@@ -152,7 +152,7 @@ vector<Interval> Solver_artem(int N, int M, int K, int J, int L,
             free_spaces_seperation_starts.push_back(free_space.start);
         }
         for (auto j = 0; j < J; j++){
-            // выбрать наибольший возможный, отрезать от него кусок TARGET_LEN;
+            // РІС‹Р±СЂР°С‚СЊ РЅР°РёР±РѕР»СЊС€РёР№ РІРѕР·РјРѕР¶РЅС‹Р№, РѕС‚СЂРµР·Р°С‚СЊ РѕС‚ РЅРµРіРѕ РєСѓСЃРѕРє TARGET_LEN;
             int selected_index = -1;
             int selected_size = -1;
             for (int i = 0; i < free_spaces.size(); i++){
@@ -163,7 +163,7 @@ vector<Interval> Solver_artem(int N, int M, int K, int J, int L,
                 }
             }
             assert(selected_index != -1);
-            int can_cut = selected_size; // если это не последний отрезаемый кусок. Тогда отрезаем всё что есть
+            int can_cut = selected_size; // РµСЃР»Рё СЌС‚Рѕ РЅРµ РїРѕСЃР»РµРґРЅРёР№ РѕС‚СЂРµР·Р°РµРјС‹Р№ РєСѓСЃРѕРє. РўРѕРіРґР° РѕС‚СЂРµР·Р°РµРј РІСЃС‘ С‡С‚Рѕ РµСЃС‚СЊ
             if (j+1 != J){
                 can_cut = std::min(selected_size, TARGET_LEN);
             }
@@ -179,17 +179,57 @@ vector<Interval> Solver_artem(int N, int M, int K, int J, int L,
         std::vector<int>beamOwnedBy(BEAM_MAX_AMOUNT, -1);
         std::set<int>activeUsers;
         for (int i = 0; i < current_interval.size(); i++) {
-            // юзаем OWNEDBY до конца!!!
-            // считаем кол-во свободных слотов.
+            // СЋР·Р°РµРј OWNEDBY РґРѕ РєРѕРЅС†Р°!!!
+            // СЃС‡РёС‚Р°РµРј РєРѕР»-РІРѕ СЃРІРѕР±РѕРґРЅС‹С… СЃР»РѕС‚РѕРІ.
 
-            // Набираем
+            // РќР°Р±РёСЂР°РµРј
+            std::set<int>to_delete;
+            for (auto user_id: activeUsers){
+                float curr_len = current_interval[i].end-current_interval[i].start;
+                float need_more = userInfos[user_id].rbNeed-rbSuplied[user_id];
+                if (need_more < curr_len*0.25){
+                    to_delete.insert(user_id);
+                }
+            }
+
+
+
+
+            int have_full = 0;
             std::vector<std::pair<int,int>>candidates;
+            for (auto& user: userInfos){
+                if (used_users.find(user.id) == used_users.end()) {
+                    if (beamOwnedBy[user.beam] == -1 &&
+                        user.rbNeed - rbSuplied[user.id] > current_interval[i].end - current_interval[i].start) {
+                        have_full++;
+                    }
+                    if (beamOwnedBy[user.beam] != -1){
+                        int owned_by_id = beamOwnedBy[user.beam];
+                        if (user.rbNeed - rbSuplied[user.id] > userInfos[owned_by_id].rbNeed -  rbSuplied[owned_by_id]){
+                            have_full++;
+                        }
+                    }
+                }
+            }
+            if (have_full) {
+                for (auto user_id: to_delete) {
+                    activeUsers.erase(user_id);
+                    beamOwnedBy[userInfos[user_id].beam] = -1;
+                    have_full--;
+                    if (have_full == 0){
+                        break;
+                    }
+                }
+            }
+            candidates.clear();
             for (auto& user: userInfos){
                 if (used_users.find(user.id) == used_users.end() && beamOwnedBy[user.beam] == -1){
                     assert(rbSuplied[user.id] == 0);
                     candidates.push_back({user.rbNeed-rbSuplied[user.id],user.id});
                 }
             }
+
+
             sort(candidates.begin(),candidates.end(), greater<pair<int,int>>());
             int get_more = L - activeUsers.size();
             for (int g = 0; g < min(get_more, (int)candidates.size()); g++){
@@ -200,7 +240,8 @@ vector<Interval> Solver_artem(int N, int M, int K, int J, int L,
                 }
             }
 
-            std::set<int>to_delete;
+
+            to_delete.clear();
             for (auto user_id: activeUsers){
                 rbSuplied[user_id] += current_interval[i].end-current_interval[i].start;
                 current_interval[i].users.push_back(user_id);
