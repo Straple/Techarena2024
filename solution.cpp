@@ -41,13 +41,20 @@ struct Interval {
 };
 
 struct free_space {
-    int start, end, len;
+    int start, end;
+    int len(){
+        return end-start;
+    }
 };
+int BEAM_MAX_AMOUNT = 32;
 
 vector<Interval> Solver_artem(int N, int M, int K, int J, int L,
                               vector<Interval> reservedRBs,
                               vector<UserInfo> userInfos
 ) {
+    for (int i = 0; i < userInfos.size(); i++){
+        assert(userInfos[i].id == i);
+    }
     std::vector<free_space> free_spaces;
     {
         std::vector<bool> is_free(M + 1, true);
@@ -62,27 +69,92 @@ vector<Interval> Solver_artem(int N, int M, int K, int J, int L,
         for (int i = 0; i < is_free.size(); i++) {
             if (!is_free[i]) {
                 if (start != i - 1) {
-                    free_spaces.push_back({start + 1, i, i - start + 1});
+                    free_spaces.push_back({start + 1, i});
                 }
                 start = i;
             }
         }
     }
-    vector<Interval> answer;
-    for (int i = 0; i < min((int) free_spaces.size(), J); i++) {
-        answer.push_back({free_spaces[i].start, free_spaces[i].end, {}});
-    }
-    std::set<int> used_users;
-    for (int i = 0; i < answer.size(); i++) {
-        std::set<int> used_beams;
-        for (auto user: userInfos) {
-            if (answer[i].users.size() == L) {
-                break;
+
+    vector<std::vector<Interval>> pre_answer(free_spaces.size());
+    {
+        int total_free_space_size = 0;
+        for (auto free_space: free_spaces) {
+            total_free_space_size += free_space.len();
+        }
+        int TARGET_LEN = total_free_space_size / J;
+        std::vector<int>free_spaces_seperation_starts;
+        for (auto free_space: free_spaces) {
+            free_spaces_seperation_starts.push_back(free_space.start);
+        }
+        for (auto j = 0; j < J; j++){
+            // выбрать наибольший возможный, отрезать от него кусок TARGET_LEN;
+            int selected_index = -1;
+            int selected_size = -1;
+            for (int i = 0; i < free_spaces.size(); i++){
+                int current_possible_len = free_spaces[i].end-free_spaces_seperation_starts[i];
+                if (current_possible_len > selected_size){
+                    selected_size = current_possible_len;
+                    selected_index = i;
+                }
             }
-            if (used_users.find(user.id) == used_users.end() && used_beams.find(user.beam) == used_beams.end()) {
-                used_beams.insert(user.beam);
-                answer[i].users.push_back(user.id);
-                used_users.insert(user.id);
+            assert(selected_index != -1);
+            int can_cut = selected_size; // если это не последний отрезаемый кусок. Тогда отрезаем всё что есть
+            if (j+1 != J){
+                can_cut = std::min(selected_size, TARGET_LEN);
+            }
+            int currect_start = free_spaces_seperation_starts[selected_index];
+            pre_answer[selected_index].push_back({currect_start, currect_start+can_cut, {}});
+            free_spaces_seperation_starts[selected_index]+=can_cut;
+
+        }
+    }
+    std::vector<int>rbSuplied(N,0);
+    std::set<int> used_users;
+    for (auto& current_interval: pre_answer) {
+        std::vector<int>beamOwnedBy(BEAM_MAX_AMOUNT, -1);
+        std::set<int>activeUsers;
+        for (int i = 0; i < current_interval.size(); i++) {
+            // юзаем OWNEDBY до конца!!!
+            // считаем кол-во свободных слотов.
+
+            // Набираем
+            std::vector<std::pair<int,int>>candidates;
+            for (auto& user: userInfos){
+                if (used_users.find(user.id) == used_users.end() && beamOwnedBy[user.beam] == -1){
+                    assert(rbSuplied[user.id] == 0);
+                    candidates.push_back({user.rbNeed-rbSuplied[user.id],user.id});
+                }
+            }
+            sort(candidates.begin(),candidates.end(), greater<pair<int,int>>());
+            int get_more = L - activeUsers.size();
+            for (int g = 0; g < min(get_more, (int)candidates.size()); g++){
+                if (beamOwnedBy[userInfos[candidates[g].second].beam] == -1){
+                    activeUsers.insert(candidates[g].second);
+                    used_users.insert(candidates[g].second);
+                    beamOwnedBy[userInfos[candidates[g].second].beam] = candidates[g].second;
+                }
+            }
+
+            std::set<int>to_delete;
+            for (auto user_id: activeUsers){
+                rbSuplied[user_id] += current_interval[i].end-current_interval[i].start;
+                current_interval[i].users.push_back(user_id);
+                if (rbSuplied[user_id] > userInfos[user_id].rbNeed){
+                    to_delete.insert(user_id);
+                }
+            }
+            for (auto user_id: to_delete){
+                activeUsers.erase(user_id);
+                beamOwnedBy[userInfos[user_id].beam] = -1;
+            }
+        }
+    }
+    vector<Interval> answer;
+    for (int i = 0; i < pre_answer.size(); i++){
+        for (int g = 0; g < pre_answer[i].size(); g++){
+            if (pre_answer[i][g].users.size()){
+                answer.push_back(pre_answer[i][g]);
             }
         }
     }
@@ -137,6 +209,7 @@ int get_solution_score(const TestData &testdata, const vector<Interval>& answer)
     for (auto [start, end, users]: answer) {
         // validate interval
         {
+            assert(!users.empty());
             ASSERT(users.size() <= testdata.L, "answer interval is invalid: users more than L");
             ASSERT(start < end, "answer interval is invalid: start >= end");
             ASSERT(0 <= start && end <= testdata.M, "answer interval is invalid: incorrect interval");
@@ -152,7 +225,9 @@ int get_solution_score(const TestData &testdata, const vector<Interval>& answer)
             user_max[id] = max(user_max[id], end);
             unique_beams.insert(testdata.userInfos[id].beam);
         }
+        if (unique_beams.size() != users.size()){
 
+        }
         ASSERT(unique_beams.size() == users.size(), "answer interval is invalid: have equal user beams");
     }
 
