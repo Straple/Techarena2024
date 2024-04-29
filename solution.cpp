@@ -233,11 +233,13 @@ vector<vector<Interval>> Solver_artem(int N, int M, int K, int J, int L,
         }
         sort(candidates.begin(),candidates.end(), greater<>());
         int get_more = L - activeUsers[pick_i].size();
-        for (int g = 0; g < min(get_more, (int)candidates.size()); g++){
+        for (int g = 0; g < (int)candidates.size(); g++){
+            if (get_more == 0) break;
             if (beamOwnedBy[pick_i][userInfos[candidates[g].second].beam] == -1){
                 activeUsers[pick_i].insert(candidates[g].second);
                 used_users.insert(candidates[g].second);
                 beamOwnedBy[pick_i][userInfos[candidates[g].second].beam] = candidates[g].second;
+                get_more--;
             }
         }
 
