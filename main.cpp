@@ -145,7 +145,7 @@ double get_solution_score(const TestData &testdata) {
 }
 
 int main() {
-    std::fstream input("/Users/artembreznev/Techarena2024/open.txt");
+    std::fstream input("open.txt");
     size_t test_cases;
     input >> test_cases;
 
