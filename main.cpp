@@ -42,10 +42,36 @@ struct Interval {
     std::vector<int> users;
 };
 
-vector<Interval> Solver(int N, int M, int K, int J, int L,
+struct free_space{
+    int start, end, len;
+};
+
+vector<Interval> Solver_artem(int N, int M, int K, int J, int L,
                         vector<Interval> reservedRBs,
                         vector<UserInfo> userInfos
-) {
+){
+    std::vector<free_space>free_spaces;
+    {
+        std::vector<bool>is_free(M+1, true);
+        is_free.back() = false;
+        int start = -1;
+        for (size_t i = 0; i < reservedRBs.size(); i++){
+            for (size_t g = reservedRBs[i].start; g < reservedRBs[i].end; g++){
+                is_free[g] = false;
+            }
+        }
+
+        for (int i = 0; i < is_free.size(); i++) {
+            if (!is_free[i]) {
+                if (start != i - 1) {
+                    free_spaces.push_back({start + 1, i, i - start + 1});
+                }
+                start = i;
+            }
+        }
+
+    }
+
 
 }
 
@@ -74,7 +100,7 @@ TestData read_test(istream &input) {
 }
 
 double get_solution_score(const TestData &testdata) {
-    auto result = Solver(testdata.N, testdata.M, testdata.K, testdata.J, testdata.L, testdata.reservedRBs,
+    auto result = Solver_artem(testdata.N, testdata.M, testdata.K, testdata.J, testdata.L, testdata.reservedRBs,
                          testdata.userInfos);
 
     for (int i = 0; i < result.size(); i++) {
@@ -119,7 +145,15 @@ double get_solution_score(const TestData &testdata) {
 }
 
 int main() {
+    std::fstream input("/Users/artembreznev/Techarena2024/open.txt");
+    size_t test_cases;
+    input >> test_cases;
 
+    for (size_t test_case = 0; test_case < test_cases; test_case++) {
+        auto data = read_test(input);
+        auto res = get_solution_score(data);
+        cout << "TEST: " << test_case << " | RES: " << res << endl;
+    }
 
     return 0;
 }
