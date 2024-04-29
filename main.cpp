@@ -114,9 +114,12 @@ TestData read_test(istream &input) {
 
     return TestData{N, M, K, J, L, reservedRBs, userInfos};
 }
+vector<Interval> Solver(int N, int M, int K, int J, int L,
+                        vector<Interval> reservedRBs,
+                        vector<UserInfo> userInfos);
 
 double get_solution_score(const TestData &testdata) {
-    auto result = Solver_artem(testdata.N, testdata.M, testdata.K, testdata.J, testdata.L, testdata.reservedRBs,
+    auto result = Solver(testdata.N, testdata.M, testdata.K, testdata.J, testdata.L, testdata.reservedRBs,
                          testdata.userInfos);
 
     ASSERT(result.size() <= testdata.J, "answer intervals is invalid: count intervals more than J");
@@ -162,6 +165,16 @@ double get_solution_score(const TestData &testdata) {
     }
     return sum_score;
 }
+
+
+vector<Interval> Solver(int N, int M, int K, int J, int L,
+                        vector<Interval> reservedRBs,
+                        vector<UserInfo> userInfos){
+    auto res = Solver_artem(N, M, K, J, L, reservedRBs,userInfos);
+    get_solution_score({N,M,K,J,L,reservedRBs,userInfos});
+    return res;
+}
+
 
 int main() {
     std::fstream input("open.txt");
