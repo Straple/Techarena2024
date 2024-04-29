@@ -25,8 +25,6 @@
 
 #endif// MY_DEBUG_MODE
 
-#pragma once
-
 #include "bits/stdc++.h"
 
 using namespace std;
@@ -42,21 +40,21 @@ struct Interval {
     std::vector<int> users;
 };
 
-struct free_space{
+struct free_space {
     int start, end, len;
 };
 
 vector<Interval> Solver_artem(int N, int M, int K, int J, int L,
-                        vector<Interval> reservedRBs,
-                        vector<UserInfo> userInfos
-){
-    std::vector<free_space>free_spaces;
+                              vector<Interval> reservedRBs,
+                              vector<UserInfo> userInfos
+) {
+    std::vector<free_space> free_spaces;
     {
-        std::vector<bool>is_free(M+1, true);
+        std::vector<bool> is_free(M + 1, true);
         is_free.back() = false;
         int start = -1;
-        for (size_t i = 0; i < reservedRBs.size(); i++){
-            for (size_t g = reservedRBs[i].start; g < reservedRBs[i].end; g++){
+        for (size_t i = 0; i < reservedRBs.size(); i++) {
+            for (size_t g = reservedRBs[i].start; g < reservedRBs[i].end; g++) {
                 is_free[g] = false;
             }
         }
@@ -71,17 +69,17 @@ vector<Interval> Solver_artem(int N, int M, int K, int J, int L,
         }
     }
     vector<Interval> answer;
-    for (int i = 0; i < min((int)free_spaces.size(), J); i++){
+    for (int i = 0; i < min((int) free_spaces.size(), J); i++) {
         answer.push_back({free_spaces[i].start, free_spaces[i].end, {}});
     }
-    std::set<int>used_users;
-    for (int i = 0; i < answer.size(); i++){
-        std::set<int>used_beams;
-        for (auto user: userInfos){
-            if (answer[i].users.size() == L){
+    std::set<int> used_users;
+    for (int i = 0; i < answer.size(); i++) {
+        std::set<int> used_beams;
+        for (auto user: userInfos) {
+            if (answer[i].users.size() == L) {
                 break;
             }
-            if (used_users.find(user.id) == used_users.end() && used_beams.find(user.beam) == used_beams.end()){
+            if (used_users.find(user.id) == used_users.end() && used_beams.find(user.beam) == used_beams.end()) {
                 used_beams.insert(user.beam);
                 answer[i].users.push_back(user.id);
                 used_users.insert(user.id);
@@ -114,19 +112,21 @@ TestData read_test(istream &input) {
 
     return TestData{N, M, K, J, L, reservedRBs, userInfos};
 }
+
 vector<Interval> Solver(int N, int M, int K, int J, int L,
                         vector<Interval> reservedRBs,
                         vector<UserInfo> userInfos);
 
-double get_solution_score(const TestData &testdata) {
-    auto result = Solver(testdata.N, testdata.M, testdata.K, testdata.J, testdata.L, testdata.reservedRBs,
-                         testdata.userInfos);
+vector<Interval> Solver(const TestData &testdata) {
+    return Solver(testdata.N, testdata.M, testdata.K, testdata.J, testdata.L, testdata.reservedRBs, testdata.userInfos);
+}
 
-    ASSERT(result.size() <= testdata.J, "answer intervals is invalid: count intervals more than J");
+double get_solution_score(const TestData &testdata, vector<Interval> answer) {
+    ASSERT(answer.size() <= testdata.J, "answer intervals is invalid: count intervals more than J");
 
-    for (int i = 0; i < result.size(); i++) {
-        for (int j = i + 1; j < result.size(); j++) {
-            ASSERT(result[i].end <= result[j].start || result[j].end <= result[i].start,
+    for (int i = 0; i < answer.size(); i++) {
+        for (int j = i + 1; j < answer.size(); j++) {
+            ASSERT(answer[i].end <= answer[j].start || answer[j].end <= answer[i].start,
                    "answer interval is invalid: intersect");
         }
     }
@@ -134,7 +134,7 @@ double get_solution_score(const TestData &testdata) {
     vector<int> user_score(testdata.N);
     vector<int> user_min(testdata.N, 1e9);
     vector<int> user_max(testdata.N, -1e9);
-    for (auto [start, end, users]: result) {
+    for (auto [start, end, users]: answer) {
         // validate interval
         {
             ASSERT(users.size() <= testdata.L, "answer interval is invalid: users more than L");
@@ -169,12 +169,11 @@ double get_solution_score(const TestData &testdata) {
 
 vector<Interval> Solver(int N, int M, int K, int J, int L,
                         vector<Interval> reservedRBs,
-                        vector<UserInfo> userInfos){
-    auto res = Solver_artem(N, M, K, J, L, reservedRBs,userInfos);
-    get_solution_score({N,M,K,J,L,reservedRBs,userInfos});
-    return res;
+                        vector<UserInfo> userInfos) {
+    auto answer = Solver_artem(N, M, K, J, L, reservedRBs, userInfos);
+    get_solution_score({N, M, K, J, L, reservedRBs, userInfos}, answer);
+    return answer;
 }
-
 
 int main() {
     std::fstream input("open.txt");
@@ -184,17 +183,19 @@ int main() {
     int total_max = 0;
     for (size_t test_case = 0; test_case < test_cases; test_case++) {
         auto data = read_test(input);
-        auto res = get_solution_score(data);
+        auto intervals = Solver(data);
+        auto res = get_solution_score(data, intervals);
         int max_score = 0;
-        for (auto user: data.userInfos){
-            max_score+=user.rbNeed;
+        for (auto user: data.userInfos) {
+            max_score += user.rbNeed;
         }
         total_score += res;
         total_max += max_score;
-        cout << "TEST: " << test_case << " | RES: " << res << "/" << max_score << " | " << float(res)/max_score * 100 << "%" << endl;
+        cout << "TEST: " << test_case << " | RES: " << res << "/" << max_score << " | " << float(res) / max_score * 100
+             << "%" << endl;
     }
     cout << "------------" << endl;
-    cout << "RES: " << total_score << "/" << total_max << " | " << float(total_score)/total_max * 100 << "%" << endl;
+    cout << "RES: " << total_score << "/" << total_max << " | " << float(total_score) / total_max * 100 << "%" << endl;
 
     return 0;
 }
