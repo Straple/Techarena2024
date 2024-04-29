@@ -74,16 +74,21 @@ vector<Interval> Solver_artem(int N, int M, int K, int J, int L,
     for (int i = 0; i < min((int)free_spaces.size(), J); i++){
         answer.push_back({free_spaces[i].start, free_spaces[i].end, {}});
     }
-//    for (int i = 0; i < answer.size(); i++){
-//        std::set<int>used_beams;
-//        for (auto user: ){
-//            if ()
-//        }
-//    }
-//
-
-
-
+    std::set<int>used_users;
+    for (int i = 0; i < answer.size(); i++){
+        std::set<int>used_beams;
+        for (auto user: userInfos){
+            if (answer[i].users.size() == L){
+                break;
+            }
+            if (used_users.find(user.id) == used_users.end() && used_beams.find(user.beam) == used_beams.end()){
+                used_beams.insert(user.beam);
+                answer[i].users.push_back(user.id);
+                used_users.insert(user.id);
+            }
+        }
+    }
+    return answer;
 }
 
 struct TestData {
@@ -152,7 +157,7 @@ double get_solution_score(const TestData &testdata) {
     for (int u = 0; u < testdata.N; u++) {
         sum_score += std::min(user_score[u], testdata.userInfos[u].rbNeed);
 
-        ASSERT(user_score[u] == user_max[u] - user_min[u],
+        ASSERT(user_min[u] == 1e9 || user_score[u] == user_max[u] - user_min[u],
                "answer interval is invalid: user have no continuous interval");
     }
     return sum_score;
@@ -162,12 +167,21 @@ int main() {
     std::fstream input("open.txt");
     size_t test_cases;
     input >> test_cases;
-
+    int total_score = 0;
+    int total_max = 0;
     for (size_t test_case = 0; test_case < test_cases; test_case++) {
         auto data = read_test(input);
         auto res = get_solution_score(data);
-        cout << "TEST: " << test_case << " | RES: " << res << endl;
+        int max_score = 0;
+        for (auto user: data.userInfos){
+            max_score+=user.rbNeed;
+        }
+        total_score += res;
+        total_max += max_score;
+        cout << "TEST: " << test_case << " | RES: " << res << "/" << max_score << " | " << float(res)/max_score * 100 << "%" << endl;
     }
+    cout << "------------" << endl;
+    cout << "RES: " << total_score << "/" << total_max << " | " << float(total_score)/total_max * 100 << "%" << endl;
 
     return 0;
 }
