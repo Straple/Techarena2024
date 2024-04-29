@@ -69,8 +69,19 @@ vector<Interval> Solver_artem(int N, int M, int K, int J, int L,
                 start = i;
             }
         }
-
     }
+    vector<Interval> answer;
+    for (int i = 0; i < min((int)free_spaces.size(), J); i++){
+        answer.push_back({free_spaces[i].start, free_spaces[i].end, {}});
+    }
+//    for (int i = 0; i < answer.size(); i++){
+//        std::set<int>used_beams;
+//        for (auto user: ){
+//            if ()
+//        }
+//    }
+//
+
 
 
 }
