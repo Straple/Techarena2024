@@ -77,6 +77,8 @@ double get_solution_score(const TestData &testdata) {
     auto result = Solver(testdata.N, testdata.M, testdata.K, testdata.J, testdata.L, testdata.reservedRBs,
                          testdata.userInfos);
 
+    ASSERT(result.size() <= testdata.J, "answer intervals is invalid: count intervals more than J");
+
     for (int i = 0; i < result.size(); i++) {
         for (int j = i + 1; j < result.size(); j++) {
             ASSERT(result[i].end <= result[j].start || result[j].end <= result[i].start,
@@ -92,6 +94,7 @@ double get_solution_score(const TestData &testdata) {
         {
             ASSERT(users.size() <= testdata.L, "answer interval is invalid: users more than L");
             ASSERT(start < end, "answer interval is invalid: start >= end");
+            ASSERT(0 <= start && end <= testdata.M, "answer interval is invalid: incorrect interval");
             for (auto [reserved_start, reserved_end, reserved_users]: testdata.reservedRBs) {
                 ASSERT(end <= reserved_start || reserved_end <= start, "answer interval intersect with reservedRbs");
             }
