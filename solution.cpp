@@ -108,11 +108,96 @@ struct UserInfo {
 struct Interval {
     int start, end;
     vector<int> users;
+
+    int len() const {
+        return end - start;
+    }
 };
 
 struct MyInterval {
-    int start, end, len;
+    int start, end;
+
+    int len() const {
+        return end - start;
+    }
 };
+
+struct TestData {
+    int N, M, K, J, L;
+    vector<Interval> reservedRBs;
+    vector<UserInfo> userInfos;
+};
+
+TestData read_test(istream &input) {
+    int N, M, K, J, L;
+    input >> N >> M >> K >> J >> L;
+
+    vector<Interval> reservedRBs(K);
+    for (auto &[start, end, users]: reservedRBs) {
+        input >> start >> end;
+    }
+
+    vector<UserInfo> userInfos(N);
+    for (int u = 0; u < N; u++) {
+        userInfos[u].id = u;
+        input >> userInfos[u].rbNeed >> userInfos[u].beam;
+    }
+
+    return TestData{N, M, K, J, L, reservedRBs, userInfos};
+}
+
+int get_solution_score(int N, int M, int K, int J, int L,
+                       const vector<Interval> &reservedRBs,
+                       const vector<UserInfo> &userInfos, const vector<Interval> &answer) {
+    ASSERT(answer.size() <= J, "answer intervals is invalid: count intervals more than J");
+
+    for (int i = 0; i < answer.size(); i++) {
+        for (int j = i + 1; j < answer.size(); j++) {
+            ASSERT(answer[i].end <= answer[j].start || answer[j].end <= answer[i].start,
+                   "answer interval is invalid: intersect");
+        }
+    }
+
+    vector<int> user_score(N);
+    vector<int> user_min(N, 1e9);
+    vector<int> user_max(N, -1e9);
+    for (auto [start, end, users]: answer) {
+        // validate interval
+        {
+            ASSERT(users.size() <= L, "answer interval is invalid: users more than L");
+            ASSERT(start < end, "answer interval is invalid: start >= end");
+            ASSERT(0 <= start && end <= M, "answer interval is invalid: incorrect interval");
+            for (auto [reserved_start, reserved_end, reserved_users]: reservedRBs) {
+                ASSERT(end <= reserved_start || reserved_end <= start, "answer interval intersect with reservedRbs");
+            }
+        }
+        set<int> unique_beams;
+        for (int id: users) {
+            user_score[id] += end - start;
+
+            user_min[id] = min(user_min[id], start);
+            user_max[id] = max(user_max[id], end);
+            unique_beams.insert(userInfos[id].beam);
+        }
+
+        ASSERT(unique_beams.size() == users.size(), "answer interval is invalid: have equal user beams");
+    }
+
+    int sum_score = 0;
+    for (int u = 0; u < N; u++) {
+        sum_score += std::min(user_score[u], userInfos[u].rbNeed);
+
+        ASSERT(user_min[u] == 1e9 || user_score[u] == user_max[u] - user_min[u],
+               "answer interval is invalid: user have no continuous interval");
+    }
+    return sum_score;
+}
+
+int get_solution_score(const TestData &testdata, const vector<Interval> &answer) {
+    return get_solution_score(testdata.N, testdata.M, testdata.K, testdata.J, testdata.L, testdata.reservedRBs,
+                              testdata.userInfos, answer);
+}
+
 
 vector<Interval> Solver_artem(int N, int M, int K, int J, int L,
                               vector<Interval> reservedRBs,
@@ -132,7 +217,7 @@ vector<Interval> Solver_artem(int N, int M, int K, int J, int L,
         for (int i = 0; i < is_free.size(); i++) {
             if (!is_free[i]) {
                 if (start != i - 1) {
-                    free_spaces.push_back({start + 1, i, i - start + 1});
+                    free_spaces.push_back({start + 1, i});
                 }
                 start = i;
             }
@@ -177,7 +262,7 @@ vector<Interval> Solver_egor(int N, int M, int K, int J, int L,
         for (int i = 0; i < M; i++) {
             if (!is_free[i]) {
                 if (start != i - 1) {
-                    free_spaces.push_back({start + 1, i, i - start + 1});
+                    free_spaces.push_back({start + 1, i});
                 }
                 start = i;
             }
@@ -186,7 +271,7 @@ vector<Interval> Solver_egor(int N, int M, int K, int J, int L,
 
     struct user {
         int id = -1;
-        int start = -1, end = -1;
+        int len = 0;
     };
 
     randomizer rnd;
@@ -196,22 +281,134 @@ vector<Interval> Solver_egor(int N, int M, int K, int J, int L,
         // TODO: smart deterministic build algorithm
         for (int u = 0; u < N; u++) {
             int block = rnd.get(0, blocks.size() - 1);
-            blocks[block].emplace_back(u, -1, -1);
-            //.emplace_back(u, free_spaces[block].start, free_spaces[block].end);
+            blocks[block].emplace_back(u, 0);
         }
         return blocks;
     };
 
-    auto calc_score = [&](const vector<vector<user>> &blocks) {
-        double score = 0;
+    auto build_answer = [&](const vector<vector<user>> &blocks) {
+        vector<vector<Interval>> block_answer(blocks.size());
 
+        int cnt_total_intervals = 0;
+
+        // (len, block, id)
+        vector<tuple<int, int, int>> users;
+        for (int block = 0; block < blocks.size(); block++) {
+            block_answer[block].emplace_back(free_spaces[block].start, free_spaces[block].end, vector<int>());
+            for (auto [id, len]: blocks[block]) {
+                if (len > 0) {
+                    users.emplace_back(len, block, id);
+                }
+            }
+        }
+        sort(users.begin(), users.end(), greater<>());
+
+        for (auto [len, block, id]: users) {
+            auto &intervals = block_answer[block];
+            int best_i = -1;
+            int best_len = 1e9;
+            for (int i = 0; i < intervals.size(); i++) {
+
+                // длина подходит
+                if (len <= intervals[i].len() && intervals[i].users.size() < L) {
+                    // можно ли поставить в этот интервал юзера?
+                    bool ok = true;
+                    for (auto u: intervals[i].users) {
+                        if (userInfos[u].beam == userInfos[id].beam) {
+                            ok = false;
+                            break;
+                        }
+                    }
+
+                    if (ok) {
+                        if (intervals[i].len() < best_len) {
+                            best_len = intervals[i].end - intervals[i].start;
+                            best_i = i;
+                        }
+                    }
+                }
+            }
+
+            if (best_i != -1) {
+                if (len == intervals[best_i].len()) {
+                    // full interval
+                    if (intervals[best_i].users.empty()) {
+                        if (cnt_total_intervals < J) {
+                            cnt_total_intervals++;
+                            intervals[best_i].users.push_back(id);
+                        }
+                    } else if (cnt_total_intervals <= J) {
+                        intervals[best_i].users.push_back(id);
+                    }
+                } else {
+                    // split
+                    if (cnt_total_intervals < J) {
+                        cnt_total_intervals++;
+                        intervals.push_back(intervals[best_i]);
+                        intervals[best_i].end = intervals[best_i].start + len;
+                        intervals.back().start = intervals[best_i].end;
+                        intervals[best_i].users.push_back(id);
+                    }
+                }
+            }
+        }
+
+        vector<Interval> answer;
+        for (int block = 0; block < blocks.size(); block++) {
+            for (auto interval: block_answer[block]) {
+                if (!interval.users.empty()) {
+                    answer.push_back(interval);
+                }
+            }
+        }
+
+        // old build answer version
+        /*vector<vector<int>> open(M), close(M);
+
+        for (int block = 0; block < blocks.size(); block++) {
+            for (auto [id, len]: blocks[block]) {
+                if (start != -1) {
+                    open[start].push_back(id);
+                    close[end].push_back(id);
+                }
+            }
+        }
+
+        vector<int> users;
+        int start = 0;
+        for (int i = 0; i < M; i++) {
+            if (!open[i].empty() || !close[i].empty()) {
+                // need new interval
+                if (!users.empty()) {
+                    answer.emplace_back(start, i, users);
+                }
+
+                start = i;
+            }
+
+            for (int u: open[i]) {
+                users.push_back(u);
+            }
+            for (int u: close[i]) {
+                users.erase(find(users.begin(), users.end(), u));
+            }
+        }*/
+
+        return answer;
+    };
+
+    auto calc_score = [&](const vector<vector<user>> &blocks) {
+        return get_solution_score(N, M, K, J, L, reservedRBs, userInfos, build_answer(blocks));
+        /*double score = 0;
+
+        // old version calc_score
         vector<int> user_score(N, -1);
         vector<set<int>> beams(M);
         vector<set<int>> users(M);
 
         for (int block = 0; block < blocks.size(); block++) {
             for (auto [id, start, end]: blocks[block]) {
-                if(start == -1){
+                if (start == -1) {
                     continue;
                 }
 
@@ -255,167 +452,82 @@ vector<Interval> Solver_egor(int N, int M, int K, int J, int L,
                 score += user_score[u];
             }
         }
-        return score;
-    };
-
-    auto build_answer = [&](const vector<vector<user>> &blocks) {
-        vector<Interval> answer;
-
-        vector<vector<int>> open(M), close(M);
-
-        for (int block = 0; block < blocks.size(); block++) {
-            for (auto [id, start, end]: blocks[block]) {
-                if (start != -1) {
-                    open[start].push_back(id);
-                    close[end].push_back(id);
-                }
-            }
-        }
-
-        vector<int> users;
-        int start = 0;
-        for (int i = 0; i < M; i++) {
-            if (!open[i].empty() || !close[i].empty()) {
-                // need new interval
-                if (!users.empty()) {
-                    answer.emplace_back(start, i, users);
-                }
-
-                start = i;
-            }
-
-            for (int u: open[i]) {
-                users.push_back(u);
-            }
-            for (int u: close[i]) {
-                users.erase(find(users.begin(), users.end(), u));
-            }
-        }
-
-        return answer;
+        return score;*/
     };
 
     vector<vector<user>> blocks = build_blocks();
 
-    double cur_score = calc_score(blocks);
+    /*double cur_score = calc_score(blocks);
+    double t = 1;
+    for (int step = 0; step < 10000; step++) {
+        int block = rnd.get(0, blocks.size() - 1);
+        if (!blocks[block].empty()) {
+            t *= 0.999;
+            int i = rnd.get(0, blocks[block].size() - 1);
 
-    for (bool run = true; run;) {
+            int old_len = blocks[block][i].len;
+            int new_len = max(0, (int)rnd.get(-10, 10));
+
+            blocks[block][i].len = new_len;
+            double new_score = calc_score(blocks);
+            if (new_score > cur_score || rnd.get_d() < exp((new_score - cur_score) / t)) {
+                cur_score = new_score;
+            } else {
+                blocks[block][i].len = old_len;
+            }
+        }
+    }*/
+
+    /*for (bool run = true; run;) {
         run = false;
         //cout << cur_score << ' ' << calc_score(blocks) << endl;
 
         for (int block = 0; block < blocks.size(); block++) {
             for (int i = 0; i < blocks[block].size(); i++) {
-                auto &[id, start, end] = blocks[block][i];
+                auto &[id, len] = blocks[block][i];
 
-                // add interval
-                if (start == -1) {
-                    start = rnd.get(free_spaces[block].start, free_spaces[block].end - 1);
-                    end = start + 1;
-
+                if (len > 0) {
+                    int save_len = len;
+                    len--;
                     double new_score = calc_score(blocks);
                     if (new_score > cur_score) {
                         cur_score = new_score;
                         run = true;
                     } else {
-                        start = end = -1;
+                        len = save_len;
                     }
                 }
 
-                // remove interval
-                if (start != -1) {
-                    int save_start = start;
-                    int save_end = end;
-
-                    start = -1;
-                    end = -1;
+                {
+                    int save_len = len;
+                    len++;
                     double new_score = calc_score(blocks);
                     if (new_score > cur_score) {
                         cur_score = new_score;
                         run = true;
                     } else {
-                        start = save_start;
-                        end = save_end;
+                        len = save_len;
                     }
                 }
 
-                // start++
-                if (start != -1 && start + 1 < end) {
-                    start++;
+                {
+                    int save_len = len;
+                    len = rnd.get(0, userInfos[id].rbNeed);
                     double new_score = calc_score(blocks);
                     if (new_score > cur_score) {
                         cur_score = new_score;
                         run = true;
                     } else {
-                        start--;
-                    }
-                }
-
-                // start--
-                if (start != -1 && start > free_spaces[block].start) {
-                    start--;
-                    double new_score = calc_score(blocks);
-                    if (new_score > cur_score) {
-                        cur_score = new_score;
-                        run = true;
-                    } else {
-                        start++;
-                    }
-                }
-
-                // end++
-                if (start != -1 && end < free_spaces[block].end) {
-                    end++;
-                    double new_score = calc_score(blocks);
-                    if (new_score > cur_score) {
-                        cur_score = new_score;
-                        run = true;
-                    } else {
-                        end--;
-                    }
-                }
-
-                // end--
-                if (start != -1 && start + 1 < end) {
-                    end--;
-                    double new_score = calc_score(blocks);
-                    if (new_score > cur_score) {
-                        cur_score = new_score;
-                        run = true;
-                    } else {
-                        end++;
+                        len = save_len;
                     }
                 }
             }
         }
-    }
+    }*/
 
     cout << cur_score << ' ' << calc_score(blocks) << '\n';
 
     return build_answer(blocks);
-}
-
-struct TestData {
-    int N, M, K, J, L;
-    vector<Interval> reservedRBs;
-    vector<UserInfo> userInfos;
-};
-
-TestData read_test(istream &input) {
-    int N, M, K, J, L;
-    input >> N >> M >> K >> J >> L;
-
-    vector<Interval> reservedRBs(K);
-    for (auto &[start, end, users]: reservedRBs) {
-        input >> start >> end;
-    }
-
-    vector<UserInfo> userInfos(N);
-    for (int u = 0; u < N; u++) {
-        userInfos[u].id = u;
-        input >> userInfos[u].rbNeed >> userInfos[u].beam;
-    }
-
-    return TestData{N, M, K, J, L, reservedRBs, userInfos};
 }
 
 vector<Interval> Solver(int N, int M, int K, int J, int L,
@@ -424,51 +536,6 @@ vector<Interval> Solver(int N, int M, int K, int J, int L,
 
 vector<Interval> Solver(const TestData &testdata) {
     return Solver(testdata.N, testdata.M, testdata.K, testdata.J, testdata.L, testdata.reservedRBs, testdata.userInfos);
-}
-
-int get_solution_score(const TestData &testdata, const vector<Interval> &answer) {
-    ASSERT(answer.size() <= testdata.J, "answer intervals is invalid: count intervals more than J");
-
-    for (int i = 0; i < answer.size(); i++) {
-        for (int j = i + 1; j < answer.size(); j++) {
-            ASSERT(answer[i].end <= answer[j].start || answer[j].end <= answer[i].start,
-                   "answer interval is invalid: intersect");
-        }
-    }
-
-    vector<int> user_score(testdata.N);
-    vector<int> user_min(testdata.N, 1e9);
-    vector<int> user_max(testdata.N, -1e9);
-    for (auto [start, end, users]: answer) {
-        // validate interval
-        {
-            ASSERT(users.size() <= testdata.L, "answer interval is invalid: users more than L");
-            ASSERT(start < end, "answer interval is invalid: start >= end");
-            ASSERT(0 <= start && end <= testdata.M, "answer interval is invalid: incorrect interval");
-            for (auto [reserved_start, reserved_end, reserved_users]: testdata.reservedRBs) {
-                ASSERT(end <= reserved_start || reserved_end <= start, "answer interval intersect with reservedRbs");
-            }
-        }
-        set<int> unique_beams;
-        for (int id: users) {
-            user_score[id] += end - start;
-
-            user_min[id] = min(user_min[id], start);
-            user_max[id] = max(user_max[id], end);
-            unique_beams.insert(testdata.userInfos[id].beam);
-        }
-
-        ASSERT(unique_beams.size() == users.size(), "answer interval is invalid: have equal user beams");
-    }
-
-    int sum_score = 0;
-    for (int u = 0; u < testdata.N; u++) {
-        sum_score += std::min(user_score[u], testdata.userInfos[u].rbNeed);
-
-        ASSERT(user_min[u] == 1e9 || user_score[u] == user_max[u] - user_min[u],
-               "answer interval is invalid: user have no continuous interval");
-    }
-    return sum_score;
 }
 
 vector<Interval> Solver(int N, int M, int K, int J, int L,
