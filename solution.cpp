@@ -243,7 +243,7 @@ vector<Interval> Solver_egor(int N, int M, int K, int J, int L,
         for (int i = 0; i < M; i++) {
             if (!is_free[i]) {
                 if (start != i - 1) {
-                    free_spaces.push_back({start + 1, i, i - start + 1});
+                    free_spaces.push_back({start + 1, i});
                 }
                 start = i;
             }
