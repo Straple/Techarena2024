@@ -1059,13 +1059,13 @@ struct EgorTaskSolver {
     void annealing() {
         double temp = 1;
         auto is_good = [&](int old_score) {
-            return total_score >= old_score;
+            return total_score > old_score || rnd.get_d() < exp((total_score - old_score) / temp);
         };
 
         //cout << total_score << "->";
         //cout.flush();
         for (int step = 0; step < 100'000; step++) {
-            temp *= 0.999;
+            temp *= 0.9999;
 
             if (rnd.get_d() < 0.3) {
                 // update interval
@@ -1206,6 +1206,7 @@ struct EgorTaskSolver {
                 }
             }
         }
+        //cout << temp << endl;
         //cout << total_score << endl;
     }
 };
