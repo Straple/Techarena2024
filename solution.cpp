@@ -1062,6 +1062,14 @@ struct EgorTaskSolver {
             return total_score > old_score || rnd.get_d() < exp((total_score - old_score) / temp);
         };
 
+        vector<int> users_order(N);
+        iota(users_order.begin(), users_order.end(), 0);
+        sort(users_order.begin(), users_order.end(), [&](int lhs, int rhs) {
+            return users_info[lhs].rbNeed > users_info[rhs].rbNeed;
+        });
+
+        int current_user = 0;
+
         //cout << total_score << "->";
         //cout.flush();
         for (int step = 0; step < 100'000; step++) {
@@ -1098,7 +1106,9 @@ struct EgorTaskSolver {
             } else if (rnd.get_d() < 0.5) {
                 // update user
 
-                int u = rnd.get(0, N - 1);
+                int u = users_order[current_user];
+                current_user = (current_user + 1) % N;
+                //int u = rnd.get(0, N - 1);
 
                 if (users_info[u].block == -1) {
                     // no interval
