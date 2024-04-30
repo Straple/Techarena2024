@@ -1065,9 +1065,9 @@ struct EgorTaskSolver {
         //cout << total_score << "->";
         //cout.flush();
         for (int step = 0; step < 100'000; step++) {
-            temp *= 0.9999;
+            temp *= 0.999999;
 
-            if (rnd.get_d() < 0.3) {
+            if (rnd.get_d() < 0.1) {
                 // update interval
 
                 int block = rnd.get(0, free_intervals.size() - 1);
@@ -1132,76 +1132,114 @@ struct EgorTaskSolver {
                     int left = users_info[u].left;
                     int beam = users_info[u].beam;
 
-                    if (right + 1 < intervals[block].size() &&
-                        intervals[block][right + 1].users.size() + 1 <= L &&
-                        !have_equal_beam(block, right + 1, beam) &&
-                        rnd.get_d() < 0.2) {
+                    auto add_right = [&]() {
+                        if (right + 1 < intervals[block].size() &&
+                            intervals[block][right + 1].users.size() + 1 <= L &&
+                            !have_equal_beam(block, right + 1, beam) &&
+                            rnd.get_d() < 0.2) {
 
-                        int old_score = total_score;
+                            int old_score = total_score;
 
-                        add_right_interval_in_user(u);
-
-                        if (is_good(old_score)) {
-
-                        } else {
-                            remove_right_interval_in_user(u);
-                            ASSERT(old_score == total_score, "failed back score");
-                        }
-                    } else if (left > 0 &&
-                               intervals[block][left - 1].users.size() + 1 <= L &&
-                               !have_equal_beam(block, left - 1, beam) &&
-                               rnd.get_d() < 0.4) {
-
-                        int old_score = total_score;
-
-                        add_left_interval_in_user(u);
-
-                        if (is_good(old_score)) {
-
-                        } else {
-                            remove_left_interval_in_user(u);
-                            ASSERT(old_score == total_score, "failed back score");
-                        }
-                    } else if (left + 1 <= right &&
-                               rnd.get_d() < 0.1) {
-
-                        int old_score = total_score;
-
-                        remove_left_interval_in_user(u);
-
-                        if (is_good(old_score)) {
-
-                        } else {
-                            add_left_interval_in_user(u);
-                            ASSERT(old_score == total_score, "failed back score");
-                        }
-                    } else if (left + 1 <= right &&
-                               rnd.get_d() < 0.1) {
-
-                        int old_score = total_score;
-
-                        remove_right_interval_in_user(u);
-
-                        if (is_good(old_score)) {
-
-                        } else {
                             add_right_interval_in_user(u);
-                            ASSERT(old_score == total_score, "failed back score");
-                        }
-                    } else {
-                        int old_score = total_score;
 
-                        remove_all_user_interval(u);
+                            if (is_good(old_score)) {
 
-                        if (is_good(old_score)) {
-
-                        } else {
-                            new_user_interval(u, block, left);
-                            for (int i = left + 1; i <= right; i++) {
-                                add_right_interval_in_user(u);
+                            } else {
+                                remove_right_interval_in_user(u);
+                                ASSERT(old_score == total_score, "failed back score");
                             }
-                            ASSERT(old_score == total_score, "failed back score");
+
+                            return true;
+                        } else {
+                            return false;
                         }
+                    };
+
+                    auto add_left = [&]() {
+                        if (left > 0 &&
+                            intervals[block][left - 1].users.size() + 1 <= L &&
+                            !have_equal_beam(block, left - 1, beam) &&
+                            rnd.get_d() < 0.2) {
+
+                            int old_score = total_score;
+
+                            add_left_interval_in_user(u);
+
+                            if (is_good(old_score)) {
+
+                            } else {
+                                remove_left_interval_in_user(u);
+                                ASSERT(old_score == total_score, "failed back score");
+                            }
+                            return true;
+                        } else {
+                            return false;
+                        }
+                    };
+
+                    auto remove_right = [&]() {
+                        if (left + 1 <= right &&
+                            rnd.get_d() < 0.1) {
+
+                            int old_score = total_score;
+
+                            remove_right_interval_in_user(u);
+
+                            if (is_good(old_score)) {
+
+                            } else {
+                                add_right_interval_in_user(u);
+                                ASSERT(old_score == total_score, "failed back score");
+                            }
+                            return true;
+                        } else {
+                            return false;
+                        }
+                    };
+
+                    auto remove_left = [&]() {
+                        if (left + 1 <= right &&
+                            rnd.get_d() < 0.1) {
+
+                            int old_score = total_score;
+
+                            remove_left_interval_in_user(u);
+
+                            if (is_good(old_score)) {
+
+                            } else {
+                                add_left_interval_in_user(u);
+                                ASSERT(old_score == total_score, "failed back score");
+                            }
+                            return true;
+                        } else {
+                            return false;
+                        }
+                    };
+
+                    auto remove_all = [&]() {
+                        if (rnd.get_d() < 0.5) {
+                            int old_score = total_score;
+
+                            remove_all_user_interval(u);
+
+                            if (is_good(old_score)) {
+
+                            } else {
+                                new_user_interval(u, block, left);
+                                for (int i = left + 1; i <= right; i++) {
+                                    add_right_interval_in_user(u);
+                                }
+                                ASSERT(old_score == total_score, "failed back score");
+                            }
+                            return true;
+                        } else {
+                            return false;
+                        }
+                    };
+
+                    if (add_right() || add_left() || remove_right() || remove_left() || remove_all()) {
+
                     }
                 }
             }
