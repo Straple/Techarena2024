@@ -29,6 +29,106 @@
 #endif// MY_DEBUG_MODE
 
 // ===================================================================================================================
+// =========================TIMER=====================================================================================
+// ===================================================================================================================
+
+#include <iostream>
+
+// тики ведутся с 1-го января 1970 г. 00:00:00 Всемирного времени
+
+// вернет частоту обновления устройства
+// для удобства работы оно в efloat
+const double get_performance_frequency();
+
+// вернет текущий тик
+uint64_t get_ticks();
+
+class Timer {
+    uint64_t start_tick;
+
+public:
+    Timer();
+
+    // вернет время между начальным тиком и текущим
+    [[nodiscard]] double get() const;
+
+    // обновит начальный тик
+    void reset();
+
+    // вернет тик начала отсчета
+    [[nodiscard]] uint64_t get_tick() const;
+};
+
+std::ostream &operator<<(std::ostream &output, const Timer &time);
+
+#include <iomanip>
+
+#ifdef _WIN32
+
+#include <windows.h>
+// windows.h defined min and max macros
+// this is bad
+#undef min
+#undef max
+
+uint64_t calc_performance_frequency() {
+    LARGE_INTEGER perf;
+    ASSERT(QueryPerformanceFrequency(&perf), "call to QueryPerformanceFrequency fails");
+    return perf.QuadPart;
+}
+
+uint64_t get_ticks() {
+    LARGE_INTEGER ticks;
+    ASSERT(QueryPerformanceCounter(&ticks), "call to QueryPerformanceCounter fails");
+    return ticks.QuadPart;
+}
+
+#elif defined(__linux__) || defined(__APPLE__)
+
+#include <sys/time.h>
+
+uint64_t calc_performance_frequency() {
+    return 1'000'000;// колво микросекунд в секунде
+}
+
+uint64_t get_ticks() {
+    timeval ticks;
+
+    // вернет -1 в случае ошибки
+    ASSERT(gettimeofday(&ticks, NULL) == 0, "call to gettimeofday fails");
+    return ticks.tv_sec * 1'000'000 + ticks.tv_usec;
+}
+
+#else
+static_assert(false, "not supported operating system");
+#endif
+
+const double get_performance_frequency() {
+    static const double performance_frequency = static_cast<double>(calc_performance_frequency());
+    return performance_frequency;
+}
+
+Timer::Timer()
+        : start_tick(get_ticks()) {
+}
+
+[[nodiscard]] double Timer::get() const {
+    return static_cast<double>(get_ticks() - start_tick) / get_performance_frequency();
+}
+
+void Timer::reset() {
+    start_tick = get_ticks();
+}
+
+[[nodiscard]] uint64_t Timer::get_tick() const {
+    return start_tick;
+}
+
+std::ostream &operator<<(std::ostream &output, const Timer &time) {
+    return output << std::setprecision(4) << time.get() << "s";
+}
+
+// ===================================================================================================================
 // =========================RANDOMIZER================================================================================
 // ===================================================================================================================
 
@@ -128,7 +228,7 @@ struct TestData {
     vector<UserInfo> userInfos;
 };
 
-TestData read_test(istream &input) {
+istream &operator>>(istream &input, TestData &data) {
     int N, M, K, J, L;
     input >> N >> M >> K >> J >> L;
 
@@ -143,12 +243,27 @@ TestData read_test(istream &input) {
         input >> userInfos[u].rbNeed >> userInfos[u].beam;
     }
 
-    return TestData{N, M, K, J, L, reservedRBs, userInfos};
+    data = TestData{N, M, K, J, L, reservedRBs, userInfos};
+    return input;
+}
+
+ostream &operator<<(ostream &output, const TestData &data) {
+    output << data.N << ' ' << data.M << ' ' << data.K << ' ' << data.J << ' ' << data.L << '\n';
+    for (auto &[start, end, users]: data.reservedRBs) {
+        output << start << ' ' << end << '\n';
+    }
+    for (int u = 0; u < data.N; u++) {
+        output << data.userInfos[u].rbNeed << ' ' << data.userInfos[u].beam << '\n';
+    }
+    return output;
 }
 
 int get_solution_score(int N, int M, int K, int J, int L,
                        const vector<Interval> &reservedRBs,
                        const vector<UserInfo> &userInfos, const vector<Interval> &answer) {
+    if (answer.size() > J) {
+        cout << "WTF????: " << N << ' ' << M << ' ' << K << ' ' << J << ' ' << L << endl;
+    }
     ASSERT(answer.size() <= J, "answer intervals is invalid: count intervals more than J");
 
     for (int i = 0; i < answer.size(); i++) {
@@ -686,7 +801,7 @@ vector<Interval> Solver_egor(int N, int M, int K, int J, int L,
 
             for (int j = 0; j < intervals[i].size(); j++) {
 
-                for(int k = j + 1; k < j + 2; k++){
+                for (int k = j + 1; k < j + 2 && k < intervals[i].size(); k++) {
                     swap(intervals[i][j], intervals[i][k]);
                     int new_score = calc_score(intervals);
 
