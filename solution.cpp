@@ -192,6 +192,134 @@ double randomizer::get_exp() {
 }
 
 // ===================================================================================================================
+// =========================MY_BITS_SET===============================================================================
+// ===================================================================================================================
+
+#include <set>
+
+template<std::size_t reserved_size>
+class MyBitSet {
+    using word_type = uint64_t;
+    static constexpr std::size_t bits_cnt = sizeof(word_type) * 8;
+    static constexpr std::size_t bits_size = (reserved_size + bits_cnt - 1) / bits_cnt;
+    word_type bits[bits_size]{};
+
+    static_assert(reserved_size % bits_cnt == 0, "invalid reserved_size");
+
+    void flip(int x) {
+        bits[x / bits_cnt] ^= (uint64_t(1) << (x % bits_cnt));
+    }
+
+public:
+
+    void insert(int x) {
+        ASSERT(0 <= x && x < reserved_size, "invalid x");
+        ASSERT(!contains(x), "x already insert");
+
+        flip(x);
+    }
+
+    void erase(int x) {
+        ASSERT(0 <= x && x < reserved_size, "invalid x");
+        ASSERT(contains(x), "x already erase");
+
+        flip(x);
+    }
+
+    bool contains(int x) const {
+        ASSERT(0 <= x && x < reserved_size, "invalid x");
+        return (bits[x / bits_cnt] >> (x % bits_cnt)) & 1;
+    }
+
+    bool empty() const {
+        for (int i = 0; i < bits_size; i++) {
+            if (bits[i] != 0) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    int size() const {
+        int sz = 0;
+        for (int i = 0; i < bits_size; i++) {
+            sz += __builtin_popcountll(bits[i]);
+        }
+        return sz;
+    }
+
+    class Iterator {
+        int x = 0;
+        const MyBitSet &object;
+
+    public:
+
+        using difference_type = std::ptrdiff_t;
+        using value_type = int;
+        using pointer = int;
+        using reference = int;
+        using iterator_category = std::forward_iterator_tag;
+
+        Iterator(int X, const MyBitSet &OBJECT)
+                : x(X), object(OBJECT) {
+        }
+
+        Iterator &operator++() {
+            if (x == reserved_size) {
+                return *this;
+            }
+
+            uint64_t val = object.bits[x / bits_cnt] >> (x % bits_cnt);
+            val ^= 1;
+            if (val == 0) {
+                x += bits_cnt - x % bits_cnt;
+
+                while (x / bits_cnt < bits_size) {
+                    uint64_t val = object.bits[x / bits_cnt] >> (x % bits_cnt);
+                    if (val == 0) {
+                        x += bits_cnt - x % bits_cnt;
+                    } else {
+                        x += __builtin_ctzll(val);
+                        break;
+                    }
+                }
+            } else {
+                x += __builtin_ctzll(val);
+            }
+
+            return *this;
+        }
+
+        const int operator*() const {
+            return x;
+        }
+
+        friend bool
+        operator==(const Iterator &lhs, const Iterator &rhs) {
+            return lhs.x == rhs.x && &lhs.object == &rhs.object;
+        }
+
+        friend bool
+        operator!=(const Iterator &lhs, const Iterator &rhs) {
+            return !(lhs == rhs);
+        }
+    };
+
+    Iterator begin() {
+        int x = 0;
+        while (x < bits_size && bits[x] == 0) {
+            x++;
+        }
+        x = x * bits_cnt + (x != bits_size ? __builtin_ctzll(bits[x]) : 0);
+        return Iterator(x, *this);
+    }
+
+    Iterator end() {
+        return Iterator(reserved_size, *this);
+    }
+};
+
+// ===================================================================================================================
 // =========================SOLUTION==================================================================================
 // ===================================================================================================================
 
@@ -232,12 +360,12 @@ istream &operator>>(istream &input, TestData &data) {
     int N, M, K, J, L;
     input >> N >> M >> K >> J >> L;
 
-    vector<Interval> reservedRBs(K);
+    vector <Interval> reservedRBs(K);
     for (auto &[start, end, users]: reservedRBs) {
         input >> start >> end;
     }
 
-    vector<UserInfo> userInfos(N);
+    vector <UserInfo> userInfos(N);
     for (int u = 0; u < N; u++) {
         userInfos[u].id = u;
         input >> userInfos[u].rbNeed >> userInfos[u].beam;
@@ -367,7 +495,7 @@ vector<vector<Interval>> Solver_artem(int N, int M, int K, int J, int L,
         }
     });
 
-    vector<std::vector<Interval>> pre_answer(free_spaces.size());
+    vector <std::vector<Interval>> pre_answer(free_spaces.size());
     {
         int total_free_space_size = 0;
         for (auto free_space: free_spaces) {
@@ -403,7 +531,8 @@ vector<vector<Interval>> Solver_artem(int N, int M, int K, int J, int L,
     std::vector<int> rbSuplied(N, 0);
     std::set<int> used_users;
     int current_interval_iter = 0;
-    std::set<pair<int, int>, std::greater<>> space_left_q;
+    std::set<pair < int, int>, std::greater<>>
+    space_left_q;
     for (int i = 0; i < pre_answer.size(); i++) {
         int total_size = 0;
         for (int g = 0; g < pre_answer[i].size(); g++) {
@@ -454,7 +583,8 @@ vector<vector<Interval>> Solver_artem(int N, int M, int K, int J, int L,
                     }
                 }
             }
-            std::vector<pair<int, int>> to_delete_sorted;
+            std::vector<pair < int, int>>
+            to_delete_sorted;
             for (auto user_id: to_delete) {
                 to_delete_sorted.push_back({userInfos[user_id].rbNeed - rbSuplied[user_id], user_id});
             }
@@ -553,8 +683,10 @@ void optimize_one_gap(int N, int M, int K, int J, int L,
             beamOwnedBy[i][userInfos[user_id].beam] = user_id;
         }
     }
-    std::vector<set<int>> mi_set(M);
-    std::vector<set<int>> ma_set(M);
+    std::vector<set < int>>
+    mi_set(M);
+    std::vector<set < int>>
+    ma_set(M);
     for (int i = 0; i < N; i++) {
         if (mi[i] != 10000) {
             mi_set[mi[i]].insert(i);
@@ -780,7 +912,7 @@ vector<Interval> Solver_Artem_grad(int N, int M, int K, int J, int L,
     if (ss > fs) {
         pre_answer = pre_answer2;
     }
-    vector<Interval> answer;
+    vector <Interval> answer;
     for (int i = 0; i < pre_answer.size(); i++) {
         for (int g = 0; g < pre_answer[i].size(); g++) {
             if (pre_answer[i][g].users.size()) {
@@ -813,7 +945,16 @@ struct EgorTaskSolver {
 
     int total_score = 0;
 
-    vector<vector<Interval>> intervals;
+    struct SetInterval {
+        int start, end;
+        MyBitSet<128> users;
+
+        [[nodiscard]] int len() const {
+            return end - start;
+        }
+    };
+
+    vector<vector<SetInterval>> intervals;
 
     vector<int> sum_intervals_len;
 
@@ -832,16 +973,11 @@ struct EgorTaskSolver {
         int sum_len = 0;
 
         int calc_score() const {
-            /*if (sum_len == 0) {
-                return -1;
-            }*/
             if (sum_len > rbNeed) {
-                return rbNeed;
-                //return rbNeed * 5 - 5 * (sum_len - rbNeed);
+                return rbNeed * 100;
             } else {
-                return sum_len;
+                return sum_len * 100;
             }
-            //return min(sum_len, rbNeed);
         }
     };
 
@@ -901,17 +1037,16 @@ struct EgorTaskSolver {
                     if (sum_intervals_len[block] + mean_len <= free_intervals[block].len()) {
                         find = true;
                         sum_intervals_len[block] += mean_len;
-                        intervals[block].push_back(Interval{0, mean_len, vector<int>()});
+                        intervals[block].push_back(SetInterval{0, mean_len, {}});
                         break;
                     }
                 }
 
                 if (!find) {
-                    intervals[p].push_back(Interval{0, 0, vector<int>()});
+                    intervals[p].push_back(SetInterval{0, 0, {}});
                     p = (p + 1) % free_intervals.size();
                 }
             }
-
 
             beams_msk.resize(free_intervals.size());
             for (int block = 0; block < intervals.size(); block++) {
@@ -924,13 +1059,16 @@ struct EgorTaskSolver {
         }
     }
 
-    [[nodiscard]] vector<Interval> get_total_answer() const {
-        vector<Interval> answer;
+    [[nodiscard]] vector<Interval> get_total_answer() {
+        vector <Interval> answer;
         for (int block = 0; block < intervals.size(); block++) {
             int start = free_intervals[block].start;
             for (int interval = 0; interval < intervals[block].size(); interval++) {
                 if (intervals[block][interval].end != 0 && !intervals[block][interval].users.empty()) {
-                    answer.push_back(intervals[block][interval]);
+                    answer.push_back({intervals[block][interval].start, intervals[block][interval].end, {}});
+                    for (int u: intervals[block][interval].users) {
+                        answer.back().users.push_back(u);
+                    }
                     answer.back().start = start;
                     answer.back().end += start;
                     start = answer.back().end;
@@ -938,6 +1076,11 @@ struct EgorTaskSolver {
             }
         }
         return answer;
+    }
+
+    int calc_beams_score(int block, int interval) {
+        int pops = __builtin_popcount(beams_msk[block][interval]);
+        return pops;
     }
 
     bool have_equal_beam(int block, int interval, int beam) {
@@ -968,7 +1111,7 @@ struct EgorTaskSolver {
 #ifdef MY_DEBUG_MODE
         int sum_len = 0;
         for (int i = 0; i < intervals[block].size(); i++) {
-            sum_len += length(intervals[block][i]);
+            sum_len += intervals[block][i].len();
         }
         ASSERT(sum_len == sum_intervals_len[block], "failed calculating sum_intervals_len");
         ASSERT(sum_len <= free_intervals[block].len(), "len more than free interval");
@@ -984,20 +1127,26 @@ struct EgorTaskSolver {
     void add_user_in_interval(int u, int block, int interval) {
         ASSERT(intervals[block][interval].users.size() + 1 <= L, "failed add");
 
-        total_score -= users_info[u].calc_score();
-        intervals[block][interval].users.push_back(u);
-        users_info[u].sum_len += length(intervals[block][interval]);
+        total_score -= users_info[u].calc_score() + calc_beams_score(block, interval);
+
+        intervals[block][interval].users.insert(u);
+        users_info[u].sum_len += intervals[block][interval].len();
         beams_msk[block][interval] ^= (uint32_t(1) << users_info[u].beam);
-        total_score += users_info[u].calc_score();
+        ASSERT(0 <= users_info[u].beam && users_info[u].beam < 32, "invalid beam");
+
+        total_score += users_info[u].calc_score() + calc_beams_score(block, interval);
     }
 
     void remove_user_in_interval(int u, int block, int interval) {
-        total_score -= users_info[u].calc_score();
+        total_score -= users_info[u].calc_score() + calc_beams_score(block, interval);
+
         auto &users = intervals[block][interval].users;
-        users.erase(find(users.begin(), users.end(), u));
-        users_info[u].sum_len -= length(intervals[block][interval]);
+        users.erase(u);
+        users_info[u].sum_len -= intervals[block][interval].len();
         beams_msk[block][interval] ^= (uint32_t(1) << users_info[u].beam);
-        total_score += users_info[u].calc_score();
+        ASSERT(0 <= users_info[u].beam && users_info[u].beam < 32, "invalid beam");
+
+        total_score += users_info[u].calc_score() + calc_beams_score(block, interval);
     }
 
     void add_right_interval_in_user(int u) {
@@ -1052,12 +1201,12 @@ struct EgorTaskSolver {
     ///===========RANDOM=========
     ///==========================
 
-    ///TEST CASE: K=0 | tests: 666 | score: 94.3085% | 646166/685162 | time: 6368.59ms | max_time: 20.295ms | mean_time: 9.56244ms
-    ///TEST CASE: K=1 | tests: 215 | score: 91.1218% | 205744/225790 | time: 1896.53ms | max_time: 16.422ms | mean_time: 8.82105ms
-    ///TEST CASE: K=2 | tests: 80 | score: 88.5483% | 73643/83167 | time: 711.818ms | max_time: 12.891ms | mean_time: 8.89772ms
-    ///TEST CASE: K=3 | tests: 39 | score: 87.5392% | 40479/46241 | time: 343.039ms | max_time: 12.674ms | mean_time: 8.79587ms
+    ///TEST CASE: K=0 | tests: 666 | score: 94.3685% | 646577/685162 | time: 10949.5ms | max_time: 66.43ms | mean_time: 16.4407ms
+    ///TEST CASE: K=1 | tests: 215 | score: 92.6091% | 209102/225790 | time: 2541.55ms | max_time: 20.171ms | mean_time: 11.8212ms
+    ///TEST CASE: K=2 | tests: 80 | score: 91.374% | 75993/83167 | time: 907.977ms | max_time: 14.678ms | mean_time: 11.3497ms
+    ///TEST CASE: K=3 | tests: 39 | score: 90.7939% | 41984/46241 | time: 428.105ms | max_time: 15.848ms | mean_time: 10.9771ms
     ///TEST CASE: K=4 | tests: 0 | score: -nan% | 0/0 | time: 0ms | max_time: 0ms | mean_time: 0ms
-    ///TOTAL: tests: 1000 | score: 92.8556% | 966032/1040360 | time: 9319.97ms | max_time: 20.295ms | mean_time: 9.31997ms
+    ///TOTAL: tests: 1000 | score: 93.5884% | 973656/1040360 | time: 14827.1ms | max_time: 66.43ms | mean_time: 14.8271ms
 
     vector<Interval> annealing() {
         double temp = 1;
@@ -1073,7 +1222,7 @@ struct EgorTaskSolver {
 
         int current_user = 0;
 
-        vector<Interval> answer = get_total_answer();
+        vector <Interval> answer = get_total_answer();
         int answer_score = total_score;
 
         for (int step = 0; step < 100'000; step++) {
@@ -1096,8 +1245,8 @@ struct EgorTaskSolver {
 
                 auto flow_over = [&]() {
                     if (interval + 1 < intervals[block].size() && rnd.get_d() < 0.3) {
-                        int change = rnd.get(-length(intervals[block][interval]),
-                                             length(intervals[block][interval + 1]));
+                        int change = rnd.get(-intervals[block][interval].len(),
+                                             intervals[block][interval + 1].len());
 
                         int old_score = total_score;
 
@@ -1129,12 +1278,12 @@ struct EgorTaskSolver {
 
                 auto change_len = [&]() {
                     if (rnd.get_d() < 0.5) {
-                        int change = min(max(-length(intervals[block][interval]), (int) rnd.get(-10, 10)),
+                        int change = min(max(-intervals[block][interval].len(), (int) rnd.get(-10, 10)),
                                          free_intervals[block].len() - sum_intervals_len[block] -
-                                         length(intervals[block][interval]));
+                                         intervals[block][interval].len());
 
-                        ASSERT(0 <= length(intervals[block][interval]) + change &&
-                               length(intervals[block][interval]) + change + sum_intervals_len[block] <=
+                        ASSERT(0 <= intervals[block][interval].len() + change &&
+                               intervals[block][interval].len() + change + sum_intervals_len[block] <=
                                free_intervals[block].len(), "kek");
 
                         if (change == 0) {
@@ -1165,7 +1314,7 @@ struct EgorTaskSolver {
 
                         int old_score = total_score;
 
-                        int len = length(intervals[block][interval]);
+                        int len = intervals[block][interval].len();
 
                         for (int u: intervals[block][interval].users) {
                             total_score -= users_info[u].calc_score();
@@ -1223,7 +1372,7 @@ struct EgorTaskSolver {
                             }
 
                             int to_block = rnd.get(0, intervals.size() - 1);
-                            intervals[to_block].push_back(Interval{0, 0, vector<int>()});
+                            intervals[to_block].push_back(SetInterval{0, 0, {}});
                             beams_msk[to_block].push_back(0);
 
                         } else {
@@ -1305,7 +1454,7 @@ struct EgorTaskSolver {
                             int len = 0;
                             for (int r = l; r < okay.size() && okay[r]; r++) {
                                 // [l, r] okay is true
-                                len += length(intervals[block][r]);
+                                len += intervals[block][r].len();
 
                                 if (best_block == -1 || f(len, users_info[u].rbNeed) <= best_f) {
                                     best_block = block;
@@ -1504,7 +1653,7 @@ struct EgorTaskSolver {
                                         int len = 0;
                                         for (int r = l; r < okay.size() && okay[r]; r++) {
                                             // [l, r] okay is true
-                                            len += length(intervals[block][r]);
+                                            len += intervals[block][r].len();
 
                                             if (best_block == -1 || f(len, users_info[u].rbNeed) <= best_f) {
                                                 best_block = block;

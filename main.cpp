@@ -31,6 +31,31 @@ int get_theory_max_score(const TestData &data) {
 }
 
 int main() {
+    /*MyBitSet<1024> s;
+    s.insert(63);
+    s.insert(64);
+    s.insert(65);
+    s.insert(250);
+    s.insert(514);
+    s.insert(512);
+    s.insert(513);
+    s.insert(511);
+
+    cout << s.size() << endl;
+    cout << "=================\n";
+
+    for (int i = 0; i < 1024; i++) {
+        if (s.contains(i)) {
+            cout << i << endl;
+        }
+    }
+    cout << "=================\n";
+
+    for (int x: s) {
+        cout << x << endl;
+    }
+
+    return 0;*/
     test_case_info infos[5];
 
     constexpr int test_case_K_sizes[] = {666, 215, 80, 39, 0};
