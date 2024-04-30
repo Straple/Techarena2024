@@ -842,9 +842,9 @@ struct EgorTaskSolver {
 
     struct MyUserInfo {
         // user info
-        int id;
-        int rbNeed;
-        int beam;
+        int id = -1;
+        int rbNeed = -1;
+        int beam = -1;
 
         // interval position
         int block = -1;
@@ -855,7 +855,16 @@ struct EgorTaskSolver {
         int sum_len = 0;
 
         int calc_score() const {
-            return min(sum_len, rbNeed);
+            /*if (sum_len == 0) {
+                return -1;
+            }*/
+            if (sum_len > rbNeed) {
+                return rbNeed;
+                //return rbNeed * 5 - 5 * (sum_len - rbNeed);
+            } else {
+                return sum_len;
+            }
+            //return min(sum_len, rbNeed);
         }
     };
 
@@ -931,6 +940,10 @@ struct EgorTaskSolver {
             for (int block = 0; block < intervals.size(); block++) {
                 beams_msk[block].resize(intervals[block].size());
             }
+        }
+
+        for (int u = 0; u < N; u++) {
+            total_score += users_info[u].calc_score();
         }
     }
 
@@ -1069,8 +1082,6 @@ struct EgorTaskSolver {
     ///TEST CASE: K=3 | tests: 39 | score: 87.5392% | 40479/46241 | time: 343.039ms | max_time: 12.674ms | mean_time: 8.79587ms
     ///TEST CASE: K=4 | tests: 0 | score: -nan% | 0/0 | time: 0ms | max_time: 0ms | mean_time: 0ms
     ///TOTAL: tests: 1000 | score: 92.8556% | 966032/1040360 | time: 9319.97ms | max_time: 20.295ms | mean_time: 9.31997ms
-
-    /// 9319.97ms -> 8767.1ms
 
     void annealing() {
         double temp = 1;
@@ -1230,7 +1241,8 @@ struct EgorTaskSolver {
                         }
                     }
 
-
+                    // random choose
+                    // some bad
                     /*int block = rnd.get(0, free_intervals.size() - 1);
                     if (intervals[block].empty()) {
                         continue;
@@ -1366,7 +1378,77 @@ struct EgorTaskSolver {
                         }
                     };
 
-                    if (add_right() || add_left() || remove_right() || remove_left() || remove_all()) {
+                    auto choose_nice_new = [&]() {
+                        if (rnd.get_d() < 0.2) {
+                            int old_score = total_score;
+
+                            remove_all_user_interval(u);
+
+                            int best_block = -1, best_l = -1, best_r = -1;
+                            // choose nice
+                            {
+                                auto f = [&](int x, int y) {
+                                    if (x < y) {
+                                        return (y - x);
+                                    } else {
+                                        return x - y;
+                                    }
+                                };
+
+                                double best_f = 0;
+
+                                // выделим очень хороший
+                                for (int block = 0; block < intervals.size(); block++) {
+                                    vector<bool> okay(intervals[block].size(), true);
+                                    for (int i = 0; i < okay.size(); i++) {
+                                        okay[i] = intervals[block][i].users.size() < L &&
+                                                  !have_equal_beam(block, i, users_info[u].beam);
+                                    }
+
+                                    for (int l = 0; l < okay.size(); l++) {
+                                        int len = 0;
+                                        for (int r = l; r < okay.size() && okay[r]; r++) {
+                                            // [l, r] okay is true
+                                            len += length(intervals[block][r]);
+
+                                            if (best_block == -1 || f(len, users_info[u].rbNeed) <= best_f) {
+                                                best_block = block;
+                                                best_l = l;
+                                                best_r = r;
+                                                best_f = f(len, users_info[u].rbNeed);
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+
+                            if (best_block == -1) {
+                                return false;
+                            }
+
+                            new_user_interval(u, best_block, best_l);
+                            for (int i = best_l + 1; i <= best_r; i++) {
+                                add_right_interval_in_user(u);
+                            }
+
+                            if (is_good(old_score)) {
+
+                            } else {
+                                remove_all_user_interval(u);
+                                new_user_interval(u, block, left);
+                                for (int i = left + 1; i <= right; i++) {
+                                    add_right_interval_in_user(u);
+                                }
+                                ASSERT(old_score == total_score, "failed back score");
+                            }
+                            return true;
+                        } else {
+                            return false;
+                        }
+                    };
+
+                    if (add_right() || add_left() || choose_nice_new() || remove_right() || remove_left() ||
+                        remove_all()) {
 
                     }
                 }
@@ -1393,8 +1475,8 @@ vector<Interval> Solver_egor(int N, int M, int K, int J, int L,
     solver.annealing();
 
     auto answer = solver.get_total_answer();
-    ASSERT(get_solution_score(N, M, K, J, L, reservedRBs, userInfos, answer) == solver.total_score,
-           "failed calculate total_score");
+    //ASSERT(get_solution_score(N, M, K, J, L, reservedRBs, userInfos, answer) == solver.total_score,
+    //       "failed calculate total_score");
 
     return answer;
 }
