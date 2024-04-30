@@ -814,6 +814,402 @@ vector<Interval> Solver_Artem_grad(int N, int M, int K, int J, int L,
 
 }
 
+struct EgorTaskSolver {
+    ///============================
+    /// task data
+    ///============================
+
+    int N;
+    int M;
+    int K;
+    int J;
+    int L;
+
+    vector<MyInterval> free_intervals;
+
+    ///============================
+    /// internal data
+    ///============================
+
+    randomizer rnd;
+
+    int total_score = 0;
+
+    vector<vector<Interval>> intervals;
+
+    vector<int> sum_intervals_len;
+
+    struct MyUserInfo {
+        // user info
+        int id;
+        int rbNeed;
+        int beam;
+
+        // interval position
+        int block = -1;
+        int left = -1;
+        int right = -1;
+
+        // score
+        int sum_len = 0;
+
+        int calc_score() const {
+            return min(sum_len, rbNeed);
+        }
+    };
+
+    vector<MyUserInfo> users_info;
+
+    EgorTaskSolver(int NN, int MM, int KK, int JJ, int LL,
+                   const vector<Interval> &reservedRBs,
+                   const vector<UserInfo> &userInfos) : N(NN), M(MM), K(KK), J(JJ), L(LL) {
+
+        users_info.resize(N);
+        for (int u = 0; u < N; u++) {
+            ASSERT(u == userInfos[u].id, "are you stupid or something?");
+            users_info[u].id = userInfos[u].id;
+            users_info[u].rbNeed = userInfos[u].rbNeed;
+            users_info[u].beam = userInfos[u].beam;
+        }
+
+        // build free_intervals
+        {
+            vector<bool> is_free(M + 1, true);
+            is_free.back() = false;
+
+            for (const auto &[start, end, users]: reservedRBs) {
+                for (int i = start; i < end; i++) {
+                    is_free[i] = false;
+                }
+            }
+
+            int start = -1;
+            for (int i = 0; i < is_free.size(); i++) {
+                if (!is_free[i]) {
+                    if (start != i - 1) {
+                        free_intervals.push_back({start + 1, i});
+                    }
+                    start = i;
+                }
+            }
+        }
+
+        // build J intervals
+        {
+            sum_intervals_len.resize(free_intervals.size());
+            intervals.resize(free_intervals.size());
+
+            int sum_free_len = 0;
+            for (int block = 0; block < free_intervals.size(); block++) {
+                sum_free_len += free_intervals[block].len();
+            }
+            int mean_len = sum_free_len / J;
+
+            int p = 0;
+            for (int j = 0; j < J; j++) {
+                bool find = false;
+                for (int block = 0; block < free_intervals.size(); block++) {
+                    if (sum_intervals_len[block] + mean_len <= free_intervals[block].len()) {
+                        find = true;
+                        sum_intervals_len[block] += mean_len;
+                        intervals[block].push_back(Interval{0, mean_len, vector<int>()});
+                        break;
+                    }
+                }
+
+                if (!find) {
+                    intervals[p].push_back(Interval{0, 0, vector<int>()});
+                    p = (p + 1) % free_intervals.size();
+                }
+            }
+
+        }
+    }
+
+    vector<Interval> get_total_answer() {
+        vector<Interval> answer;
+        for (int block = 0; block < intervals.size(); block++) {
+            int start = free_intervals[block].start;
+            for (int interval = 0; interval < intervals[block].size(); interval++) {
+                if (intervals[block][interval].end != 0) {
+                    intervals[block][interval].start = start;
+                    intervals[block][interval].end += start;
+                    start = intervals[block][interval].end;
+
+                    answer.push_back(intervals[block][interval]);
+                }
+            }
+        }
+        return answer;
+    }
+
+    bool have_equal_beam(int block, int interval, int beam) {
+        ASSERT(0 <= block && block < intervals.size() && 0 <= interval && interval < intervals[block].size(),
+               "invalid request");
+        for (int u: intervals[block][interval].users) {
+            if (users_info[u].beam == beam) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    ///===========================
+    ///===========ACTIONS=========
+    ///===========================
+
+    void change_interval_len(int block, int interval, int change) {
+        auto &[start, end, users] = intervals[block][interval];
+        end += change;
+        sum_intervals_len[block] += change;
+        ASSERT(start <= end, "invalid interval");
+
+#ifdef MY_DEBUG_MODE
+        int sum_len = 0;
+        for (int i = 0; i < intervals[block].size(); i++) {
+            sum_len += length(intervals[block][i]);
+        }
+        ASSERT(sum_len <= free_intervals[block].len(), "len more than free interval");
+        ASSERT(sum_len == sum_intervals_len[block], "failed calculating sum_intervals_len");
+#endif
+
+        for (int u: users) {
+            total_score -= users_info[u].calc_score();
+            users_info[u].sum_len += change;
+            total_score += users_info[u].calc_score();
+        }
+    }
+
+    void add_user_in_interval(int u, int block, int interval) {
+        ASSERT(intervals[block][interval].users.size() + 1 <= L, "failed add");
+
+        total_score -= users_info[u].calc_score();
+        intervals[block][interval].users.push_back(u);
+        users_info[u].sum_len += length(intervals[block][interval]);
+        total_score += users_info[u].calc_score();
+    }
+
+    void remove_user_in_interval(int u, int block, int interval) {
+        total_score -= users_info[u].calc_score();
+        auto &users = intervals[block][interval].users;
+        users.erase(find(users.begin(), users.end(), u));
+        users_info[u].sum_len -= length(intervals[block][interval]);
+        total_score += users_info[u].calc_score();
+    }
+
+    void add_right_interval_in_user(int u) {
+        ASSERT(users_info[u].block != -1, "invalid u");
+        ASSERT(users_info[u].right + 1 < intervals[users_info[u].block].size()
+               && users_info[u].left <= users_info[u].right, "no right interval");
+
+        users_info[u].right++;
+        add_user_in_interval(u, users_info[u].block, users_info[u].right);
+    }
+
+    void remove_right_interval_in_user(int u) {
+        ASSERT(users_info[u].block != -1, "invalid u");
+        ASSERT(users_info[u].right >= 0 && users_info[u].left <= users_info[u].right, "no right interval");
+
+        remove_user_in_interval(u, users_info[u].block, users_info[u].right);
+        users_info[u].right--;
+    }
+
+    void add_left_interval_in_user(int u) {
+        ASSERT(users_info[u].block != -1, "invalid u");
+        ASSERT(users_info[u].left - 1 >= 0 && users_info[u].left <= users_info[u].right, "no left interval");
+
+        users_info[u].left--;
+        add_user_in_interval(u, users_info[u].block, users_info[u].left);
+    }
+
+    void remove_left_interval_in_user(int u) {
+        ASSERT(users_info[u].block != -1, "invalid u");
+        ASSERT(users_info[u].left >= 0 && users_info[u].left <= users_info[u].right, "no left interval");
+
+        remove_user_in_interval(u, users_info[u].block, users_info[u].left);
+        users_info[u].left++;
+    }
+
+    void new_user_interval(int u, int block, int interval) {
+        ASSERT(users_info[u].block == -1, "user already have interval");
+        users_info[u].block = block;
+        users_info[u].left = users_info[u].right = interval;
+        add_user_in_interval(u, block, interval);
+    }
+
+    void remove_all_user_interval(int u) {
+        ASSERT(users_info[u].block != -1, "user already haven't interval");
+        for (int interval = users_info[u].left; interval <= users_info[u].right; interval++) {
+            remove_user_in_interval(u, users_info[u].block, interval);
+        }
+        users_info[u].block = users_info[u].left = users_info[u].right = -1;
+    }
+
+    ///==========================
+    ///===========RANDOM=========
+    ///==========================
+
+    //TEST CASE: K=0 | tests: 666 | score: 71.275% | 488349/685162 | time: 3828.16ms | max_time: 11.694ms | mean_time: 5.74799ms
+    //TEST CASE: K=1 | tests: 215 | score: 64.6162% | 145897/225790 | time: 1133.69ms | max_time: 7.791ms | mean_time: 5.27297ms
+    //TEST CASE: K=2 | tests: 80 | score: 63.0971% | 52476/83167 | time: 417.995ms | max_time: 7.488ms | mean_time: 5.22494ms
+    //TEST CASE: K=3 | tests: 39 | score: 57.9637% | 26803/46241 | time: 194.571ms | max_time: 7.034ms | mean_time: 4.989ms
+    //TEST CASE: K=4 | tests: 0 | score: -nan% | 0/0 | time: 0ms | max_time: 0ms | mean_time: 0ms
+    //TOTAL: tests: 1000 | score: 68.5844% | 713525/1040360 | time: 5574.42ms | max_time: 11.694ms | mean_time: 5.57442ms
+
+    void annealing() {
+        double temp = 1;
+        auto is_good = [&](int old_score) {
+            return total_score >= old_score;
+        };
+
+        //cout << total_score << "->";
+        //cout.flush();
+        for (int step = 0; step < 100'000; step++) {
+            temp *= 0.999;
+
+            if (rnd.get_d() < 0.3) {
+                // update interval
+
+                int block = rnd.get(0, free_intervals.size() - 1);
+                if (intervals[block].empty()) {
+                    continue;
+                }
+
+                int interval = rnd.get(0, intervals[block].size() - 1);
+
+                int change = min(max(-length(intervals[block][interval]), (int) rnd.get(-10, 10)),
+                                 free_intervals[block].len() - sum_intervals_len[block] -
+                                 length(intervals[block][interval]));
+
+                ASSERT(0 <= length(intervals[block][interval]) + change &&
+                       length(intervals[block][interval]) + change + sum_intervals_len[block] <=
+                       free_intervals[block].len(), "kek");
+
+                int old_score = total_score;
+
+                change_interval_len(block, interval, change);
+
+                if (is_good(old_score)) {
+                } else {
+                    change_interval_len(block, interval, -change);
+                    ASSERT(old_score == total_score, "failed back score");
+                }
+
+            } else if (rnd.get_d() < 0.5) {
+                // update user
+
+                int u = rnd.get(0, N - 1);
+
+                if (users_info[u].block == -1) {
+                    // no interval
+
+                    int block = rnd.get(0, free_intervals.size() - 1);
+                    if (intervals[block].empty()) {
+                        continue;
+                    }
+
+                    int interval = rnd.get(0, intervals[block].size() - 1);
+
+                    if (intervals[block][interval].users.size() + 1 <= L &&
+                        !have_equal_beam(block, interval, users_info[u].beam)) {
+
+                        int old_score = total_score;
+
+                        new_user_interval(u, block, interval);
+
+                        if (is_good(old_score)) {
+
+                        } else {
+                            remove_all_user_interval(u);
+                            ASSERT(old_score == total_score, "failed back score");
+                        }
+                    }
+
+                } else {
+
+                    int block = users_info[u].block;
+                    int right = users_info[u].right;
+                    int left = users_info[u].left;
+                    int beam = users_info[u].beam;
+
+                    if (right + 1 < intervals[block].size() &&
+                        intervals[block][right + 1].users.size() + 1 <= L &&
+                        !have_equal_beam(block, right + 1, beam) &&
+                        rnd.get_d() < 0.2) {
+
+                        int old_score = total_score;
+
+                        add_right_interval_in_user(u);
+
+                        if (is_good(old_score)) {
+
+                        } else {
+                            remove_right_interval_in_user(u);
+                            ASSERT(old_score == total_score, "failed back score");
+                        }
+                    } else if (left > 0 &&
+                               intervals[block][left - 1].users.size() + 1 <= L &&
+                               !have_equal_beam(block, left - 1, beam) &&
+                               rnd.get_d() < 0.4) {
+
+                        int old_score = total_score;
+
+                        add_left_interval_in_user(u);
+
+                        if (is_good(old_score)) {
+
+                        } else {
+                            remove_left_interval_in_user(u);
+                            ASSERT(old_score == total_score, "failed back score");
+                        }
+                    } else if (left + 1 <= right &&
+                               rnd.get_d() < 0.1) {
+
+                        int old_score = total_score;
+
+                        remove_left_interval_in_user(u);
+
+                        if (is_good(old_score)) {
+
+                        } else {
+                            add_left_interval_in_user(u);
+                            ASSERT(old_score == total_score, "failed back score");
+                        }
+                    } else if (left + 1 <= right &&
+                               rnd.get_d() < 0.1) {
+
+                        int old_score = total_score;
+
+                        remove_right_interval_in_user(u);
+
+                        if (is_good(old_score)) {
+
+                        } else {
+                            add_right_interval_in_user(u);
+                            ASSERT(old_score == total_score, "failed back score");
+                        }
+                    } else {
+                        int old_score = total_score;
+
+                        remove_all_user_interval(u);
+
+                        if (is_good(old_score)) {
+
+                        } else {
+                            new_user_interval(u, block, left);
+                            for (int i = left + 1; i <= right; i++) {
+                                add_right_interval_in_user(u);
+                            }
+                            ASSERT(old_score == total_score, "failed back score");
+                        }
+                    }
+                }
+            }
+        }
+        //cout << total_score << endl;
+    }
+};
+
 //TEST CASE: K=0 | tests: 666 | score: 93.3172% | 639374/685162 | time: 612.187ms | max_time: 9.977ms | mean_time: 0.9192ms
 //TEST CASE: K=1 | tests: 215 | score: 91.7999% | 207275/225790 | time: 235.996ms | max_time: 9.534ms | mean_time: 1.09766ms
 //TEST CASE: K=2 | tests: 80 | score: 90.471% | 75242/83167 | time: 119.629ms | max_time: 8.073ms | mean_time: 1.49536ms
@@ -824,313 +1220,15 @@ vector<Interval> Solver_egor(int N, int M, int K, int J, int L,
                              const vector<Interval> &reservedRBs,
                              const vector<UserInfo> &userInfos
 ) {
-    vector<MyInterval> free_spaces;
-    {
-        vector<bool> is_free(M, true);
-        is_free.back() = false;
-        int start = -1;
-        for (size_t i = 0; i < reservedRBs.size(); i++) {
-            for (size_t g = reservedRBs[i].start; g < reservedRBs[i].end; g++) {
-                is_free[g] = false;
-            }
-        }
+    EgorTaskSolver solver(N, M, K, J, L, reservedRBs, userInfos);
 
-        for (int i = 0; i < M; i++) {
-            if (!is_free[i]) {
-                if (start != i - 1) {
-                    free_spaces.push_back({start + 1, i});
-                }
-                start = i;
-            }
-        }
-    }
+    solver.annealing();
 
-    unordered_map<int, int> cnt_beams;
-    for (auto [rbNeed, beam, id]: userInfos) {
-        cnt_beams[beam]++;
-    }
+    auto answer = solver.get_total_answer();
+    ASSERT(get_solution_score(N, M, K, J, L, reservedRBs, userInfos, answer) == solver.total_score,
+           "failed calculate total_score");
 
-    auto users = userInfos;
-    sort(users.begin(), users.end(), [&](const auto &lhs, const auto &rhs) {
-        // TODO: незначительно улучшает скор
-        //return lhs.rbNeed * log(cnt_beams[lhs.beam] + 1) > rhs.rbNeed * log(cnt_beams[rhs.beam] + 1);
-        return lhs.rbNeed > rhs.rbNeed;
-    });
-
-    randomizer rnd;
-
-    auto build_answer = [&](const vector<vector<int>> &intervals) {
-        vector<vector<Interval>> block_answers(intervals.size());
-        for (int i = 0; i < intervals.size(); i++) {
-            int start = free_spaces[i].start;
-            for (auto len: intervals[i]) {
-                int end = min(free_spaces[i].end, start + len);
-                if (start < end && len != 0) {
-                    block_answers[i].push_back(Interval{start, end, {}});
-                    start += len;
-                }
-            }
-        }
-
-        for (auto [rbNeed, beam, id]: users) {
-            int best_i = -1, best_l = -1, best_r = -1;
-            double best_f = 0;
-
-            auto f = [&](int x, int y) {
-                if (x < y) {
-                    return 1 * (y - x);
-                } else {
-                    return x - y;
-                }
-            };
-
-            for (int i = 0; i < block_answers.size(); i++) {
-                vector<bool> okay(block_answers[i].size(), true);
-                for (int j = 0; j < okay.size(); j++) {
-                    okay[j] = block_answers[i][j].users.size() < L;
-                    for (int u: block_answers[i][j].users) {
-                        if (userInfos[u].beam == beam) {
-                            okay[j] = false;
-                            break;
-                        }
-                    }
-                }
-
-                for (int l = 0; l < okay.size(); l++) {
-                    int len = 0;
-                    for (int r = l; r < okay.size() && okay[r]; r++) {
-                        // [l, r] okay is true
-                        len += length(block_answers[i][r]);
-
-                        if (best_i == -1 || f(len, rbNeed) <= best_f) {
-                            best_i = i;
-                            best_l = l;
-                            best_r = r;
-                            best_f = f(len, rbNeed);
-                        }
-                    }
-                }
-            }
-
-            if (best_i != -1) {
-                for (int s = best_l; s <= best_r; s++) {
-                    block_answers[best_i][s].users.push_back(id);
-                }
-            }
-        }
-
-        // TODO: bad, x3 time, no boost score
-        //optimize(N, M, K, J, L, reservedRBs, userInfos, block_answers);
-
-        vector<Interval> answer;
-        for (int i = 0; i < block_answers.size(); i++) {
-            for (auto &ans: block_answers[i]) {
-                if (!ans.users.empty()) {
-                    answer.push_back(std::move(ans));
-                }
-            }
-        }
-
-        return answer;
-    };
-
-    vector<int> cnt(N);
-
-    auto calc_score = [&](const vector<vector<int>> &intervals) {
-        //return get_solution_score(N, M, K, J, L, reservedRBs, userInfos, build_answer(intervals));
-        auto answer = build_answer(intervals);
-        for (int i = 0; i < N; i++) {
-            cnt[i] = 0;
-        }
-        for (int i = 0; i < answer.size(); i++) {
-            for (auto user_id: answer[i].users) {
-                cnt[user_id] += length(answer[i]);
-            }
-        }
-        int score = 0;
-        for (int i = 0; i < N; i++) {
-            score += std::min(userInfos[i].rbNeed, cnt[i]);
-        }
-        return score;
-    };
-
-    vector<vector<int>> intervals(free_spaces.size());
-
-    int sum_len = 0;
-    vector<int> lens(intervals.size());
-    for (int i = 0; i < intervals.size(); i++) {
-        sum_len += free_spaces[i].len();
-        lens[i] = free_spaces[i].len();
-    }
-
-    int mean_len = sum_len / J;
-
-    int ost_J = J;
-    while (ost_J > 0) {
-        bool find = false;
-        for (int i = 0; i < intervals.size(); i++) {
-            if (lens[i] >= mean_len && ost_J > 0) {
-                find = true;
-                lens[i] -= mean_len;
-                intervals[i].push_back(mean_len);
-                ost_J--;
-            }
-        }
-
-        if (!find) {
-            for (int i = 0; i < intervals.size(); i++) {
-                if (ost_J > 0) {
-                    ost_J--;
-                    intervals[i].push_back(lens[i]);
-                    lens[i] = 0;
-                }
-            }
-        }
-    }
-
-    /*
-    for (int i = 0; i < intervals.size(); i++) {
-        int t = min(ost_J, J / (int) free_spaces.size());
-        int ost_len = free_spaces[i].len();
-        for (int j = 0; j < t; j++) {
-            int len = min(ost_len, free_spaces[i].len() / t + 1);
-            if (len != 0) {
-                intervals[i].push_back(len);
-            }
-            ost_len -= len;
-        }
-        ost_J -= t;
-
-        int sum_len = 0;
-        for (int len: intervals[i]) {
-            sum_len += len;
-        }
-        ASSERT(sum_len == free_spaces[i].len(), "invalid");
-    }*/
-    while (ost_J > 0) {
-        ost_J--;
-        intervals.back().push_back(0);
-    }
-    ASSERT(ost_J == 0, "using less J intervals");
-
-    int cur_score = calc_score(intervals);
-
-    //TEST CASE: K=0 | tests: 666 | score: 93.2988% | 639248/685162 | time: 752.926ms | max_time: 11.019ms | mean_time: 1.13052ms
-    //TEST CASE: K=1 | tests: 215 | score: 91.7171% | 207088/225790 | time: 296.292ms | max_time: 11.129ms | mean_time: 1.3781ms
-    //TEST CASE: K=2 | tests: 80 | score: 91.2501% | 75890/83167 | time: 165.4ms | max_time: 13.003ms | mean_time: 2.0675ms
-    //TEST CASE: K=3 | tests: 39 | score: 92.6342% | 42835/46241 | time: 110.154ms | max_time: 10.487ms | mean_time: 2.82446ms
-    //TEST CASE: K=4 | tests: 0 | score: -nan% | 0/0 | time: 0ms | max_time: 0ms | mean_time: 0ms
-    //TOTAL: tests: 1000 | score: 92.7622% | 965061/1040360 | time: 1324.77ms | max_time: 13.003ms | mean_time: 1.32477ms
-
-    int steps = 0;
-    for (bool run = true; run;) {
-        steps++;
-        run = false;
-        if (steps > 5) {
-            //break;
-        }
-        for (int i = 0; i < intervals.size(); i++) {
-            /*for (int j = 0; j < intervals.size(); j++) {
-                if (i != j && !intervals[i].empty()) {
-                    intervals[j].push_back(intervals[i].back());
-                    intervals[i].pop_back();
-
-                    int new_score = calc_score(intervals);
-                    if (cur_score < new_score) {
-                        cur_score = new_score;
-                        run = true;
-                    } else {
-                        intervals[i].push_back(intervals[j].back());
-                        intervals[j].pop_back();
-                    }
-                }
-            }*/
-
-            for (int j = 0; j < intervals[i].size(); j++) {
-
-                for (int k = j + 1; k < j + 2 && k < intervals[i].size(); k++) {
-                    swap(intervals[i][j], intervals[i][k]);
-                    int new_score = calc_score(intervals);
-
-                    if (cur_score < new_score) {
-                        cur_score = new_score;
-                        run = true;
-                    } else {
-                        swap(intervals[i][j], intervals[i][k]);
-                    }
-                }
-
-                for (int k = -1; k <= 1; k++) {
-                    if (k != 0 && intervals[i][j] + k >= 0) {
-                        intervals[i][j] += k;
-                        int new_score = calc_score(intervals);
-
-                        if (cur_score < new_score) {
-                            cur_score = new_score;
-                            run = true;
-                        } else {
-                            intervals[i][j] -= k;
-                        }
-                    }
-                }
-
-                for (int step = 0; step < 1; step++) {
-                    int k = rnd.get(-100, 100);
-                    if (intervals[i][j] + k >= 0) {
-                        intervals[i][j] += k;
-                        int new_score = calc_score(intervals);
-
-                        if (cur_score < new_score) {
-                            cur_score = new_score;
-                            run = true;
-                        } else {
-                            intervals[i][j] -= k;
-                        }
-                    }
-                }
-
-                {
-                    int k = rnd.get(0, 100);
-                    int save_len = intervals[i][j];
-                    intervals[i][j] = k;
-                    int new_score = calc_score(intervals);
-
-                    if (cur_score < new_score) {
-                        cur_score = new_score;
-                        run = true;
-                    } else {
-                        intervals[i][j] = save_len;
-                    }
-                }
-            }
-
-            /*{
-                intervals[i][j]++;
-                int new_score = calc_score(intervals);
-
-                if (cur_score < new_score) {
-                    cur_score = new_score;
-                    run = true;
-                } else {
-                    intervals[i][j]--;
-                }
-            }
-            if (intervals[i][j] > 0) {
-                intervals[i][j]--;
-                int new_score = calc_score(intervals);
-
-                if (cur_score < new_score) {
-                    cur_score = new_score;
-                    run = true;
-                } else {
-                    intervals[i][j]++;
-                }
-            }*/
-        }
-    }
-
-
-    return build_answer(intervals);
+    return answer;
 }
 
 vector<Interval> Solver(int N, int M, int K, int J, int L,
