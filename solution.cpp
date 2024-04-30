@@ -276,6 +276,7 @@ int get_solution_score(int N, int M, int K, int J, int L,
     for (auto [start, end, users]: answer) {
         // validate interval
         {
+            ASSERT(!users.empty(), "users is empty");
             ASSERT(users.size() <= L, "answer interval is invalid: users more than L");
             ASSERT(start < end, "answer interval is invalid: start >= end");
             ASSERT(0 <= start && end <= M, "answer interval is invalid: incorrect interval");
@@ -860,6 +861,8 @@ struct EgorTaskSolver {
 
     vector<MyUserInfo> users_info;
 
+    vector<vector<uint32_t>> beams_msk;
+
     EgorTaskSolver(int NN, int MM, int KK, int JJ, int LL,
                    const vector<Interval> &reservedRBs,
                    const vector<UserInfo> &userInfos) : N(NN), M(MM), K(KK), J(JJ), L(LL) {
@@ -923,6 +926,11 @@ struct EgorTaskSolver {
                 }
             }
 
+
+            beams_msk.resize(free_intervals.size());
+            for (int block = 0; block < intervals.size(); block++) {
+                beams_msk[block].resize(intervals[block].size());
+            }
         }
     }
 
@@ -931,7 +939,7 @@ struct EgorTaskSolver {
         for (int block = 0; block < intervals.size(); block++) {
             int start = free_intervals[block].start;
             for (int interval = 0; interval < intervals[block].size(); interval++) {
-                if (intervals[block][interval].end != 0) {
+                if (intervals[block][interval].end != 0 && !intervals[block][interval].users.empty()) {
                     intervals[block][interval].start = start;
                     intervals[block][interval].end += start;
                     start = intervals[block][interval].end;
@@ -946,12 +954,16 @@ struct EgorTaskSolver {
     bool have_equal_beam(int block, int interval, int beam) {
         ASSERT(0 <= block && block < intervals.size() && 0 <= interval && interval < intervals[block].size(),
                "invalid request");
+
+        /*bool res = false;
         for (int u: intervals[block][interval].users) {
             if (users_info[u].beam == beam) {
-                return true;
+                res = true;
             }
         }
-        return false;
+
+        ASSERT(res == bool((beams_msk[block][interval] >> beam) & 1), "kek");*/
+        return (beams_msk[block][interval] >> beam) & 1;
     }
 
     ///===========================
@@ -986,6 +998,7 @@ struct EgorTaskSolver {
         total_score -= users_info[u].calc_score();
         intervals[block][interval].users.push_back(u);
         users_info[u].sum_len += length(intervals[block][interval]);
+        beams_msk[block][interval] ^= (uint32_t(1) << users_info[u].beam);
         total_score += users_info[u].calc_score();
     }
 
@@ -994,6 +1007,7 @@ struct EgorTaskSolver {
         auto &users = intervals[block][interval].users;
         users.erase(find(users.begin(), users.end(), u));
         users_info[u].sum_len -= length(intervals[block][interval]);
+        beams_msk[block][interval] ^= (uint32_t(1) << users_info[u].beam);
         total_score += users_info[u].calc_score();
     }
 
@@ -1049,12 +1063,14 @@ struct EgorTaskSolver {
     ///===========RANDOM=========
     ///==========================
 
-    ///TEST CASE: K=0 | tests: 666 | score: 91.4184% | 626364/685162 | time: 5265.96ms | max_time: 19.318ms | mean_time: 7.90684ms
-    ///TEST CASE: K=1 | tests: 215 | score: 86.7138% | 195791/225790 | time: 1548ms | max_time: 11.161ms | mean_time: 7.20002ms
-    ///TEST CASE: K=2 | tests: 80 | score: 84.4746% | 70255/83167 | time: 598.336ms | max_time: 10.744ms | mean_time: 7.4792ms
-    ///TEST CASE: K=3 | tests: 39 | score: 83.4562% | 38591/46241 | time: 292.157ms | max_time: 12.923ms | mean_time: 7.49121ms
+    ///TEST CASE: K=0 | tests: 666 | score: 94.3085% | 646166/685162 | time: 6368.59ms | max_time: 20.295ms | mean_time: 9.56244ms
+    ///TEST CASE: K=1 | tests: 215 | score: 91.1218% | 205744/225790 | time: 1896.53ms | max_time: 16.422ms | mean_time: 8.82105ms
+    ///TEST CASE: K=2 | tests: 80 | score: 88.5483% | 73643/83167 | time: 711.818ms | max_time: 12.891ms | mean_time: 8.89772ms
+    ///TEST CASE: K=3 | tests: 39 | score: 87.5392% | 40479/46241 | time: 343.039ms | max_time: 12.674ms | mean_time: 8.79587ms
     ///TEST CASE: K=4 | tests: 0 | score: -nan% | 0/0 | time: 0ms | max_time: 0ms | mean_time: 0ms
-    ///TOTAL: tests: 1000 | score: 89.4884% | 931001/1040360 | time: 7704.45ms | max_time: 19.318ms | mean_time: 7.70445ms
+    ///TOTAL: tests: 1000 | score: 92.8556% | 966032/1040360 | time: 9319.97ms | max_time: 20.295ms | mean_time: 9.31997ms
+
+    /// 9319.97ms -> 8767.1ms
 
     void annealing() {
         double temp = 1;
@@ -1073,7 +1089,7 @@ struct EgorTaskSolver {
         //cout << total_score << "->";
         //cout.flush();
         for (int step = 0; step < 100'000; step++) {
-            temp *= 0.9999;
+            temp *= 0.999;
 
             if (rnd.get_d() < 0.1) {
                 // update interval
