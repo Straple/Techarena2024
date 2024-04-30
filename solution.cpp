@@ -1103,7 +1103,60 @@ struct EgorTaskSolver {
                 if (users_info[u].block == -1) {
                     // no interval
 
-                    int block = rnd.get(0, free_intervals.size() - 1);
+                    auto f = [&](int x, int y) {
+                        if (x < y) {
+                            return (y - x);
+                        } else {
+                            return x - y;
+                        }
+                    };
+
+                    int best_block = -1, best_l = -1, best_r = -1;
+                    double best_f = 0;
+
+                    // выделим очень хороший
+                    for (int block = 0; block < intervals.size(); block++) {
+                        vector<bool> okay(intervals[block].size(), true);
+                        for (int i = 0; i < okay.size(); i++) {
+                            okay[i] = intervals[block][i].users.size() < L &&
+                                      !have_equal_beam(block, i, users_info[u].beam);
+                        }
+
+                        for (int l = 0; l < okay.size(); l++) {
+                            int len = 0;
+                            for (int r = l; r < okay.size() && okay[r]; r++) {
+                                // [l, r] okay is true
+                                len += length(intervals[block][r]);
+
+                                if (best_block == -1 || f(len, users_info[u].rbNeed) <= best_f) {
+                                    best_block = block;
+                                    best_l = l;
+                                    best_r = r;
+                                    best_f = f(len, users_info[u].rbNeed);
+                                }
+                            }
+                        }
+                    }
+
+                    if (best_block != -1) {
+
+                        int old_score = total_score;
+
+                        new_user_interval(u, best_block, best_l);
+                        for (int i = best_l + 1; i <= best_r; i++) {
+                            add_right_interval_in_user(u);
+                        }
+
+                        if (is_good(old_score)) {
+
+                        } else {
+                            remove_all_user_interval(u);
+                            ASSERT(old_score == total_score, "failed back score");
+                        }
+                    }
+
+
+                    /*int block = rnd.get(0, free_intervals.size() - 1);
                     if (intervals[block].empty()) {
                         continue;
                     }
@@ -1123,7 +1176,7 @@ struct EgorTaskSolver {
                             remove_all_user_interval(u);
                             ASSERT(old_score == total_score, "failed back score");
                         }
-                    }
+                    }*/
 
                 } else {
 
@@ -1247,6 +1300,7 @@ struct EgorTaskSolver {
         //cout << temp << endl;
         //cout << total_score << endl;
     }
+
 };
 
 //TEST CASE: K=0 | tests: 666 | score: 93.3172% | 639374/685162 | time: 612.187ms | max_time: 9.977ms | mean_time: 0.9192ms
