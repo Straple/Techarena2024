@@ -1,48 +1,71 @@
 #include "solution.cpp"
 
-int main() {
-    std::fstream input("open.txt");
-    size_t test_cases;
-    input >> test_cases;
+struct test_case_info {
+    int tests = 0;
     int total_score = 0;
-    int total_max = 0;
-    std::vector<pair<float,int>>lowest_completeness;
-    int K_ZERO = 0;
-    for (size_t test_case = 0; test_case < test_cases; test_case++) {
-        auto data = read_test(input);
-        auto intervals = Solver(data);
-        auto res = get_solution_score(data, intervals);
-        int max_score = 0;
-        for (auto user: data.userInfos) {
-            max_score += user.rbNeed;
-        }
-        int max_possible = data.M * data.L;
-        for (auto reserved: data.reservedRBs){
-            max_possible -= (reserved.end-reserved.start)*data.L;
-        }
-        std::vector<int>mx_scores;
-        for (auto user: data.userInfos){
-            mx_scores.push_back(user.rbNeed);
-        }
-        sort(mx_scores.begin(),mx_scores.end(), greater<>());
-        int mx_sum = 0;
-        for (int i = 0; i < min(data.J*data.L, (int)mx_scores.size()); i++){
-            mx_sum+=mx_scores[i];
-        }
+    int total_theory_score = 0;
+    double total_time = 0;
+    double max_test_time = 0;
+};
 
-        int realMAXpossible = min(min(max_possible,max_score),mx_sum);
-        K_ZERO+=data.K==0;
-        total_max += realMAXpossible;
-        total_score += res;
-        cout << "TEST: " << test_case << " | RES: " << res << "/" << realMAXpossible << " | " << float(res) / realMAXpossible * 100
-             << "%" << endl;
-        lowest_completeness.push_back({float(res) / realMAXpossible * 100, test_case});
+ostream &operator<<(ostream &output, const test_case_info &info) {
+    return output << "tests: " << info.tests
+                  << " | score: " << info.total_score * 100.0 / info.total_theory_score << "% | "
+                  << info.total_score << "/" << info.total_theory_score
+                  << " | time: " << 1000 * info.total_time
+                  << "ms | max_time: " << 1000 * info.max_test_time << "ms | mean_time: "
+                  << 1000 * info.total_time / max(1, info.tests) << "ms";
+}
+
+int get_theory_max_score(const TestData &data) {
+    int max_score = 0;
+    for (auto user: data.userInfos) {
+        max_score += user.rbNeed;
     }
-    cout << "------------" << endl;
-    cout << "RES: " << total_score << "/" << total_max << " | " << float(total_score) / total_max * 100 << "%" << endl;
-//    sort(lowest_completeness.begin(), lowest_completeness.end());
-//    for (int i = 0; i < min((int)test_cases, 30); i++){
-//        cout << lowest_completeness[i].first  << "% test: " << lowest_completeness[i].second << endl;
-//    }
-    return 0;
+    int max_possible = data.M * data.L;
+    for (const auto &reserved: data.reservedRBs) {
+        max_possible -= (reserved.end - reserved.start) * data.L;
+    }
+
+    return min(max_score, max_possible);
+}
+
+int main() {
+    test_case_info infos[5];
+
+    constexpr int test_case_K_sizes[] = {666, 215, 80, 39, 0};
+
+    for (int K = 0; K <= 4; K++) {
+        cout << "TEST CASE: K=" << K << endl;
+        string dir = "tests/case_K=" + to_string(K) + "/";
+        infos[K].tests = test_case_K_sizes[K];
+        for (int test = 0; test < test_case_K_sizes[K]; test++) {
+            ifstream input(dir + to_string(test) + ".txt");
+            TestData data;
+            input >> data;
+
+            Timer timer;
+
+            auto intervals = Solver(data);
+
+            double time = timer.get();
+            infos[K].total_time += time;
+            infos[K].max_test_time = max(infos[K].max_test_time, time);
+
+            int score = get_solution_score(data, intervals);
+            infos[K].total_score += score;
+            infos[K].total_theory_score += get_theory_max_score(data);
+        }
+    }
+
+    test_case_info total_info;
+    for (int K = 0; K <= 4; K++) {
+        cout << "TEST CASE: K=" << K << " | " << infos[K] << endl;
+        total_info.tests += infos[K].tests;
+        total_info.total_score += infos[K].total_score;
+        total_info.total_theory_score += infos[K].total_theory_score;
+        total_info.total_time += infos[K].total_time;
+        total_info.max_test_time = max(total_info.max_test_time, infos[K].max_test_time);
+    }
+    cout << "TOTAL: " << total_info << endl;
 }
