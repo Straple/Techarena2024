@@ -1049,12 +1049,12 @@ struct EgorTaskSolver {
     ///===========RANDOM=========
     ///==========================
 
-    //TEST CASE: K=0 | tests: 666 | score: 71.275% | 488349/685162 | time: 3828.16ms | max_time: 11.694ms | mean_time: 5.74799ms
-    //TEST CASE: K=1 | tests: 215 | score: 64.6162% | 145897/225790 | time: 1133.69ms | max_time: 7.791ms | mean_time: 5.27297ms
-    //TEST CASE: K=2 | tests: 80 | score: 63.0971% | 52476/83167 | time: 417.995ms | max_time: 7.488ms | mean_time: 5.22494ms
-    //TEST CASE: K=3 | tests: 39 | score: 57.9637% | 26803/46241 | time: 194.571ms | max_time: 7.034ms | mean_time: 4.989ms
-    //TEST CASE: K=4 | tests: 0 | score: -nan% | 0/0 | time: 0ms | max_time: 0ms | mean_time: 0ms
-    //TOTAL: tests: 1000 | score: 68.5844% | 713525/1040360 | time: 5574.42ms | max_time: 11.694ms | mean_time: 5.57442ms
+    ///TEST CASE: K=0 | tests: 666 | score: 91.4184% | 626364/685162 | time: 5265.96ms | max_time: 19.318ms | mean_time: 7.90684ms
+    ///TEST CASE: K=1 | tests: 215 | score: 86.7138% | 195791/225790 | time: 1548ms | max_time: 11.161ms | mean_time: 7.20002ms
+    ///TEST CASE: K=2 | tests: 80 | score: 84.4746% | 70255/83167 | time: 598.336ms | max_time: 10.744ms | mean_time: 7.4792ms
+    ///TEST CASE: K=3 | tests: 39 | score: 83.4562% | 38591/46241 | time: 292.157ms | max_time: 12.923ms | mean_time: 7.49121ms
+    ///TEST CASE: K=4 | tests: 0 | score: -nan% | 0/0 | time: 0ms | max_time: 0ms | mean_time: 0ms
+    ///TOTAL: tests: 1000 | score: 89.4884% | 931001/1040360 | time: 7704.45ms | max_time: 19.318ms | mean_time: 7.70445ms
 
     void annealing() {
         double temp = 1;
@@ -1073,7 +1073,7 @@ struct EgorTaskSolver {
         //cout << total_score << "->";
         //cout.flush();
         for (int step = 0; step < 100'000; step++) {
-            temp *= 0.999999;
+            temp *= 0.9999;
 
             if (rnd.get_d() < 0.1) {
                 // update interval
@@ -1085,25 +1085,74 @@ struct EgorTaskSolver {
 
                 int interval = rnd.get(0, intervals[block].size() - 1);
 
-                int change = min(max(-length(intervals[block][interval]), (int) rnd.get(-10, 10)),
-                                 free_intervals[block].len() - sum_intervals_len[block] -
-                                 length(intervals[block][interval]));
+                auto flow_over = [&]() {
+                    if (interval + 1 < intervals[block].size() && rnd.get_d() < 0.5) {
+                        int change = rnd.get(-length(intervals[block][interval]),
+                                             length(intervals[block][interval + 1]));
 
-                ASSERT(0 <= length(intervals[block][interval]) + change &&
-                       length(intervals[block][interval]) + change + sum_intervals_len[block] <=
-                       free_intervals[block].len(), "kek");
+                        int old_score = total_score;
 
-                int old_score = total_score;
+                        if (change > 0) {
+                            change_interval_len(block, interval + 1, -change);
+                            change_interval_len(block, interval, change);
+                        } else {
+                            change_interval_len(block, interval, change);
+                            change_interval_len(block, interval + 1, -change);
+                        }
 
-                change_interval_len(block, interval, change);
 
-                if (is_good(old_score)) {
-                } else {
-                    change_interval_len(block, interval, -change);
-                    ASSERT(old_score == total_score, "failed back score");
+                        if (is_good(old_score)) {
+                        } else {
+                            if (change > 0) {
+                                change_interval_len(block, interval, -change);
+                                change_interval_len(block, interval + 1, change);
+                            } else {
+                                change_interval_len(block, interval + 1, change);
+                                change_interval_len(block, interval, -change);
+                            }
+                            ASSERT(old_score == total_score, "failed back score");
+                        }
+
+                        return true;
+                    } else {
+                        return false;
+                    }
+                };
+
+                auto change_len = [&]() {
+                    if (rnd.get_d() < 1) {
+                        int change = min(max(-length(intervals[block][interval]), (int) rnd.get(-10, 10)),
+                                         free_intervals[block].len() - sum_intervals_len[block] -
+                                         length(intervals[block][interval]));
+
+                        ASSERT(0 <= length(intervals[block][interval]) + change &&
+                               length(intervals[block][interval]) + change + sum_intervals_len[block] <=
+                               free_intervals[block].len(), "kek");
+
+                        if (change == 0) {
+                            return false;
+                        }
+
+                        int old_score = total_score;
+
+                        change_interval_len(block, interval, change);
+
+                        if (is_good(old_score)) {
+                        } else {
+                            change_interval_len(block, interval, -change);
+                            ASSERT(old_score == total_score, "failed back score");
+                        }
+                        return true;
+                    } else {
+                        return false;
+                    }
+                };
+
+                if (flow_over() || change_len()) {
+
                 }
 
-            } else if (rnd.get_d() < 0.5) {
+            } else if (true) {
                 // update user
 
                 int u = users_order[current_user];
