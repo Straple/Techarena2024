@@ -1047,14 +1047,10 @@ struct EgorTaskSolver {
             }
             build_blocks();
         }
-
-        /*for (int u = 0; u < N; u++) {
-            total_score += users_info[u].calc_score();
-        }*/
     }
 
     [[nodiscard]] vector<Interval> get_total_answer() {
-        vector<Interval> answer;
+        vector <Interval> answer;
         int start = free_intervals[0].start;
         int cur_block = 0;
         for (int i = 0; i < intervals.size(); i++) {
@@ -1094,21 +1090,6 @@ struct EgorTaskSolver {
         return answer;
     }
 
-    //bool have_equal_beam(int block, int interval, int beam) {
-    //    ASSERT(0 <= block && block < intervals.size() && 0 <= interval && interval < intervals[block].size(),
-    //           "invalid request");
-    //
-    /*bool res = false;
-    for (int u: intervals[block][interval].users) {
-        if (users_info[u].beam == beam) {
-            res = true;
-        }
-    }
-
-    ASSERT(res == bool((beams_msk[block][interval] >> beam) & 1), "kek");*/
-    //    return (beams_msk[block][interval] >> beam) & 1;
-    //}
-
     ///===========================
     ///===========ACTIONS=========
     ///===========================
@@ -1133,25 +1114,53 @@ struct EgorTaskSolver {
 
     void change_interval_len(int interval, int change) {
         auto &[block, len, users, beam_msk] = intervals[interval];
+
+        if (block != -1) {
+            for (int u: users) {
+                total_score -= users_info[u].calc_score();
+                users_info[u].sum_len += change;
+                total_score += users_info[u].calc_score();
+            }
+        }
+
         len += change;
         ASSERT(0 <= len, "invalid interval");
 
+        int old_first_bad_block = intervals.size();
+        for (int i = 0; i < intervals.size(); i++) {
+            if (intervals[i].block == -1) {
+                old_first_bad_block = i;
+                break;
+            }
+        }
+
         build_blocks();
 
-/*#ifdef MY_DEBUG_MODE
-        int sum_len = 0;
-        for (int i = 0; i < intervals[block].size(); i++) {
-            sum_len += intervals[block][i].len();
-        }
-        ASSERT(sum_len == sum_intervals_len[block], "failed calculating sum_intervals_len");
-        ASSERT(sum_len <= free_intervals[block].len(), "len more than free interval");
-#endif*/
+        while (0 < old_first_bad_block && intervals[old_first_bad_block - 1].block == -1) {
+            old_first_bad_block--;
 
-        for (int u: users) {
+            for (int u: intervals[old_first_bad_block].users) {
+                total_score -= users_info[u].calc_score();
+                users_info[u].sum_len -= intervals[old_first_bad_block].len;
+                total_score += users_info[u].calc_score();
+            }
+        }
+
+        while (old_first_bad_block < intervals.size() && intervals[old_first_bad_block].block != -1) {
+            for (int u: intervals[old_first_bad_block].users) {
+                total_score -= users_info[u].calc_score();
+                users_info[u].sum_len += intervals[old_first_bad_block].len;
+                total_score += users_info[u].calc_score();
+            }
+
+            old_first_bad_block++;
+        }
+
+        /*for (int u: users) {
             total_score -= users_info[u].calc_score();
             users_info[u].sum_len += change;
             total_score += users_info[u].calc_score();
-        }
+        }*/
     }
 
     void add_user_in_interval(int u, int interval) {
@@ -1159,25 +1168,29 @@ struct EgorTaskSolver {
         ASSERT(!intervals[interval].users.contains(u), "user already contains");
         ASSERT(!((intervals[interval].beam_msk >> users_info[u].beam) & 1), "equal beams");
 
-        total_score -= users_info[u].calc_score();
 
         intervals[interval].users.insert(u);
         intervals[interval].beam_msk ^= (uint32_t(1) << users_info[u].beam);
-        users_info[u].sum_len += intervals[interval].len;
 
-        total_score += users_info[u].calc_score();
+        if (intervals[interval].block != -1) {
+            total_score -= users_info[u].calc_score();
+            users_info[u].sum_len += intervals[interval].len;
+            total_score += users_info[u].calc_score();
+        }
     }
 
     void remove_user_in_interval(int u, int interval) {
         ASSERT(intervals[interval].users.contains(u), "user no contains");
 
-        total_score -= users_info[u].calc_score();
 
         intervals[interval].users.erase(u);
         intervals[interval].beam_msk ^= (uint32_t(1) << users_info[u].beam);
-        users_info[u].sum_len -= intervals[interval].len;
 
-        total_score += users_info[u].calc_score();
+        if (intervals[interval].block != -1) {
+            total_score -= users_info[u].calc_score();
+            users_info[u].sum_len -= intervals[interval].len;
+            total_score += users_info[u].calc_score();
+        }
     }
 
     /*void add_right_interval_in_user(int u) {
@@ -1339,7 +1352,8 @@ struct EgorTaskSolver {
         }
     }
 
-    vector<Interval> annealing() {
+    vector<Interval> annealing(const vector<Interval> &reservedRBs,
+                               const vector<UserInfo> &userInfos) {
         temperature = 1;
 
         vector<int> users_order(N);
@@ -1366,6 +1380,9 @@ struct EgorTaskSolver {
             }
         }
 
+        ASSERT(get_solution_score(N, M, K, J, L, reservedRBs, userInfos, answer) == answer_score,
+               "failed answer score");
+
         return answer;
     }
 
@@ -1382,8 +1399,8 @@ vector<Interval> Solver_egor(int N, int M, int K, int J, int L,
                              const vector<UserInfo> &userInfos
 ) {
     EgorTaskSolver solver(N, M, K, J, L, reservedRBs, userInfos);
-
-    return solver.annealing();
+    auto answer = solver.annealing(reservedRBs, userInfos);
+    return answer;
 }
 
 vector<Interval> Solver(int N, int M, int K, int J, int L,
