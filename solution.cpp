@@ -1003,6 +1003,8 @@ struct EgorTaskSolver {
                    const vector<Interval> &reservedRBs,
                    const vector<UserInfo> &userInfos) : N(NN), M(MM), K(KK), J(JJ), L(LL) {
 
+        ASSERT(2 <= L && L <= 16, "kek");
+
         users_info.resize(N);
         for (int u = 0; u < N; u++) {
             ASSERT(u == userInfos[u].id, "are you stupid or something?");
@@ -1362,13 +1364,13 @@ struct EgorTaskSolver {
 
             int old_score = total_score;
 
-            for(int i = left; i <= right; i++){
+            for (int i = left; i <= right; i++) {
                 add_user_in_interval(u, i);
             }
 
             if (is_good(old_score)) {
             } else {
-                for(int i = left; i <= right; i++){
+                for (int i = left; i <= right; i++) {
                     remove_user_in_interval(u, i);
                 }
                 ASSERT(old_score == total_score, "failed back score");
@@ -1380,11 +1382,52 @@ struct EgorTaskSolver {
         }
     }
 
-    bool user_truncate(int u){
-        if(rnd.get_d() < 0){
-            return true;
+    bool do_truncate_left_user(int u) {
+        int left = get_left_user(u);
+        if (left == -1) {
+            return false;
         }
-        else{
+
+        int old_score = total_score;
+
+        remove_user_in_interval(u, left);
+
+        if (is_good(old_score)) {
+        } else {
+            add_user_in_interval(u, left);
+            ASSERT(old_score == total_score, "failed back score");
+        }
+
+        return true;
+    }
+
+    bool do_truncate_right_user(int u) {
+        int right = get_left_user(u);
+        if (right == -1) {
+            return false;
+        }
+
+        int old_score = total_score;
+
+        remove_user_in_interval(u, right);
+
+        if (is_good(old_score)) {
+        } else {
+            add_user_in_interval(u, right);
+            ASSERT(old_score == total_score, "failed back score");
+        }
+
+        return true;
+    }
+
+    bool user_truncate(int u) {
+        if (rnd.get_d() < 0.3) {
+            if (rnd.get_d() < 0.5) {
+                return do_truncate_left_user(u);
+            } else {
+                return do_truncate_right_user(u);
+            }
+        } else {
             return false;
         }
     }
