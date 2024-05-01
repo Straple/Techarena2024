@@ -1420,10 +1420,17 @@ struct EgorTaskSolver {
     }
 
     void user_new_interval(int u) {
+        vector<int> removed;
+
+        int old_score = total_score;
+
         vector<bool> okay(intervals.size());
         for (int i = 0; i < intervals.size(); i++) {
-            okay[i] = !intervals[i].users.contains(u) &&
-                      intervals[i].users.size() + 1 <= L &&
+            if (intervals[i].users.contains(u)) {
+                removed.push_back(i);
+                remove_user_in_interval(u, i);
+            }
+            okay[i] = intervals[i].users.size() + 1 <= L &&
                       ((intervals[i].beam_msk >> users_info[u].beam) & 1) == 0;
         }
 
@@ -1448,8 +1455,6 @@ struct EgorTaskSolver {
             return;
         }
 
-        int old_score = total_score;
-
         for (int i = best_left; i <= best_right; i++) {
             add_user_in_interval(u, i);
         }
@@ -1458,6 +1463,9 @@ struct EgorTaskSolver {
         } else {
             for (int i = best_left; i <= best_right; i++) {
                 remove_user_in_interval(u, i);
+            }
+            for (int i: removed) {
+                add_user_in_interval(u, i);
             }
             ASSERT(old_score == total_score, "failed back score");
         }
@@ -1655,15 +1663,15 @@ struct EgorTaskSolver {
         }
 
         double p = rnd.get_d();
-        if (p < 0.05) {
+        if (p < 0.1) {
             user_new_interval(u);
-        } else if (p < 0.2) {
-            user_add_left(u);
         } else if (p < 0.3) {
-            user_add_right(u);
-        } else if (p < 0.4) {
-            user_remove_left(u);
+            user_add_left(u);
         } else if (p < 0.5) {
+            user_add_right(u);
+        } else if (p < 0.7) {
+            user_remove_left(u);
+        } else if (p < 0.9) {
             user_remove_right(u);
         } /*else if (p < 0.7) {
             user_flip_interval(u);
