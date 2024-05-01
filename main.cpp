@@ -93,4 +93,5 @@ int main() {
         total_info.max_test_time = max(total_info.max_test_time, infos[K].max_test_time);
     }
     cout << "TOTAL: " << total_info << endl;
+    cout << "ABADACEDABRA: " << ABADACEDABRA << endl;
 }
