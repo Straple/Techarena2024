@@ -1155,19 +1155,12 @@ struct EgorTaskSolver {
 
             old_first_bad_block++;
         }
-
-        /*for (int u: users) {
-            total_score -= users_info[u].calc_score();
-            users_info[u].sum_len += change;
-            total_score += users_info[u].calc_score();
-        }*/
     }
 
     void add_user_in_interval(int u, int interval) {
         ASSERT(intervals[interval].users.size() + 1 <= L, "failed add");
         ASSERT(!intervals[interval].users.contains(u), "user already contains");
         ASSERT(!((intervals[interval].beam_msk >> users_info[u].beam) & 1), "equal beams");
-
 
         intervals[interval].users.insert(u);
         intervals[interval].beam_msk ^= (uint32_t(1) << users_info[u].beam);
@@ -1181,7 +1174,6 @@ struct EgorTaskSolver {
 
     void remove_user_in_interval(int u, int interval) {
         ASSERT(intervals[interval].users.contains(u), "user no contains");
-
 
         intervals[interval].users.erase(u);
         intervals[interval].beam_msk ^= (uint32_t(1) << users_info[u].beam);
@@ -1343,10 +1335,69 @@ struct EgorTaskSolver {
         }
     }
 
+    bool new_user_interval(int u) {
+        if (rnd.get_d() < 0.9) {
+            vector<bool> okay(intervals.size());
+            for (int i = 0; i < intervals.size(); i++) {
+                okay[i] = !intervals[i].users.contains(u) &&
+                          intervals[i].users.size() + 1 <= L &&
+                          ((intervals[i].beam_msk >> users_info[u].beam) & 1) == 0;
+            }
+
+            vector<pair<int, int>> bounds;
+
+            for (int left = 0; left < intervals.size(); left++) {
+                int sum_len = 0;
+                for (int right = left; right < intervals.size() && okay[right] &&
+                                       intervals[left].block == intervals[right].block; right++) {
+                    bounds.emplace_back(left, right);
+                }
+            }
+
+            if (bounds.empty()) {
+                return false;
+            }
+
+            auto [left, right] = bounds[rnd.get(0, bounds.size() - 1)];
+
+            int old_score = total_score;
+
+            for(int i = left; i <= right; i++){
+                add_user_in_interval(u, i);
+            }
+
+            if (is_good(old_score)) {
+            } else {
+                for(int i = left; i <= right; i++){
+                    remove_user_in_interval(u, i);
+                }
+                ASSERT(old_score == total_score, "failed back score");
+            }
+
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    bool user_truncate(int u){
+        if(rnd.get_d() < 0){
+            return true;
+        }
+        else{
+            return false;
+        }
+    }
+
+    int current_user = -1;
+
+    vector<int> users_order;
+
     bool update_user() {
         if (rnd.get_d() < 0.6) {
-            int u = rnd.get(0, N - 1);
-            return flip_user_interval(u);
+            int u = current_user;//rnd.get(0, N - 1);
+            current_user = (current_user + 1) % N;
+            return flip_user_interval(u) || user_truncate(u) || new_user_interval(u);
         } else {
             return false;
         }
@@ -1356,13 +1407,14 @@ struct EgorTaskSolver {
                                const vector<UserInfo> &userInfos) {
         temperature = 1;
 
-        vector<int> users_order(N);
-        iota(users_order.begin(), users_order.end(), 0);
-        sort(users_order.begin(), users_order.end(), [&](int lhs, int rhs) {
-            return users_info[lhs].rbNeed > users_info[rhs].rbNeed;
-        });
-
-        int current_user = 0;
+        {
+            current_user = 0;
+            users_order.resize(N);
+            iota(users_order.begin(), users_order.end(), 0);
+            sort(users_order.begin(), users_order.end(), [&](int lhs, int rhs) {
+                return users_info[lhs].rbNeed > users_info[rhs].rbNeed;
+            });
+        }
 
         vector <Interval> answer = get_total_answer();
         int answer_score = total_score;
