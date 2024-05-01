@@ -17,19 +17,6 @@ ostream &operator<<(ostream &output, const test_case_info &info) {
                   << 1000 * info.total_time / max(1, info.tests) << "ms";
 }
 
-int get_theory_max_score(const TestData &data) {
-    int max_score = 0;
-    for (auto user: data.userInfos) {
-        max_score += user.rbNeed;
-    }
-    int max_possible = data.M * data.L;
-    for (const auto &reserved: data.reservedRBs) {
-        max_possible -= (reserved.end - reserved.start) * data.L;
-    }
-
-    return min(max_score, max_possible);
-}
-
 int main() {
     /*MyBitSet<1024> s;
     s.insert(63);
@@ -63,6 +50,7 @@ int main() {
     for (int K = 0; K <= 4; K++) {
         cout << "TEST CASE: K=" << K << endl;
         string dir = "tests/case_K=" + to_string(K) + "/";
+        std::vector<pair<float,int>>tests_and_scores;
         infos[K].tests = test_case_K_sizes[K];
         for (int test = 0; test < test_case_K_sizes[K]; test++) {
             ifstream input(dir + to_string(test) + ".txt");
@@ -71,7 +59,7 @@ int main() {
 
             Timer timer;
 
-            auto intervals = Solver(data);
+            auto intervals = Solver(data, test);
 
             double time = timer.get();
             infos[K].total_time += time;
@@ -79,7 +67,14 @@ int main() {
 
             int score = get_solution_score(data, intervals);
             infos[K].total_score += score;
+//            cout << score <<  " _ " <<  get_theory_max_score(data) << endl;
+            int theor_max = get_theory_max_score(data);
             infos[K].total_theory_score += get_theory_max_score(data);
+            tests_and_scores.push_back({(float)score/theor_max, test});
+        }
+        sort(tests_and_scores.begin(), tests_and_scores.end());
+        for (int i = 0; i < min((int)tests_and_scores.size(), 10); i++){
+            cout << tests_and_scores[i].first << " " << tests_and_scores[i].second << endl;
         }
     }
 
