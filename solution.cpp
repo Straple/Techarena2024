@@ -967,6 +967,13 @@ struct EgorTaskSolver {
         // info
         MyBitSet<128> users;
         uint32_t beam_msk = 0;
+
+        friend bool operator==(const SetInterval &lhs, const SetInterval &rhs) {
+            return lhs.block == rhs.block &&
+                   lhs.len == rhs.len &&
+                   lhs.users == rhs.users &&
+                   lhs.beam_msk == rhs.beam_msk;
+        }
     };
 
     vector<SetInterval> intervals;
@@ -1067,7 +1074,7 @@ struct EgorTaskSolver {
     }
 
     [[nodiscard]] vector<Interval> get_total_answer() {
-        vector <Interval> answer;
+        vector<Interval> answer;
         int start = free_intervals[0].start;
         int cur_block = 0;
         for (int i = 0; i < intervals.size(); i++) {
@@ -1084,7 +1091,7 @@ struct EgorTaskSolver {
             if (!intervals[i].users.empty() && intervals[i].len != 0) {
                 answer.push_back({start, start + intervals[i].len, {}});
                 for (int u: intervals[i].users) {
-                    answer.back().users.push_back(u);
+                    answer.back().users.push_back(users_info[u].id);
                 }
                 start += intervals[i].len;
             }
@@ -1202,39 +1209,6 @@ struct EgorTaskSolver {
         }
     }
 
-    /*void add_right_interval_in_user(int u) {
-        ASSERT(users_info[u].block != -1, "invalid u");
-        ASSERT(users_info[u].right + 1 < intervals[users_info[u].block].size()
-               && users_info[u].left <= users_info[u].right, "no right interval");
-
-        users_info[u].right++;
-        add_user_in_interval(u, users_info[u].block, users_info[u].right);
-    }
-
-    void remove_right_interval_in_user(int u) {
-        ASSERT(users_info[u].block != -1, "invalid u");
-        ASSERT(users_info[u].right >= 0 && users_info[u].left <= users_info[u].right, "no right interval");
-
-        remove_user_in_interval(u, users_info[u].block, users_info[u].right);
-        users_info[u].right--;
-    }
-
-    void add_left_interval_in_user(int u) {
-        ASSERT(users_info[u].block != -1, "invalid u");
-        ASSERT(users_info[u].left - 1 >= 0 && users_info[u].left <= users_info[u].right, "no left interval");
-
-        users_info[u].left--;
-        add_user_in_interval(u, users_info[u].block, users_info[u].left);
-    }
-
-    void remove_left_interval_in_user(int u) {
-        ASSERT(users_info[u].block != -1, "invalid u");
-        ASSERT(users_info[u].left >= 0 && users_info[u].left <= users_info[u].right, "no left interval");
-
-        remove_user_in_interval(u, users_info[u].block, users_info[u].left);
-        users_info[u].left++;
-    }*/
-
     ///==========================
     ///===========RANDOM=========
     ///==========================
@@ -1331,46 +1305,92 @@ struct EgorTaskSolver {
         }
     }
 
-    void interval_merge_equal(int interval) {
+    // merge interval and interval+1
+    bool interval_do_merge_equal(int interval) {
         if (interval + 1 >= intervals.size()) {
-            return;
+            return false;
         }
         if (!(intervals[interval].users == intervals[interval + 1].users &&
               intervals[interval].block == intervals[interval + 1].block)) {
-            return;
+            return false;
         }
         ASSERT(intervals[interval].beam_msk == intervals[interval + 1].beam_msk, "kek");
 
         int old_score = total_score;
-
-        auto save_right_interval = intervals[interval + 1];
 
         int right_len = intervals[interval + 1].len;
         change_interval_len(interval + 1, -right_len);
         change_interval_len(interval, right_len);
 
         intervals.erase(intervals.begin() + interval + 1);
-        intervals.push_back(SetInterval());
+
+        return true;
+    }
+
+    void interval_do_split(int interval, int right_len) {
+        intervals.insert(intervals.begin() + interval + 1, intervals[interval]);
+        intervals[interval + 1].len = 0;
+
+        change_interval_len(interval, -right_len);
+        change_interval_len(interval + 1, right_len);
+    }
+
+    void interval_merge_equal(int interval) {
+        int old_score = total_score;
+        int right_len = intervals[interval + 1].len;
+
+        if (interval_do_merge_equal(interval)) {
+
+            intervals.push_back(SetInterval());
+
+            if (is_good(old_score)) {
+            } else {
+                intervals.pop_back();
+                interval_do_split(interval, right_len);
+
+                ASSERT(old_score == total_score, "failed back score");
+            }
+        }
+    }
+
+    // downgrade score
+    // 92% -> 9%
+    /*void interval_split(int interval) {
+        if (interval + 1 >= intervals.size()) {
+            return;
+        }
+
+        auto old_intervals = intervals;
+
+        int old_score = total_score;
+
+        auto save_back = move(intervals.back());
+        intervals.pop_back();
+
+        int right_len = rnd.get(0, intervals[interval].len);
+
+        interval_do_split(interval, right_len);
+
+        ASSERT(intervals.size() == J, "kek");
 
         if (is_good(old_score)) {
         } else {
-            intervals.pop_back();
-            intervals.insert(intervals.begin() + interval + 1, intervals[interval]);
-            intervals[interval + 1].len = 0;
-
-            change_interval_len(interval, -right_len);
-            change_interval_len(interval + 1, right_len);
+            interval_do_merge_equal(interval);
+            intervals.push_back(save_back);
 
             ASSERT(old_score == total_score, "failed back score");
+            ASSERT(intervals.size() == J, "kek");
+
+            ASSERT(intervals == old_intervals, "?");
         }
-    }
+    }*/
 
     void interval_random_action() {
         int interval = rnd.get(0, intervals.size() - 1);
         double p = rnd.get_d();
         if (p < 0.3) {
             interval_change_len(interval);
-        } else if (p < 0.6) {
+        } else if (p < 0.7) {
             interval_flow_over(interval);
         } else if (p < 0.8) {
             interval_merge_equal(interval);
@@ -1585,6 +1605,32 @@ struct EgorTaskSolver {
         }
     }
 
+    void user_swap(int u) {
+        int u2 = rnd.get(0, N - 1);
+        if (users_info[u].beam != users_info[u2].beam || u == u2) {
+            return;
+        }
+
+        int old_score = total_score;
+
+        auto do_swap = [&](){
+            total_score -= users_info[u].calc_score() + users_info[u2].calc_score();
+
+            swap(users_info[u].sum_len, users_info[u2].sum_len);
+            swap(users_info[u], users_info[u2]);
+
+            total_score += users_info[u].calc_score() + users_info[u2].calc_score();
+        };
+
+        do_swap();
+
+        if (is_good(old_score)) {
+        } else {
+            do_swap();
+            ASSERT(old_score == total_score, "failed back score");
+        }
+    }
+
     void user_random_action() {
         int u = current_user;//rnd.get(0, N - 1);
         current_user = (current_user + 1) % N;
@@ -1609,13 +1655,13 @@ struct EgorTaskSolver {
             user_add_left(u);
         } else if (p < 0.5) {
             user_add_right(u);
-        } else if (p < 0.7) {
+        } else if (p < 0.6) {
             user_remove_left(u);
-        } else if (p < 0.9) {
+        } else if (p < 0.7) {
             user_remove_right(u);
-        } /*else if (p < 0.7) {
-            user_flip_interval(u);
-        } */else {
+        } else if (p < 0.9) {
+            user_swap(u);
+        } else {
             user_crop(u);
         }
     }
