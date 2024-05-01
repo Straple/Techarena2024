@@ -59,7 +59,7 @@ int main() {
 
             Timer timer;
 
-            auto intervals = Solver(data, test);
+            auto intervals = Solver(data);
 
             double time = timer.get();
             infos[K].total_time += time;
