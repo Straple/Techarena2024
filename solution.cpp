@@ -157,6 +157,8 @@ public:
     double get_exp();
 };
 
+
+
 randomizer::randomizer() : generator(42) {
 }
 
@@ -355,6 +357,41 @@ struct TestData {
     vector<Interval> reservedRBs;
     vector<UserInfo> userInfos;
 };
+int get_theory_max_score(int N, int M, int K, int J, int L, const vector<Interval>& reservedRBs, const  vector<UserInfo>& userInfos) {
+    int max_score = 0;
+    std::vector<int>rbNeeded;
+    std::vector<pair<int,int>>reserved;
+    for (int i = 0; i < K; i++){
+        reserved.push_back({reservedRBs[i].start,reservedRBs[i].end});
+    }
+    sort(reserved.begin(), reserved.end());
+    int max_res_len = M;
+    if (K){
+        max_res_len = max(reserved[0].first, M - reserved.back().second);
+    }
+    for (int i = 1; i < reserved.size(); i++){
+        max_res_len = max(max_res_len, reserved[i].first - reserved[i-1].second);
+    }
+    for (auto user: userInfos) {
+        rbNeeded.push_back(min(user.rbNeed,max_res_len));
+    }
+    sort(rbNeeded.begin(), rbNeeded.end(), greater<>());
+    for (int i = 0; i < min(N, J*L); i++){
+        max_score+=rbNeeded[i];
+    }
+
+    int max_possible = M * L;
+    for (const auto &reserved: reservedRBs) {
+        max_possible -= (reserved.end - reserved.start) * L;
+    }
+
+    return min(max_score, max_possible);
+}
+
+int get_theory_max_score(const TestData &data) {
+    return get_theory_max_score(data.N,data.M,data.K,data.J,data.L,data.reservedRBs, data.userInfos );
+}
+
 
 istream &operator>>(istream &input, TestData &data) {
     int N, M, K, J, L;
@@ -934,6 +971,7 @@ struct EgorTaskSolver {
     int K;
     int J;
     int L;
+    int theor_max = 0;
 
     vector<MyInterval> free_intervals;
 
@@ -989,6 +1027,7 @@ struct EgorTaskSolver {
                    const vector<Interval> &reservedRBs,
                    const vector<UserInfo> &userInfos) : N(NN), M(MM), K(KK), J(JJ), L(LL) {
 
+        theor_max = get_theory_max_score(N,M,K,J,L,reservedRBs, userInfos);
         users_info.resize(N);
         for (int u = 0; u < N; u++) {
             ASSERT(u == userInfos[u].id, "are you stupid or something?");
@@ -1224,16 +1263,29 @@ struct EgorTaskSolver {
 
         vector <Interval> answer = get_total_answer();
         int answer_score = total_score;
-
-        for (int step = 0; step < 100'000; step++) {
+        int last_update = 0;
+        int last_type = -1;
+//        cout << "----------" << endl;
+        for (int step = 0; step < 10'000; step++) {
             temp *= 0.999999;
-
+//            if (answer_score/100.0 > 0.99*theor_max){ // step > 7000 &&
+//                break;
+//            }
+//            if (step - last_update > 1000){
+//                break;
+//            }
             if (answer_score < total_score) {
+//                if (theor_max > 3000) {
+                   // cout << "UP: +" << total_score - answer_score << "| STEP: " << step << " " << last_update << " " << theor_max << " | " << last_type << endl;
+                //}
+                last_update = step;
                 answer_score = total_score;
                 answer = get_total_answer();
             }
+            last_type = -1;
 
             if (rnd.get_d() < 0.1) {
+                last_type = 1;
                 // update interval
 
                 int block = rnd.get(0, free_intervals.size() - 1);
@@ -1422,6 +1474,7 @@ struct EgorTaskSolver {
                 }
 
             } else if (true) {
+                last_type = 2;
                 // update user
 
                 int u = users_order[current_user];
@@ -1725,17 +1778,30 @@ vector<Interval> Solver_egor(int N, int M, int K, int J, int L,
 
 vector<Interval> Solver(int N, int M, int K, int J, int L,
                         vector<Interval> reservedRBs,
-                        vector<UserInfo> userInfos);
+                        vector<UserInfo> userInfos, int test);
 
-vector<Interval> Solver(const TestData &testdata) {
-    return Solver(testdata.N, testdata.M, testdata.K, testdata.J, testdata.L, testdata.reservedRBs, testdata.userInfos);
+vector<Interval> Solver(const TestData &testdata, int test) {
+    return Solver(testdata.N, testdata.M, testdata.K, testdata.J, testdata.L, testdata.reservedRBs, testdata.userInfos, test);
 }
 
 vector<Interval> Solver(int N, int M, int K, int J, int L,
                         vector<Interval> reservedRBs,
-                        vector<UserInfo> userInfos) {
+                        vector<UserInfo> userInfos, int test) {
 
     auto egor_answer = Solver_egor(N, M, K, J, L, reservedRBs, userInfos);
+
+    std::ofstream out("ans_data/case_K="+to_string(K)+"/"+to_string(test)+".txt");
+    out << egor_answer.size() << endl;
+    for (int i = 0; i < egor_answer.size(); i++){
+        out << egor_answer[i].start << " " << egor_answer[i].end << endl;
+        out << egor_answer[i].users.size() << endl;
+        for (auto user_id: egor_answer[i].users ){
+            out << user_id << " ";
+        }
+        out << endl;
+    }
+    out.close();
+
     double egor_score = get_solution_score({N, M, K, J, L, reservedRBs, userInfos}, egor_answer);
     return egor_answer;
     /*auto artem_answer = Solver_Artem_grad(N, M, K, J, L, reservedRBs, userInfos);
