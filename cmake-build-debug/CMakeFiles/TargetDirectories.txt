@@ -1,3 +1,0 @@
-/Users/artembreznev/Techarena2024/cmake-build-debug/CMakeFiles/Techarena2024.dir
-/Users/artembreznev/Techarena2024/cmake-build-debug/CMakeFiles/edit_cache.dir
-/Users/artembreznev/Techarena2024/cmake-build-debug/CMakeFiles/rebuild_cache.dir
