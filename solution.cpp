@@ -315,6 +315,20 @@ public:
     Iterator end() {
         return Iterator(reserved_size, *this);
     }
+
+
+    friend bool operator==(const MyBitSet &lhs, const MyBitSet &rhs) {
+        for (int i = 0; i < bits_size; i++) {
+            if (lhs.bits[i] != rhs.bits[i]) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    friend bool operator!=(const MyBitSet &lhs, const MyBitSet &rhs) {
+        return !(lhs == rhs);
+    }
 };
 
 // ===================================================================================================================
@@ -1289,19 +1303,85 @@ struct EgorTaskSolver {
         }
     }
 
+    void interval_get_full_free_space(int interval) {
+        int block = intervals[interval].block;
+        if (block == -1) {
+            return;
+        }
+
+        int len = 0;
+        for (int i = 0; i < intervals.size(); i++) {
+            if (intervals[i].block == block) {
+                len += intervals[i].len;
+            }
+        }
+
+        int change = free_intervals[block].len() - len;
+        ASSERT(change >= 0, "what?");
+        if (change != 0) {
+            int old_score = total_score;
+
+            change_interval_len(interval, change);
+
+            if (is_good(old_score)) {
+            } else {
+                change_interval_len(interval, -change);
+                ASSERT(old_score == total_score, "failed back score");
+            }
+        }
+    }
+
+    void interval_merge_equal(int interval) {
+        if (interval + 1 >= intervals.size()) {
+            return;
+        }
+        if (!(intervals[interval].users == intervals[interval + 1].users &&
+              intervals[interval].block == intervals[interval + 1].block)) {
+            return;
+        }
+        ASSERT(intervals[interval].beam_msk == intervals[interval + 1].beam_msk, "kek");
+
+        int old_score = total_score;
+
+        auto save_right_interval = intervals[interval + 1];
+
+        int right_len = intervals[interval + 1].len;
+        change_interval_len(interval + 1, -right_len);
+        change_interval_len(interval, right_len);
+
+        intervals.erase(intervals.begin() + interval + 1);
+        intervals.push_back(SetInterval());
+
+        if (is_good(old_score)) {
+        } else {
+            intervals.pop_back();
+            intervals.insert(intervals.begin() + interval + 1, intervals[interval]);
+            intervals[interval + 1].len = 0;
+
+            change_interval_len(interval, -right_len);
+            change_interval_len(interval + 1, right_len);
+
+            ASSERT(old_score == total_score, "failed back score");
+        }
+    }
+
     void interval_random_action() {
         int interval = rnd.get(0, intervals.size() - 1);
         double p = rnd.get_d();
         if (p < 0.3) {
             interval_change_len(interval);
-        } else {
+        } else if (p < 0.6) {
             interval_flow_over(interval);
+        } else if (p < 0.8) {
+            interval_merge_equal(interval);
+        } else {
+            interval_get_full_free_space(interval);
         }
     }
 
-    ///======================
-    ///===========USER=======
-    ///======================
+///======================
+///===========USER=======
+///======================
 
     int current_user = -1;
 
@@ -1339,7 +1419,6 @@ struct EgorTaskSolver {
         }
     }
 
-    // TODO: брать лучший
     void user_new_interval(int u) {
         vector<bool> okay(intervals.size());
         for (int i = 0; i < intervals.size(); i++) {
@@ -1348,34 +1427,57 @@ struct EgorTaskSolver {
                       ((intervals[i].beam_msk >> users_info[u].beam) & 1) == 0;
         }
 
-        vector <pair<int, int>> bounds;
-
+        int best_left = -1, best_right = -1, best_f = 1e9;
         for (int left = 0; left < intervals.size(); left++) {
             int sum_len = 0;
             for (int right = left; right < intervals.size() && okay[right] &&
                                    intervals[left].block == intervals[right].block &&
                                    intervals[left].block != -1; right++) {
-                bounds.emplace_back(left, right);
+                sum_len += intervals[right].len;
+
+                int cur_f = abs(sum_len - users_info[u].rbNeed);
+                if (cur_f < best_f) {
+                    best_f = cur_f;
+                    best_left = left;
+                    best_right = right;
+                }
             }
         }
 
-        if (bounds.empty()) {
+        if (best_left == -1) {
             return;
         }
 
-        auto [left, right] = bounds[rnd.get(0, bounds.size() - 1)];
-
         int old_score = total_score;
 
-        for (int i = left; i <= right; i++) {
+        for (int i = best_left; i <= best_right; i++) {
             add_user_in_interval(u, i);
         }
 
         if (is_good(old_score)) {
         } else {
-            for (int i = left; i <= right; i++) {
+            for (int i = best_left; i <= best_right; i++) {
                 remove_user_in_interval(u, i);
             }
+            ASSERT(old_score == total_score, "failed back score");
+        }
+    }
+
+    void user_add_left(int u) {
+        int left = get_left_user(u);
+        if (left <= 0 || intervals[left - 1].users.size() == L ||
+            ((intervals[left - 1].beam_msk >> users_info[u].beam) & 1) == 1) {
+            return;
+        }
+        left--;
+
+        int old_score = total_score;
+
+        add_user_in_interval(u, left);
+
+        if (is_good(old_score)) {
+        } else {
+            remove_user_in_interval(u, left);
             ASSERT(old_score == total_score, "failed back score");
         }
     }
@@ -1397,8 +1499,27 @@ struct EgorTaskSolver {
         }
     }
 
+    void user_add_right(int u) {
+        int right = get_right_user(u);
+        if (right == -1 || right + 1 == intervals.size() || intervals[right + 1].users.size() == L ||
+            ((intervals[right + 1].beam_msk >> users_info[u].beam) & 1) == 1) {
+            return;
+        }
+        right++;
+
+        int old_score = total_score;
+
+        add_user_in_interval(u, right);
+
+        if (is_good(old_score)) {
+        } else {
+            remove_user_in_interval(u, right);
+            ASSERT(old_score == total_score, "failed back score");
+        }
+    }
+
     void user_remove_right(int u) {
-        int right = get_left_user(u);
+        int right = get_right_user(u);
         if (right == -1) {
             return;
         }
@@ -1485,60 +1606,69 @@ struct EgorTaskSolver {
         }
     }
 
-    // returns {inserted intervals}
-    /*vector<int> user_do_fill_all_seg(int u) {
-        int left = get_left_user(u);
-        int right = get_right_user(u);
-        vector<int> inserted;
+// returns {inserted intervals}
+/*vector<int> user_do_fill_all_seg(int u) {
+    int left = get_left_user(u);
+    int right = get_right_user(u);
+    vector<int> inserted;
 
-        if (left == -1) {
-            return inserted;
-        }
-
-        for (int i = left; i <= right; i++) {
-            if (!intervals[i].users.contains(u)) {
-                inserted.push_back(i);
-                add_user_in_interval(u, i);
-            }
-        }
-
+    if (left == -1) {
         return inserted;
-    }*/
+    }
 
-    // TODO: need verify beam
-    /*bool user_fill_all_seg(int u) {
-        if (rnd.get_d() < 0.2) {
-            int old_score = total_score;
-            auto inserted = user_do_fill_all_seg(u);
-
-            if (is_good(old_score)) {
-            } else {
-                for (int i: inserted) {
-                    remove_user_in_interval(u, i);
-                }
-                ASSERT(old_score == total_score, "failed back score");
-            }
-            return true;
-        } else {
-            return false;
+    for (int i = left; i <= right; i++) {
+        if (!intervals[i].users.contains(u)) {
+            inserted.push_back(i);
+            add_user_in_interval(u, i);
         }
-    }*/
+    }
+
+    return inserted;
+}*/
+
+// TODO: need verify beam
+/*bool user_fill_all_seg(int u) {
+    if (rnd.get_d() < 0.2) {
+        int old_score = total_score;
+        auto inserted = user_do_fill_all_seg(u);
+
+        if (is_good(old_score)) {
+        } else {
+            for (int i: inserted) {
+                remove_user_in_interval(u, i);
+            }
+            ASSERT(old_score == total_score, "failed back score");
+        }
+        return true;
+    } else {
+        return false;
+    }
+}*/
 
     void user_random_action() {
         int u = current_user;//rnd.get(0, N - 1);
         current_user = (current_user + 1) % N;
 
-        double p = rnd.get_d();
-        if (p < 0.2) {
+        if (users_info[u].sum_len == 0) {
             user_new_interval(u);
-        } else if (p < 0.5) {
-            user_crop(u);
-        } else if (p < 0.7) {
-            user_flip_interval(u);
-        } else if (p < 0.8) {
+            return;
+        }
+
+        double p = rnd.get_d();
+        if (p < 0.05) {
+            user_new_interval(u);
+        } else if (p < 0.2) {
+            user_add_left(u);
+        } else if (p < 0.3) {
+            user_add_right(u);
+        } else if (p < 0.4) {
             user_remove_left(u);
-        } else {
+        } else if (p < 0.5) {
             user_remove_right(u);
+        } /*else if (p < 0.7) {
+            user_flip_interval(u);
+        } */else {
+            user_crop(u);
         }
     }
 
@@ -1561,7 +1691,7 @@ struct EgorTaskSolver {
         for (int step = 0; step < 100'000; step++) {
             temperature *= 0.99999;
 
-            if(step != 0 && step % 2'000 == 0){
+            if (step != 0 && step % 10'000 == 0) {
                 for (int u = 0; u < N; u++) {
                     user_do_crop(u);
                 }
@@ -1573,7 +1703,7 @@ struct EgorTaskSolver {
             }*/
 
             double p = rnd.get_d();
-            if (p < 0.5) {
+            if (p < 0.2) {
                 interval_random_action();
             } else {
                 user_random_action();
@@ -1585,13 +1715,16 @@ struct EgorTaskSolver {
 
         // TODO: добить все интервалы до максимального свободного пространства
 
+        for (int i = 0; i < intervals.size(); i++) {
+            interval_get_full_free_space(i);
+        }
+
         for (int u = 0; u < N; u++) {
             user_do_crop(u);
         }
 
         return get_total_answer();
     }
-
 };
 
 //TEST CASE: K=0 | tests: 666 | score: 93.3172% | 639374/685162 | time: 612.187ms | max_time: 9.977ms | mean_time: 0.9192ms
