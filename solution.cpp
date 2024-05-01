@@ -1387,38 +1387,8 @@ struct EgorTaskSolver {
 
     vector<int> users_order;
 
-    void user_flip_interval(int u) {
-        int interval = rnd.get(0, intervals.size() - 1);
-
-        // no place
-        if (!intervals[interval].users.contains(u) && intervals[interval].users.size() + 1 > L) {
-            return;
-        }
-
-        // там нет этого юзера, но уже есть одинаковый beam
-        if (!intervals[interval].users.contains(u) && ((intervals[interval].beam_msk >> users_info[u].beam) & 1)) {
-            return;
-        }
-
-        auto flip = [&]() {
-            if (intervals[interval].users.contains(u)) {
-                remove_user_in_interval(u, interval);
-            } else {
-                add_user_in_interval(u, interval);
-            }
-        };
-
-        int old_score = total_score;
-
-        flip();
-
-        if (is_good(old_score)) {
-        } else {
-            flip();
-            ASSERT(old_score == total_score, "failed back score");
-        }
-    }
-
+    // удаляет старые интервалы,
+    // добавляет лучший новый
     void user_new_interval(int u) {
         vector<int> removed;
 
@@ -1600,6 +1570,7 @@ struct EgorTaskSolver {
         return removed;*/
     }
 
+    // обрезает отрезок юзера до содержащегося только в одном блоке
     void user_crop(int u) {
         int old_score = total_score;
 
@@ -1614,48 +1585,17 @@ struct EgorTaskSolver {
         }
     }
 
-// returns {inserted intervals}
-/*vector<int> user_do_fill_all_seg(int u) {
-    int left = get_left_user(u);
-    int right = get_right_user(u);
-    vector<int> inserted;
-
-    if (left == -1) {
-        return inserted;
-    }
-
-    for (int i = left; i <= right; i++) {
-        if (!intervals[i].users.contains(u)) {
-            inserted.push_back(i);
-            add_user_in_interval(u, i);
-        }
-    }
-
-    return inserted;
-}*/
-
-// TODO: need verify beam
-/*bool user_fill_all_seg(int u) {
-    if (rnd.get_d() < 0.2) {
-        int old_score = total_score;
-        auto inserted = user_do_fill_all_seg(u);
-
-        if (is_good(old_score)) {
-        } else {
-            for (int i: inserted) {
-                remove_user_in_interval(u, i);
-            }
-            ASSERT(old_score == total_score, "failed back score");
-        }
-        return true;
-    } else {
-        return false;
-    }
-}*/
-
     void user_random_action() {
         int u = current_user;//rnd.get(0, N - 1);
         current_user = (current_user + 1) % N;
+
+#ifdef MY_DEBUG_MODE
+        int left = get_left_user(u);
+        int right = get_right_user(u);
+        for (int i = 0; i < intervals.size(); i++) {
+            ASSERT(intervals[i].users.contains(u) == (left <= i && i <= right), "invalid user segment");
+        }
+#endif
 
         if (users_info[u].sum_len == 0) {
             user_new_interval(u);
@@ -1696,8 +1636,10 @@ struct EgorTaskSolver {
         //vector <Interval> answer = get_total_answer();
         //int answer_score = total_score;
 
-        for (int step = 0; step < 100'000; step++) {
-            temperature *= 0.99999;
+        constexpr int STEPS = 100'000;
+        for (int step = 0; step < STEPS; step++) {
+            temperature = (STEPS - step) * 1.0 / STEPS;
+            //temperature *= 0.999999;
 
             if (step != 0 && step % 10'000 == 0) {
                 for (int u = 0; u < N; u++) {
