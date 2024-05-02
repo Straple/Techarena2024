@@ -140,7 +140,7 @@ int main() {
         g(USER_CROP);
         g(USER_SWAP);
         cout << "=================\n";
-        cout << "TIME_ACCUM: " << TimeAccumWrapper::time_accum * 1000 << "ms " << TimeAccumWrapper::time_accum * 100 / total_info.total_time << "%\n";
+        cout << "TIME_ACCUM: " << TimeAccumWrapper::time_accum * 1000 << "ms " << TimeAccumWrapper::time_accum * 100 / total_info.total_time << "% counter: " << TimeAccumWrapper::counter << "\n";
         cout.flush();
     }
 }

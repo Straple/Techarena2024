@@ -1,6 +1,3 @@
-// TIME OPTIMIZATION
-// 3375.92ms ->
-
 int CNT_CALL_GET_LEFT_USER = 0;
 int CNT_CALL_GET_RIGHT_USER = 0;
 
@@ -375,9 +372,11 @@ public:
 
 struct TimeAccumWrapper {
     static inline double time_accum = 0;
+    static inline int counter = 0;
     Timer timer;
 
-    TimeAccumWrapper() {
+    TimeAccumWrapper() : timer() {
+        counter++;
     }
 
     ~TimeAccumWrapper() {
@@ -1195,7 +1194,7 @@ struct EgorTaskSolver {
     // инициализирует .block так, чтобы длины не превышали free_interval
     // если .block = -1, то этот интервал никуда не влез
 
-    // 271.944ms -> 250.176ms
+    // 7%
     void build_blocks() {
         ASSERT(intervals.size() == J, "kek");
         int cur_block = 0;
@@ -1375,8 +1374,8 @@ struct EgorTaskSolver {
         return -1;
     }
 
+    // 16%
     void change_interval_len(int interval, int change) {
-        //TimeAccumWrapper _;
         CNT_CALL_CHANGE_INTERVAL_LEN++;
         auto &[block, len, users, beam_msk] = intervals[interval];
 
@@ -1422,6 +1421,7 @@ struct EgorTaskSolver {
         }
     }
 
+    // 3%
     void add_user_in_interval(int u, int i) {
         CNT_CALL_ADD_USER_IN_INTERVAL++;
 
@@ -1452,6 +1452,7 @@ struct EgorTaskSolver {
         }
     }
 
+    // 3%
     void remove_user_in_interval(int u, int i) {
         CNT_CALL_REMOVE_USER_IN_INTERVAL++;
 
@@ -1472,7 +1473,7 @@ struct EgorTaskSolver {
             user.left = user.right = -1;
         }
 
-        if(user.left != get_left_user(u)) {
+        if (user.left != get_left_user(u)) {
             cout << "FUCK" << endl;
             return;
         }
@@ -2040,24 +2041,24 @@ struct EgorTaskSolver {
                     int u = user_id_to_u[u_id];
                     ups.push_back({users_info[u].sum_len, u});
                     //for (int u2_id: users_with_equal_beam[beam]) {
-                     //   if(u_id == u2_id) {
-                     //       continue;
-                     //   }
-                     //   CNT_CALL_USER_SWAP++;
-//
-                     //   int u = user_id_to_u[u_id];
-                     //   int u2 = user_id_to_u[u2_id];
-//
-                     //   int old_score = total_score;
-//
-                     //   user_do_swap(u, u2);
-////
-                     //   if (is_good(old_score)) {
-                     //      CNT_ACCEPTED_USER_SWAP++;
-                     //   } else {
-                     //       user_do_swap(u, u2);
-                     //       ASSERT(old_score == total_score, "failed back score");
-                     //   }
+                    //   if(u_id == u2_id) {
+                    //       continue;
+                    //   }
+                    //   CNT_CALL_USER_SWAP++;
+                    //
+                    //   int u = user_id_to_u[u_id];
+                    //   int u2 = user_id_to_u[u2_id];
+                    //
+                    //   int old_score = total_score;
+                    //
+                    //   user_do_swap(u, u2);
+                    ////
+                    //   if (is_good(old_score)) {
+                    //      CNT_ACCEPTED_USER_SWAP++;
+                    //   } else {
+                    //       user_do_swap(u, u2);
+                    //       ASSERT(old_score == total_score, "failed back score");
+                    //   }
                     //}
                 }
                 sort(ups.begin(), ups.end());
@@ -2084,7 +2085,7 @@ struct EgorTaskSolver {
         return;
 
         //int u = -1, u2 = -1;
-        for (int beam = 0; beam < 32; beam++) {
+        /*for (int beam = 0; beam < 32; beam++) {
             if (users_with_equal_beam[beam].size() >= 2) {
                 for (int steps = 0; steps < 1; steps++) {
                     CNT_CALL_USER_SWAP++;
@@ -2109,7 +2110,7 @@ struct EgorTaskSolver {
                     }
                 }
             }
-        }
+        }*/
     }
 
     void user_random_action() {
@@ -2166,12 +2167,6 @@ struct EgorTaskSolver {
                 add_user_in_interval(user_id, i);
             }
         }
-        //        for (int i = 0; i < N; i++) {
-        //            user_new_interval();
-        //        }
-
-        //vector <Interval> answer = get_total_answer();
-        //int answer_score = total_score;
 
         //TEST CASE: K=0 | tests: 666 | score: 94.7412% | 646507/682393 | time: 5647.33ms | max_time: 31.324ms | mean_time: 8.47947ms
         //TEST CASE: K=1 | tests: 215 | score: 94.1612% | 210276/223315 | time: 1644.51ms | max_time: 21.472ms | mean_time: 7.64887ms
@@ -2205,7 +2200,7 @@ struct EgorTaskSolver {
         //USER_CROP: 32.6654% 193/591
         //USER_SWAP: 50.0409% 77172/154217
 
-        constexpr int STEPS = 10'000;
+        constexpr int STEPS = 100'000;
         for (int step = 0; step < STEPS; step++) {
             temperature = (STEPS - step) * 1.0 / STEPS;
             //temperature *= 0.999999;
@@ -2330,7 +2325,6 @@ vector<Interval> Solver(int N, int M, int K, int J, int L,
     /*auto artem_answer = Solver_Artem_grad(N, M, K, J, L, reservedRBs, userInfos);
     auto egor_answer = Solver_egor(N, M, K, J, L, reservedRBs, userInfos, artem_answer);
 
-    //return egor_answer;
     auto egor_score = get_solution_score(N, M, K, J, L, reservedRBs, userInfos, egor_answer);
     auto artem_score = get_solution_score(N, M, K, J, L, reservedRBs, userInfos, artem_answer);
 
@@ -2338,17 +2332,5 @@ vector<Interval> Solver(int N, int M, int K, int J, int L,
         return egor_answer;
     } else {
         return artem_answer;
-    }*/
-
-    /*auto artem_answer = Solver_Artem_grad(N, M, K, J, L, reservedRBs, userInfos);
-    double artem_score = get_solution_score({N, M, K, J, L, reservedRBs, userInfos}, artem_answer);
-
-    auto egor_answer = Solver_egor(N, M, K, J, L, reservedRBs, userInfos);
-    double egor_score = get_solution_score({N, M, K, J, L, reservedRBs, userInfos}, egor_answer);
-
-    if (artem_score > egor_score) {
-        return artem_answer;
-    } else {
-        return egor_answer;
     }*/
 }
