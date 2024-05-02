@@ -58,7 +58,7 @@ int main() {
 
             Timer timer;
 
-            auto intervals = Solver(data, test);
+            auto intervals = Solver(data);
 
             double time = timer.get();
             infos[K].total_time += time;
@@ -80,6 +80,14 @@ int main() {
         }
     }
 
+    cout << "{";
+    for (auto &[k, tests]: score_per_test) {
+        for (auto &[test, score]: tests) {
+            cout << "\"" << k << "_" << test << "\": " << score << ", ";
+        }
+    }
+    cout << "}" << endl;
+
     test_case_info total_info;
     for (int K = 0; K <= 4; K++) {
         cout << "TEST CASE: K=" << K << " | " << infos[K] << endl;
@@ -89,13 +97,6 @@ int main() {
         total_info.total_time += infos[K].total_time;
         total_info.max_test_time = max(total_info.max_test_time, infos[K].max_test_time);
     }
-    cout << "{";
-    for (auto &[k, tests]: score_per_test) {
-        for (auto &[test, score]: tests) {
-            cout << "\"" << k << "_" << test << "\": " << score << ", ";
-        }
-    }
-    cout << "}" << endl;
     cout << "TOTAL: " << total_info << endl;
 
     {
@@ -118,7 +119,8 @@ int main() {
         f(CNT_CALL_REMOVE_USER_IN_INTERVAL);
         cout << "=================\n";
         g(INTERVAL_FLOW_OVER);
-        g(INTERVAL_CHANGE_LEN);
+        g(INTERVAL_INCREASE_LEN);
+        g(INTERVAL_DECREASE_LEN);
         g(INTERVAL_GET_FULL_FREE_SPACE);
 
         f(CNT_CALL_INTERVAL_DO_MERGE_EQUAL);
@@ -137,6 +139,8 @@ int main() {
 
         g(USER_CROP);
         g(USER_SWAP);
+        cout << "=================\n";
+        cout << "TIME_ACCUM: " << TimeAccumWrapper::time_accum * 1000 << "ms " << TimeAccumWrapper::time_accum * 100 / total_info.total_time << "%\n";
         cout.flush();
     }
 }
