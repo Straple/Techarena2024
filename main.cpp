@@ -49,7 +49,7 @@ int main() {
     for (int K = 0; K <= 4; K++) {
         cout << "TEST CASE: K=" << K << endl;
         string dir = "tests/case_K=" + to_string(K) + "/";
-        std::vector<pair<float,int>>tests_and_scores;
+        std::vector<pair<float, int>> tests_and_scores;
         infos[K].tests = test_case_K_sizes[K];
         for (int test = 0; test < test_case_K_sizes[K]; test++) {
             ifstream input(dir + to_string(test) + ".txt");
@@ -74,7 +74,7 @@ int main() {
 //            tests_and_scores.push_back({(float)score/theor_max, test});
         }
         sort(tests_and_scores.begin(), tests_and_scores.end());
-        for (int i = 0; i < min((int)tests_and_scores.size(), 10); i++){
+        for (int i = 0; i < min((int) tests_and_scores.size(), 10); i++) {
             cout << tests_and_scores[i].first << " " << tests_and_scores[i].second << endl;
         }
     }
@@ -96,5 +96,46 @@ int main() {
     }
     cout << "}" << endl;
     cout << "TOTAL: " << total_info << endl;
-    cout << "ABADACEDABRA: " << ABADACEDABRA << endl;
+
+    {
+        cout << "EGOR TASK SOLVER STATISTIC:\n";
+
+#define CAT_IMPL(string1, string2) string1##string2
+
+#define CAT(string1, string2) CAT_IMPL(string1, string2)
+
+
+#define f(x) cout << #x": " << x / 1000.0 << '\n';
+#define g(x) cout << #x": " << CAT(CNT_ACCEPTED_, x) * 100.0 / CAT(CNT_CALL_, x) << "% " << CAT(CNT_ACCEPTED_, x) / 1000 << "/" << CAT(CNT_CALL_, x) / 1000 << '\n';
+
+        f(CNT_CALL_GET_LEFT_USER);
+        f(CNT_CALL_GET_RIGHT_USER);
+        cout << "=================\n";
+        f(CNT_CALL_CHANGE_INTERVAL_LEN);
+        cout << "=================\n";
+        f(CNT_CALL_ADD_USER_IN_INTERVAL);
+        f(CNT_CALL_REMOVE_USER_IN_INTERVAL);
+        cout << "=================\n";
+        g(INTERVAL_FLOW_OVER);
+        g(INTERVAL_CHANGE_LEN);
+        g(INTERVAL_GET_FULL_FREE_SPACE);
+
+        f(CNT_CALL_INTERVAL_DO_MERGE_EQUAL);
+        f(CNT_CALL_INTERVAL_DO_SPLIT);
+
+        g(INTERVAL_MERGE_EQUAL);
+
+        cout << "=================\n";
+        g(USER_NEW_INTERVAL);
+        g(USER_ADD_LEFT);
+        g(USER_REMOVE_LEFT);
+        g(USER_ADD_RIGHT);
+        g(USER_REMOVE_RIGHT);
+
+        f(CNT_CALL_USER_DO_CROP);
+
+        g(USER_CROP);
+        g(USER_SWAP);
+        cout.flush();
+    }
 }
