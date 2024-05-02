@@ -44,7 +44,7 @@ int main() {
 
     return 0;*/
     test_case_info infos[5];
-    map<int,map<int,int>>score_per_test;
+    map<int, map<int, int>> score_per_test;
     constexpr int test_case_K_sizes[] = {666, 215, 80, 39, 0};
     for (int K = 0; K <= 4; K++) {
         cout << "TEST CASE: K=" << K << endl;
@@ -58,7 +58,7 @@ int main() {
 
             Timer timer;
 
-            auto intervals = Solver(data);
+            auto intervals = Solver(data, test);
 
             double time = timer.get();
             infos[K].total_time += time;
@@ -68,10 +68,11 @@ int main() {
             score_per_test[K][test] = score;
 
             infos[K].total_score += score;
-//            cout << score <<  " _ " <<  get_theory_max_score(data) << endl;
-//            int theor_max = get_theory_max_score(data);
-//            infos[K].total_theory_score += get_theory_max_score(data);
-//            tests_and_scores.push_back({(float)score/theor_max, test});
+            int theor_max = get_theory_max_score(data);
+            infos[K].total_theory_score += theor_max;
+
+            //cout << score <<  " _ " <<  get_theory_max_score(data) << endl;
+            //tests_and_scores.push_back({(float)score/theor_max, test});
         }
         sort(tests_and_scores.begin(), tests_and_scores.end());
         for (int i = 0; i < min((int) tests_and_scores.size(), 10); i++) {
@@ -89,9 +90,9 @@ int main() {
         total_info.max_test_time = max(total_info.max_test_time, infos[K].max_test_time);
     }
     cout << "{";
-    for (auto& [k, tests]: score_per_test){
-        for (auto& [test, score]: tests){
-            cout <<"\"" << k << "_" << test << "\": " << score << ", ";
+    for (auto &[k, tests]: score_per_test) {
+        for (auto &[test, score]: tests) {
+            cout << "\"" << k << "_" << test << "\": " << score << ", ";
         }
     }
     cout << "}" << endl;
@@ -105,8 +106,8 @@ int main() {
 #define CAT(string1, string2) CAT_IMPL(string1, string2)
 
 
-#define f(x) cout << #x": " << x / 1000.0 << '\n';
-#define g(x) cout << #x": " << CAT(CNT_ACCEPTED_, x) * 100.0 / CAT(CNT_CALL_, x) << "% " << CAT(CNT_ACCEPTED_, x) / 1000 << "/" << CAT(CNT_CALL_, x) / 1000 << '\n';
+#define f(x) cout << #x ": " << x / 1000.0 << '\n';
+#define g(x) cout << #x ": " << CAT(CNT_ACCEPTED_, x) * 100.0 / CAT(CNT_CALL_, x) << "% " << CAT(CNT_ACCEPTED_, x) / 1000 << "/" << CAT(CNT_CALL_, x) / 1000 << '\n';
 
         f(CNT_CALL_GET_LEFT_USER);
         f(CNT_CALL_GET_RIGHT_USER);

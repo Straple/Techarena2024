@@ -2222,10 +2222,10 @@ vector<Interval> Solver_egor(int N, int M, int K, int J, int L,
 
 vector<Interval> Solver(int N, int M, int K, int J, int L,
                         vector<Interval> reservedRBs,
-                        vector<UserInfo> userInfos);
+                        vector<UserInfo> userInfos, int test);
 
-vector<Interval> Solver(const TestData &testdata) {
-    return Solver(testdata.N, testdata.M, testdata.K, testdata.J, testdata.L, testdata.reservedRBs, testdata.userInfos);
+vector<Interval> Solver(const TestData &testdata, int test) {
+    return Solver(testdata.N, testdata.M, testdata.K, testdata.J, testdata.L, testdata.reservedRBs, testdata.userInfos, test);
 }
 
 vector<Interval> Solver(int N, int M, int K, int J, int L,
@@ -2244,7 +2244,9 @@ vector<Interval> Solver(int N, int M, int K, int J, int L,
     }
     out.close();*/
 
-    double egor_score = get_solution_score({N, M, K, J, L, reservedRBs, userInfos}, egor_answer);
+    auto egor_answer = Solver_egor(N, M, K, J, L, reservedRBs, userInfos);
+
+    //double egor_score = get_solution_score(N, M, K, J, L, reservedRBs, userInfos, egor_answer);
     return egor_answer;
     /*auto artem_answer = Solver_Artem_grad(N, M, K, J, L, reservedRBs, userInfos);
     double artem_score = get_solution_score({N, M, K, J, L, reservedRBs, userInfos}, artem_answer);
