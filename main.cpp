@@ -44,9 +44,8 @@ int main() {
 
     return 0;*/
     test_case_info infos[5];
-
+    map<int,map<int,int>>score_per_test;
     constexpr int test_case_K_sizes[] = {666, 215, 80, 39, 0};
-
     for (int K = 0; K <= 4; K++) {
         cout << "TEST CASE: K=" << K << endl;
         string dir = "tests/case_K=" + to_string(K) + "/";
@@ -66,11 +65,13 @@ int main() {
             infos[K].max_test_time = max(infos[K].max_test_time, time);
 
             int score = get_solution_score(data, intervals);
+            score_per_test[K][test] = score;
+
             infos[K].total_score += score;
 //            cout << score <<  " _ " <<  get_theory_max_score(data) << endl;
-            int theor_max = get_theory_max_score(data);
-            infos[K].total_theory_score += get_theory_max_score(data);
-            tests_and_scores.push_back({(float)score/theor_max, test});
+//            int theor_max = get_theory_max_score(data);
+//            infos[K].total_theory_score += get_theory_max_score(data);
+//            tests_and_scores.push_back({(float)score/theor_max, test});
         }
         sort(tests_and_scores.begin(), tests_and_scores.end());
         for (int i = 0; i < min((int)tests_and_scores.size(), 10); i++){
@@ -87,6 +88,13 @@ int main() {
         total_info.total_time += infos[K].total_time;
         total_info.max_test_time = max(total_info.max_test_time, infos[K].max_test_time);
     }
+    cout << "{";
+    for (auto& [k, tests]: score_per_test){
+        for (auto& [test, score]: tests){
+            cout <<"\"" << k << "_" << test << "\": " << score << ", ";
+        }
+    }
+    cout << "}" << endl;
     cout << "TOTAL: " << total_info << endl;
     cout << "ABADACEDABRA: " << ABADACEDABRA << endl;
 }

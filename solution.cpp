@@ -513,6 +513,35 @@ int get_blocks_amount(int M, vector<Interval> reservedRBs) {
     return cnt;
 }
 
+void recut(std::vector<Interval>& intervals, int last_k, int to){
+    int s = 0;
+    for (int i = max(0, (int)intervals.size() - last_k); i < intervals.size(); i++){
+        s+=intervals[i].end-intervals[i].start;
+    }
+    for (int i = 0; i < last_k; i++){
+        assert(intervals.back().users.empty());
+        intervals.pop_back();
+    }
+    int start = 0;
+    if (intervals.size()){
+        start = intervals.back().end;
+    }
+    assert(intervals.size());
+    intervals.pop_back();
+    int more = s;
+    int new_size = s/to;
+    int pref = start;
+    for (int i = 0; i < to; i++){
+        int put = new_size;
+        if (i+1 == to){
+            put=more;
+        }
+        intervals.push_back({pref, pref+put, {}});
+        more-=put;
+        pref+=put;
+    }
+}
+
 vector<vector<Interval>> Solver_artem(int N, int M, int K, int J, int L,
                                       vector<Interval> &reservedRBs,
                                       vector<UserInfo> &userInfos, float coef
@@ -616,6 +645,7 @@ vector<vector<Interval>> Solver_artem(int N, int M, int K, int J, int L,
     std::vector<std::vector<int>> beamOwnedBy(pre_answer.size(), std::vector<int>(BEAM_MAX_AMOUNT, -1));
     std::vector<std::set<int>> activeUsers(pre_answer.size());
     std::vector<int> current_sub_interval(pre_answer.size(), 0);
+//    cout << "-------------------" << endl;
     while (!space_left_q.empty()) {
         int space_left = space_left_q.begin()->first;
         int pick_i = space_left_q.begin()->second;
@@ -697,23 +727,39 @@ vector<vector<Interval>> Solver_artem(int N, int M, int K, int J, int L,
         }
         to_delete.clear();
         if (coef == -2.0) {
-            int ma_not_empty = -1;
-            int int_len = pre_answer[pick_i][current_sub_interval[pick_i]].end -
-                          pre_answer[pick_i][current_sub_interval[pick_i]].start;
-            for (auto user_id: activeUsers[pick_i]) {
-                int need = userInfos[user_id].rbNeed;
-                int now = rbSuplied[user_id];
-                assert(need - now > 0);
-                if (need - now < int_len) {
-                    ma_not_empty = max(ma_not_empty, need - now);
+            while (true) {
+                int ma_not_empty = -1;
+                int int_len = pre_answer[pick_i][current_sub_interval[pick_i]].end -
+                              pre_answer[pick_i][current_sub_interval[pick_i]].start;
+                for (auto user_id: activeUsers[pick_i]) {
+                    int need = userInfos[user_id].rbNeed;
+                    int now = rbSuplied[user_id];
+                    assert(need - now > 0);
+                    if (need - now < int_len) {
+                        ma_not_empty = max(ma_not_empty, need - now);
+                    }
                 }
-            }
-//            ma_not_empty = max(ma_not_empty, 1);
-            if (ma_not_empty != -1 && current_sub_interval[pick_i] + 1 != pre_answer[pick_i].size()) {
-                ma_not_empty = max(ma_not_empty, 1);
-                int give = int_len - ma_not_empty;
-                pre_answer[pick_i][current_sub_interval[pick_i]].end -= give;
-                pre_answer[pick_i][current_sub_interval[pick_i] + 1].start -= give;
+                if (activeUsers[pick_i].empty()){
+                    break;
+                }
+                if (ma_not_empty != -1 && current_sub_interval[pick_i] + 1 != pre_answer[pick_i].size()) {
+                    ma_not_empty = max(ma_not_empty, 1);
+                    int give = int_len - ma_not_empty;
+                    pre_answer[pick_i][current_sub_interval[pick_i]].end -= give;
+                    pre_answer[pick_i][current_sub_interval[pick_i] + 1].start -= give;
+                } else if (ma_not_empty == -1 && current_sub_interval[pick_i] + 2 < pre_answer[pick_i].size()) {
+                    int curr_index = current_sub_interval[pick_i];
+                    int end = pre_answer[pick_i][curr_index + 1].end;
+                    int more = pre_answer[pick_i].size() - current_sub_interval[pick_i] - 2;
+                    if ((pre_answer[pick_i].back().end-pre_answer[pick_i][curr_index + 2].start)/(more+1) == 0){
+                        break;
+                    }
+                    pre_answer[pick_i][curr_index].end = end;
+                    recut(pre_answer[pick_i], more, more + 1);
+
+                    continue;
+                }
+                break;
             }
         }
 
@@ -741,7 +787,7 @@ vector<vector<Interval>> Solver_artem(int N, int M, int K, int J, int L,
 }
 
 int
-get_solution_score_light(int N, vector<vector<Interval>> &ans, vector<UserInfo> &userInfos, std::vector<int> &suplied) {
+get_solution_score_light(int N, vector<vector<Interval>> &ans, const vector<UserInfo> &userInfos, std::vector<int> &suplied) {
     for (int i = 0; i < N; i++) {
         suplied[i] = 0;
     }
@@ -762,8 +808,8 @@ get_solution_score_light(int N, vector<vector<Interval>> &ans, vector<UserInfo> 
 
 
 void optimize_one_gap(int N, int M, int K, int J, int L,
-                      vector<Interval> &reservedRBs,
-                      vector<UserInfo> &userInfos, vector<Interval> &solution, vector<int> &suplied, set<int> &empty) {
+                      const vector<Interval> &reservedRBs,
+                      const vector<UserInfo> &userInfos, vector<Interval> &solution, vector<int> &suplied, set<int> &empty) {
 
     std::vector<int> mi(N, 10000);
     std::vector<int> ma(N, -10000);
@@ -966,8 +1012,8 @@ void optimize_one_gap(int N, int M, int K, int J, int L,
 }
 
 void optimize(int N, int M, int K, int J, int L,
-              vector<Interval> &reservedRBs,
-              vector<UserInfo> &userInfos, vector<vector<Interval>> &solution) {
+              const vector<Interval> &reservedRBs,
+              const vector<UserInfo> &userInfos, vector<vector<Interval>> &solution) {
 
     std::vector<int> suplied(N, 0);
     get_solution_score_light(N, solution, userInfos, suplied);
@@ -1921,6 +1967,39 @@ struct EgorTaskSolver {
     }
 };
 
+std::vector<vector<Interval>> ans_to_blocked_ans(int M, int K, const vector<Interval> &reservedRBs, vector<Interval> &solution){
+    std::vector<bool> is_free(M + 1, true);
+    is_free.back() = false;
+    int start = -1;
+    for (size_t i = 0; i < reservedRBs.size(); i++) {
+        for (size_t g = reservedRBs[i].start; g < reservedRBs[i].end; g++) {
+            is_free[g] = false;
+        }
+    }
+
+    std::vector<pair<int,int>>free_intervals;
+    for (int i = 0; i < is_free.size(); i++) {
+        if (!is_free[i]) {
+            if (start != i - 1) {
+                free_intervals.push_back({start + 1, i});
+            }
+            start = i;
+        }
+    }
+    std::vector<std::vector<Interval>>ans(free_intervals.size());
+    for (auto interval: solution){
+        int i = 0;
+        for (auto [l,r]: free_intervals){
+            if (interval.start >= l && interval.end <= r){
+                ans[i].push_back(interval);
+                break;
+            }
+            i++;
+        }
+    }
+    return ans;
+}
+
 //TEST CASE: K=0 | tests: 666 | score: 93.3172% | 639374/685162 | time: 612.187ms | max_time: 9.977ms | mean_time: 0.9192ms
 //TEST CASE: K=1 | tests: 215 | score: 91.7999% | 207275/225790 | time: 235.996ms | max_time: 9.534ms | mean_time: 1.09766ms
 //TEST CASE: K=2 | tests: 80 | score: 90.471% | 75242/83167 | time: 119.629ms | max_time: 8.073ms | mean_time: 1.49536ms
@@ -1932,23 +2011,47 @@ vector<Interval> Solver_egor(int N, int M, int K, int J, int L,
                              const vector<UserInfo> &userInfos
 ) {
     EgorTaskSolver solver(N, M, K, J, L, reservedRBs, userInfos);
-    auto answer = solver.annealing(reservedRBs, userInfos);
+    auto res = solver.annealing(reservedRBs, userInfos);
+    auto blocked = ans_to_blocked_ans(M, K, reservedRBs, res);
+    optimize(N, M, K, J, L, reservedRBs, userInfos, blocked);
+    vector <Interval> answer;
+    for (int i = 0; i < blocked.size(); i++) {
+        for (int g = 0; g < blocked[i].size(); g++) {
+            if (blocked[i][g].users.size()) {
+                answer.push_back(blocked[i][g]);
+            }
+        }
+    }
+    return answer;
     return answer;
 }
 
 vector<Interval> Solver(int N, int M, int K, int J, int L,
                         vector<Interval> reservedRBs,
-                        vector<UserInfo> userInfos);
+                        vector<UserInfo> userInfos, int test);
 
-vector<Interval> Solver(const TestData &testdata) {
-    return Solver(testdata.N, testdata.M, testdata.K, testdata.J, testdata.L, testdata.reservedRBs, testdata.userInfos);
+vector<Interval> Solver(const TestData &testdata, int test) {
+    return Solver(testdata.N, testdata.M, testdata.K, testdata.J, testdata.L, testdata.reservedRBs, testdata.userInfos, test);
 }
 
 vector<Interval> Solver(int N, int M, int K, int J, int L,
                         vector<Interval> reservedRBs,
-                        vector<UserInfo> userInfos) {
+                        vector<UserInfo> userInfos, int test) {
 
-    auto egor_answer = Solver_egor(N, M, K, J, L, reservedRBs, userInfos);
+    auto egor_answer = Solver_Artem_grad(N, M, K, J, L, reservedRBs, userInfos);
+
+        std::ofstream out("ans_data/case_K="+to_string(K)+"/"+to_string(test)+".txt");
+    out << egor_answer.size() << endl;
+    for (int i = 0; i < egor_answer.size(); i++){
+        out << egor_answer[i].start << " " << egor_answer[i].end << endl;
+        out << egor_answer[i].users.size() << endl;
+        for (auto user_id: egor_answer[i].users ){
+            out << user_id << " ";
+        }
+        out << endl;
+    }
+    out.close();
+
     double egor_score = get_solution_score({N, M, K, J, L, reservedRBs, userInfos}, egor_answer);
     return egor_answer;
     /*auto artem_answer = Solver_Artem_grad(N, M, K, J, L, reservedRBs, userInfos);
