@@ -544,7 +544,7 @@ void recut(std::vector<Interval>& intervals, int last_k, int to){
 
 vector<vector<Interval>> Solver_artem(int N, int M, int K, int J, int L,
                                       vector<Interval> &reservedRBs,
-                                      vector<UserInfo> &userInfos, float coef
+                                      vector<UserInfo> &userInfos, float coef, float coef2 = 1.0
 ) {
     std::vector<MyInterval> free_spaces;
     {
@@ -580,7 +580,7 @@ vector<vector<Interval>> Solver_artem(int N, int M, int K, int J, int L,
         for (auto free_space: free_spaces) {
             total_free_space_size += free_space.len();
         }
-        int TARGET_LEN = total_free_space_size / J;
+        int TARGET_LEN = total_free_space_size / J * coef2;
         std::vector<int> free_spaces_seperation_starts;
         for (auto free_space: free_spaces) {
             free_spaces_seperation_starts.push_back(free_space.start);
@@ -589,9 +589,15 @@ vector<vector<Interval>> Solver_artem(int N, int M, int K, int J, int L,
             // РІС‹Р±СЂР°С‚СЊ РЅР°РёР±РѕР»СЊС€РёР№ РІРѕР·РјРѕР¶РЅС‹Р№, РѕС‚СЂРµР·Р°С‚СЊ РѕС‚ РЅРµРіРѕ РєСѓСЃРѕРє TARGET_LEN;
             int selected_index = -1;
             int selected_size = -1;
+            int selected_size_fake = -1;
             for (int i = 0; i < free_spaces.size(); i++) {
                 int current_possible_len = free_spaces[i].end - free_spaces_seperation_starts[i];
-                if (current_possible_len > selected_size) {
+                int current_size_fake = current_possible_len;
+                if  (free_spaces_seperation_starts[i] == free_spaces[i].start) {
+                    current_size_fake *= 1;
+                }
+                if (current_size_fake > selected_size_fake) {
+                    selected_size_fake = current_size_fake;
                     selected_size = current_possible_len;
                     selected_index = i;
                 }
@@ -1042,15 +1048,26 @@ vector<Interval> Solver_Artem_grad(int N, int M, int K, int J, int L,
                                    vector<UserInfo> userInfos) {
 
     vector<int> suplied(N, 0);
-    auto pre_answer = Solver_artem(N, M, K, J, L, reservedRBs, userInfos, -2.0);
-    optimize(N, M, K, J, L, reservedRBs, userInfos, pre_answer);
-    auto pre_answer2 = Solver_artem(N, M, K, J, L, reservedRBs, userInfos, 0.75);
-    optimize(N, M, K, J, L, reservedRBs, userInfos, pre_answer2);
-    auto fs = get_solution_score_light(N, pre_answer, userInfos, suplied);
-    auto ss = get_solution_score_light(N, pre_answer2, userInfos, suplied);
-    if (ss > fs) {
-        pre_answer = pre_answer2;
+    std::vector<std::vector<std::vector<Interval>>>anses;
+    anses.push_back(Solver_artem(N, M, K, J, L, reservedRBs, userInfos, -2.0));
+//    anses.push_back(Solver_artem(N, M, K, J, L, reservedRBs, userInfos, -2.0, 0.75));
+//    anses.push_back(Solver_artem(N, M, K, J, L, reservedRBs, userInfos, -2.0, 0.5));
+//    anses.push_back(Solver_artem(N, M, K, J, L, reservedRBs, userInfos, -2.0, 0.3));
+
+
+//    anses.push_back(Solver_artem(N, M, K, J, L, reservedRBs, userInfos, -2.0, 0.7));
+//    anses.push_back(Solver_artem(N, M, K, J, L, reservedRBs, userInfos, -2.0, 0.6));
+    int biggest_score = -1;
+    int biggest_index = -1;
+    for (int i = 0; i < anses.size(); i++){
+        optimize(N, M, K, J, L, reservedRBs, userInfos, anses[i]);
+        int score = get_solution_score_light(N, anses[i], userInfos, suplied);
+        if (score > biggest_score){
+            biggest_score = score;
+            biggest_index = i;
+        }
     }
+    std::vector<vector<Interval>>pre_answer = anses[biggest_index];
     vector <Interval> answer;
     for (int i = 0; i < pre_answer.size(); i++) {
         for (int g = 0; g < pre_answer[i].size(); g++) {
@@ -1229,18 +1246,18 @@ struct EgorTaskSolver {
         }
 
         // build J intervals
-        {
-            int sum_free_len = 0;
-            for (int block = 0; block < free_intervals.size(); block++) {
-                sum_free_len += free_intervals[block].len();
-            }
-            int mean_len = sum_free_len / J;
-
-            for (int j = 0; j < J; j++) {
-                intervals.push_back(SetInterval{0, mean_len, {}});
-            }
-            build_blocks();
-        }
+//        {
+//            int sum_free_len = 0;
+//            for (int block = 0; block < free_intervals.size(); block++) {
+//                sum_free_len += free_intervals[block].len();
+//            }
+//            int mean_len = sum_free_len / J;
+//
+//            for (int j = 0; j < J; j++) {
+//                intervals.push_back(SetInterval{0, mean_len, {}});
+//            }
+//            build_blocks();
+//        }
     }
 
     [[nodiscard]] vector<Interval> get_total_answer() {
@@ -2105,7 +2122,7 @@ struct EgorTaskSolver {
         }
     }
 
-    vector<Interval> annealing() {
+    vector<Interval> annealing(std::vector<Interval>start) {
         temperature = 1;
 
         {
@@ -2119,14 +2136,28 @@ struct EgorTaskSolver {
             user_brute_order = users_order;
         }
 
-        for (int i = 0; i < N; i++) {
-            user_new_interval();
+        ASSERT(intervals.empty(), "NOT EMPTY INTERVALS BAD BAD");
+        for (int i = 0; i < start.size(); i++) {
+            intervals.push_back(SetInterval{-1, start[i].end-start[i].start, {}});
         }
+        while (intervals.size() < J) {
+            intervals.push_back(SetInterval{-1, 0, {}});
+        }
+        build_blocks();
+
+        for (int i = 0; i < start.size(); i++) {
+            for (auto user_id: start[i].users) {
+                add_user_in_interval(user_id, i);
+            }
+        }
+//        for (int i = 0; i < N; i++) {
+//            user_new_interval();
+//        }
 
         //vector <Interval> answer = get_total_answer();
         //int answer_score = total_score;
 
-        constexpr int STEPS = 100'000;
+        constexpr int STEPS = 5'000;
         for (int step = 0; step < STEPS; step++) {
             temperature = (STEPS - step) * 1.0 / STEPS;
             //temperature *= 0.999999;
@@ -2214,9 +2245,9 @@ std::vector<vector<Interval>> ans_to_blocked_ans(int M, int K, const vector<Inte
 //TOTAL: tests: 1000 | score: 92.6422% | 963812/1040360 | time: 1039.86ms | max_time: 9.977ms | mean_time: 1.03986ms
 vector<Interval> Solver_egor(int N, int M, int K, int J, int L,
                              const vector<Interval> &reservedRBs,
-                             const vector<UserInfo> &userInfos) {
+                             const vector<UserInfo> &userInfos, std::vector<Interval>solution) {
     EgorTaskSolver solver(N, M, K, J, L, reservedRBs, userInfos);
-    auto answer = solver.annealing();
+    auto answer = solver.annealing(solution);
     return answer;
 }
 
@@ -2244,7 +2275,8 @@ vector<Interval> Solver(int N, int M, int K, int J, int L,
     }
     out.close();*/
 
-    auto egor_answer = Solver_egor(N, M, K, J, L, reservedRBs, userInfos);
+    auto artem_answer = Solver_Artem_grad(N, M, K, J, L, reservedRBs, userInfos);
+    auto egor_answer = Solver_egor(N, M, K, J, L, reservedRBs, userInfos, artem_answer);
 
     //double egor_score = get_solution_score(N, M, K, J, L, reservedRBs, userInfos, egor_answer);
     return egor_answer;
