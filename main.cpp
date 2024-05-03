@@ -51,14 +51,27 @@ int main() {
         string dir = "tests/case_K=" + to_string(K) + "/";
         std::vector<pair<float, int>> tests_and_scores;
         infos[K].tests = test_case_K_sizes[K];
-        for (int test = 0; test < test_case_K_sizes[K]; test++) {
+        for (int test = 0; test <  test_case_K_sizes[K]; test++) {
             ifstream input(dir + to_string(test) + ".txt");
             TestData data;
             input >> data;
 
             Timer timer;
+//            cout << test << "!" << endl;
+            auto intervals = Solver(data);
 
-            auto intervals = Solver(data, test);
+            std::ofstream out("ans_data_art/case_K="+to_string(K)+"/"+to_string(test)+".txt");
+            out << intervals.size() << endl;
+            for (int i = 0; i < intervals.size(); i++){
+                out << intervals[i].start << " " << intervals[i].end << endl;
+                out << intervals[i].users.size() << endl;
+                for (auto user_id: intervals[i].users ){
+                    out << user_id << " ";
+                }
+                out << endl;
+            }
+            out.close();
+
 
             double time = timer.get();
             infos[K].total_time += time;
@@ -118,7 +131,7 @@ int main() {
         f(CNT_CALL_REMOVE_USER_IN_INTERVAL);
         cout << "=================\n";
         g(INTERVAL_FLOW_OVER);
-        g(INTERVAL_CHANGE_LEN);
+        //g(INTERVAL_CHANGE_LEN);
         g(INTERVAL_GET_FULL_FREE_SPACE);
 
         f(CNT_CALL_INTERVAL_DO_MERGE_EQUAL);
