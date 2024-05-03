@@ -80,24 +80,22 @@ int main() {
         }
     }
 
-    cout << "{";
-    for (auto &[k, tests]: score_per_test) {
-        for (auto &[test, score]: tests) {
-            cout << "\"" << k << "_" << test << "\": " << score << ", ";
-        }
-    }
-    cout << "}" << endl;
-
     test_case_info total_info;
     for (int K = 0; K <= 4; K++) {
-        cout << "TEST CASE: K=" << K << " | " << infos[K] << endl;
         total_info.tests += infos[K].tests;
         total_info.total_score += infos[K].total_score;
         total_info.total_theory_score += infos[K].total_theory_score;
         total_info.total_time += infos[K].total_time;
         total_info.max_test_time = max(total_info.max_test_time, infos[K].max_test_time);
     }
-    cout << "TOTAL: " << total_info << endl;
+
+    /*cout << "{";
+    for (auto &[k, tests]: score_per_test) {
+        for (auto &[test, score]: tests) {
+            cout << "\"" << k << "_" << test << "\": " << score << ", ";
+        }
+    }
+    cout << "}" << endl;*/
 
     {
         cout << "EGOR TASK SOLVER STATISTIC:\n";
@@ -105,7 +103,6 @@ int main() {
 #define CAT_IMPL(string1, string2) string1##string2
 
 #define CAT(string1, string2) CAT_IMPL(string1, string2)
-
 
 #define f(x) cout << #x ": " << x / 1000.0 << '\n';
 #define g(x) cout << #x ": " << CAT(CNT_ACCEPTED_, x) * 100.0 / CAT(CNT_CALL_, x) << "% " << CAT(CNT_ACCEPTED_, x) / 1000 << "/" << CAT(CNT_CALL_, x) / 1000 << '\n';
@@ -143,5 +140,15 @@ int main() {
         cout << "=================\n";
         cout << "TIME_ACCUM: " << TimeAccumWrapper::time_accum * 1000 << "ms " << TimeAccumWrapper::time_accum * 100 / total_info.total_time << "% counter: " << TimeAccumWrapper::counter << "\n";
         cout.flush();
+
+#undef CAT_IMPL
+#undef CAT
+#undef f
+#undef g
     }
+
+    for (int K = 0; K <= 4; K++) {
+        cout << "TEST CASE: K=" << K << " | " << infos[K] << endl;
+    }
+    cout << "TOTAL: " << total_info << endl;
 }
