@@ -127,6 +127,7 @@ int main() {
         f(CNT_CALL_INTERVAL_DO_SPLIT);
 
         g(INTERVAL_MERGE_EQUAL);
+        g(INTERVAL_SPLIT);
 
         cout << "=================\n";
         g(USER_NEW_INTERVAL);
