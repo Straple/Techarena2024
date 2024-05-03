@@ -1810,25 +1810,17 @@ struct EgorTaskSolver {
         u = ips[rnd.get(0, ips.size() - 1)]; \
     }
 
-    // удаляет старые интервалы,
-    // добавляет лучший новый
     void user_new_interval() {
-
         CNT_CALL_USER_NEW_INTERVAL++;
-        vector<int> removed;
 
         int u = users_order[current_user];//rnd.get(0, N - 1);
         current_user = (current_user + 1) % N;
 
-        int old_score = total_score;
-
-        total_score -= users_info[u].calc_score();
+        int user_left = get_left_user(u);
+        int user_right = get_right_user(u);
 
         bool okay[16];
         for (int i = 0; i < J; i++) {
-            if(intervals[i].users.contains(u)) {
-                removed.push_back(i);
-            }
             okay[i] = intervals[i].users.contains(u) ||     // либо мы уже здесь стоим
                       (intervals[i].users.size() + 1 <= L &&// либо мы можем сюда поставить
                        ((intervals[i].beam_msk >> users_info[u].beam) & 1) == 0);
@@ -1852,7 +1844,7 @@ struct EgorTaskSolver {
                 sum_len += intervals[right].len;
 
                 int cur_f = f(sum_len);
-                if (cur_f < best_f) {
+                if (cur_f < best_f && !(user_left == left && user_right == right)) {
                     best_f = cur_f;
                     best_sum_len = sum_len;
                     best_left = left;
@@ -1861,26 +1853,28 @@ struct EgorTaskSolver {
             }
         }
 
+        ASSERT(user_left == -1 || !(best_left == user_left && best_right == user_right), "failed get best");
+
         if (best_left == -1) {
-            total_score += users_info[u].calc_score();
-            ASSERT(old_score == total_score, "failed back score");
             return;
         }
 
+        int old_score = total_score;
+
+        total_score -= users_info[u].calc_score();
         swap(users_info[u].sum_len, best_sum_len);
         total_score += users_info[u].calc_score();
         swap(users_info[u].sum_len, best_sum_len);
-        //for (int i = best_left; i <= best_right; i++) {
-        //    add_user_in_interval(u, i);
-        //}
 
         if (is_good(old_score)) {
             CNT_ACCEPTED_USER_NEW_INTERVAL++;
             int nice_score = total_score;
             total_score = old_score;
 
-            for (int i: removed) {
-                remove_user_in_interval(u, i);
+            if(user_left != -1) {
+                for (int i = user_left; i <= user_right; i++) {
+                    remove_user_in_interval(u, i);
+                }
             }
             for (int i = best_left; i <= best_right; i++) {
                 add_user_in_interval(u, i);
@@ -1891,6 +1885,8 @@ struct EgorTaskSolver {
             total_score = old_score;
         }
 
+        /// old version
+        /// must too slow
         /*CNT_CALL_USER_NEW_INTERVAL++;
         vector<int> removed;
 
