@@ -282,18 +282,6 @@ void train_egor_task_solver() {
 }
 
 int main() {
-    /*for(int i = 0; i < 12; i++){
-        for(int j =0 ; j  <12;j++){
-            cout << cnt_edges[i][j] << ' ';
-        }
-        cout << '\n';
-    }
-    cout << endl;*/
-
-    //train_egor_task_solver();
-    //return 0;
-
-
     /*MyBitSet<1024> s;
     s.insert(63);
     s.insert(64);
@@ -332,8 +320,20 @@ int main() {
             input >> data;
 
             Timer timer;
-
+//            cout << test << "!" << endl;
             auto intervals = Solver(data);
+
+            std::ofstream out("ans_data_art/case_K="+to_string(K)+"/"+to_string(test)+".txt");
+            out << intervals.size() << endl;
+            for (int i = 0; i < intervals.size(); i++){
+                out << intervals[i].start << " " << intervals[i].end << endl;
+                out << intervals[i].users.size() << endl;
+                for (auto user_id: intervals[i].users ){
+                    out << user_id << " ";
+                }
+                out << endl;
+            }
+            out.close();
 
             double time = timer.get();
             infos[K].total_time += time;
@@ -363,7 +363,6 @@ int main() {
         total_info.total_time += infos[K].total_time;
         total_info.max_test_time = max(total_info.max_test_time, infos[K].max_test_time);
     }
-
     /*cout << "{";
     for (auto &[k, tests]: score_per_test) {
         for (auto &[test, score]: tests) {
