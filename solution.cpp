@@ -43,7 +43,7 @@ int CNT_ACCEPTED_USER_SWAP = 0;
 #include <iostream>
 
 ///////// !!!
-//#define MY_DEBUG_MODE
+#define MY_DEBUG_MODE
 ///////// !!!
 
 #ifdef MY_DEBUG_MODE
@@ -503,7 +503,7 @@ SelectionRandomizer EGOR_TASK_SOLVER_SELECTION_USER_OR_INTERVAL_ACTION = std::ve
         {0, 9},
         {1, 11},
 };
-int STEPS = 700;
+int STEPS = 10'000;
 
 // TIME: 2336s
 //score: 94.21
@@ -1356,6 +1356,8 @@ vector<Interval> Solver_Artem_grad(int N, int M, int K, int J, int L,
     return answer;
 }
 
+int THEORY_MAX_SCORE = 1e9;
+
 int cnt_edges[12][12];
 int cnt_good_edges[12][12];
 int prev_action = -1;
@@ -1426,7 +1428,6 @@ struct EgorTaskSolver {
     };
 
     MyUserInfo users_info[128];
-    int theor_max;
 
     int user_id_to_u[128];
 
@@ -1466,8 +1467,6 @@ struct EgorTaskSolver {
     EgorTaskSolver(int NN, int MM, int KK, int JJ, int LL,
                    const vector<Interval> &reservedRBs,
                    const vector<UserInfo> &userInfos) : N(NN), M(MM), K(KK), J(JJ), L(LL) {
-
-        theor_max = get_theory_max_score(N, M, K, J, L, reservedRBs, userInfos);
 
         ASSERT(2 <= L && L <= 16, "kek");
         ASSERT(0 < J && J <= 16, "hoho");
@@ -2104,7 +2103,6 @@ struct EgorTaskSolver {
     }                \
     }
 
-    // 0
     void user_new_interval() {
         CNT_CALL_USER_NEW_INTERVAL++;
 
@@ -2261,7 +2259,6 @@ struct EgorTaskSolver {
         }*/
     }
 
-    // 1
     void user_add_left() {
         CNT_CALL_USER_ADD_LEFT++;
 
@@ -2286,7 +2283,6 @@ struct EgorTaskSolver {
         USER_FOR_END
     }
 
-    // 2
     void user_add_right() {
         CNT_CALL_USER_ADD_RIGHT++;
 
@@ -2329,7 +2325,6 @@ struct EgorTaskSolver {
         }*/
     }
 
-    // 3
     void user_remove_left() {
         CNT_CALL_USER_REMOVE_LEFT++;
 
@@ -2364,7 +2359,6 @@ struct EgorTaskSolver {
         }*/
     }
 
-    // 4
     void user_remove_right() {
         CNT_CALL_USER_REMOVE_RIGHT++;
 
@@ -2410,7 +2404,6 @@ struct EgorTaskSolver {
         total_score += users_info[u].calc_score() + users_info[u2].calc_score();
     }
 
-    // 5
     void user_swap() {
         for (int beam = 0; beam < 32; beam++) {
             // (sum_len, u)
@@ -2488,7 +2481,6 @@ struct EgorTaskSolver {
     }
 
     // обрезает отрезок юзера до содержащегося только в одном блоке
-    // 6
     void user_crop() {
         CNT_CALL_USER_CROP++;
 
@@ -2674,15 +2666,15 @@ struct EgorTaskSolver {
         for (int step = 0; step < STEPS; step++) {
             temperature = (STEPS - step) * 1.0 / STEPS;
             //temperature *= 0.999999;
-            if (total_score == theor_max) {
-                break;
-            }
 
             ASSERT(STEPS % 10 == 0 && STEPS != 0, "invalid STEPS");
-            if (step != 0 && step % (STEPS / 10) == 0) {
-                //94.5985% | 977868/1033704
+            if (step != 0 && step % (STEPS / 9) == 0) {
                 for (int u = 0; u < N; u++) {
                     user_do_crop(u);
+                }
+
+                if (total_score >= THEORY_MAX_SCORE) {
+                    return get_total_answer();
                 }
 
                 //ASSERT(intervals.size() == J, "invalid intervals");
@@ -2784,17 +2776,16 @@ vector<Interval> Solver(const TestData &testdata) {
 vector<Interval> Solver(int N, int M, int K, int J, int L,
                         vector<Interval> reservedRBs,
                         vector<UserInfo> userInfos) {
+    // INITIALLY CALC THEORY MAX SCORE
+    THEORY_MAX_SCORE = get_theory_max_score(N, M, K, J, L, reservedRBs, userInfos);
 
-    //    return Solver_egor(N, M, K, J, L, reservedRBs, userInfos, {});
-    auto theor_max = get_theory_max_score(N, M, K, J, L, reservedRBs, userInfos);
     auto artem_answer = Solver_Artem_grad(N, M, K, J, L, reservedRBs, userInfos);
     auto artem_score = get_solution_score(N, M, K, J, L, reservedRBs, userInfos, artem_answer);
-    //    cout << artem_score << " " << theor_max << endl;
-    ASSERT(theor_max >= artem_score, "WA THEORMAX");
-    if (theor_max <= artem_score) {
-        //        cerr << "MAX_SCORE" << endl;
+    ASSERT(THEORY_MAX_SCORE >= artem_score, "WA THEORMAX");
+    if (THEORY_MAX_SCORE <= artem_score) {
         return artem_answer;
     }
+
     auto egor_answer = Solver_egor(N, M, K, J, L, reservedRBs, userInfos, artem_answer);
     auto get_egor_blocked = ans_to_blocked_ans(M, K, reservedRBs, egor_answer);
     optimize(N, M, K, J, L, reservedRBs, userInfos, get_egor_blocked);
@@ -2807,27 +2798,11 @@ vector<Interval> Solver(int N, int M, int K, int J, int L,
             }
         }
     }
-    //
-    //    return egor_answer;
     auto egor_score = get_solution_score(N, M, K, J, L, reservedRBs, userInfos, egor_answer);
 
     if (egor_score > artem_score) {
-        //        cout << "EGOR BETTER" << endl;
-        //        if (egor_score == theor_max){
-        //            cout << "EGOR IS THE BEST" << endl;
-        //        }
         return egor_answer;
     } else {
         return artem_answer;
     }
-    //    double artem_score = get_solution_score({N, M, K, J, L, reservedRBs, userInfos}, artem_answer);
-    //
-    //    auto egor_answer = Solver_egor(N, M, K, J, L, reservedRBs, userInfos);
-    //    double egor_score = get_solution_score({N, M, K, J, L, reservedRBs, userInfos}, egor_answer);
-    //
-    //    if (artem_score > egor_score) {
-    //        return artem_answer;
-    //    } else {
-    //        return egor_answer;
-    //    }
 }
