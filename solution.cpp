@@ -1553,6 +1553,54 @@ struct EgorTaskSolver {
     void interval_flow_over() {
         CNT_CALL_INTERVAL_FLOW_OVER++;
 
+        CHOOSE_INTERVAL(interval + 1 < J && intervals[interval].block != -1 && intervals[interval].block == intervals[interval + 1].block);
+
+        int change = rnd.get(-intervals[interval].len, intervals[interval + 1].len);
+
+        int old_score = total_score;
+
+        int old_len = intervals[interval].len + intervals[interval + 1].len;
+
+        intervals[interval].len += change;
+        intervals[interval + 1].len -= change;
+        for (int u: intervals[interval].users) {
+            total_score -= users_info[u].calc_score();
+            users_info[u].sum_len += change;
+            total_score += users_info[u].calc_score();
+        }
+        for (int u: intervals[interval + 1].users) {
+            total_score -= users_info[u].calc_score();
+            users_info[u].sum_len -= change;
+            total_score += users_info[u].calc_score();
+        }
+
+        ASSERT(intervals[interval].len >= 0 && intervals[interval + 1].len >= 0, "negative len");
+
+        if (is_good(old_score)) {
+            CNT_ACCEPTED_INTERVAL_FLOW_OVER++;
+        } else {
+            intervals[interval].len -= change;
+            intervals[interval + 1].len += change;
+            for (int u: intervals[interval].users) {
+                total_score -= users_info[u].calc_score();
+                users_info[u].sum_len -= change;
+                total_score += users_info[u].calc_score();
+            }
+            for (int u: intervals[interval + 1].users) {
+                total_score -= users_info[u].calc_score();
+                users_info[u].sum_len += change;
+                total_score += users_info[u].calc_score();
+            }
+
+            ASSERT(old_score == total_score, "failed back score");
+            ASSERT(intervals[interval].len >= 0 && intervals[interval + 1].len >= 0, "negative len");
+            ASSERT(intervals[interval].len + intervals[interval + 1].len == old_len, "negative len");
+        }
+
+        // old version
+        // must too slow
+        /*CNT_CALL_INTERVAL_FLOW_OVER++;
+
         CHOOSE_INTERVAL(interval + 1 < J);
 
         int change = rnd.get(-intervals[interval].len, intervals[interval + 1].len);
@@ -1578,7 +1626,7 @@ struct EgorTaskSolver {
                 change_interval_len(interval, -change);
             }
             ASSERT(old_score == total_score, "failed back score");
-        }
+        }*/
     }
 
     void interval_increase_len() {
@@ -1811,7 +1859,7 @@ struct EgorTaskSolver {
     }
 
     void user_new_interval() {
-        CNT_CALL_USER_NEW_INTERVAL++;
+        /*CNT_CALL_USER_NEW_INTERVAL++;
 
         int u = users_order[current_user];//rnd.get(0, N - 1);
         current_user = (current_user + 1) % N;
@@ -1871,7 +1919,7 @@ struct EgorTaskSolver {
             int nice_score = total_score;
             total_score = old_score;
 
-            if(user_left != -1) {
+            if (user_left != -1) {
                 for (int i = user_left; i <= user_right; i++) {
                     remove_user_in_interval(u, i);
                 }
@@ -1883,11 +1931,11 @@ struct EgorTaskSolver {
 
         } else {
             total_score = old_score;
-        }
+        }*/
 
         /// old version
         /// must too slow
-        /*CNT_CALL_USER_NEW_INTERVAL++;
+        CNT_CALL_USER_NEW_INTERVAL++;
         vector<int> removed;
 
         int u = users_order[current_user];//rnd.get(0, N - 1);
@@ -1964,7 +2012,7 @@ struct EgorTaskSolver {
             ASSERT(get_left_user(u) == users_info[u].left, "failed left");
             ASSERT(get_right_user(u) == users_info[u].right, "failed right");
             ASSERT(old_score == total_score, "failed back score");
-        }*/
+        }
     }
 
     void user_add_left() {
