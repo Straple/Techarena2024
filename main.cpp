@@ -51,7 +51,7 @@ int main() {
         string dir = "tests/case_K=" + to_string(K) + "/";
         std::vector<pair<float, int>> tests_and_scores;
         infos[K].tests = test_case_K_sizes[K];
-        for (int test = 0; test <  test_case_K_sizes[K]; test++) {
+        for (int test = 0; test < test_case_K_sizes[K]; test++) {
             ifstream input(dir + to_string(test) + ".txt");
             TestData data;
             input >> data;
@@ -71,7 +71,6 @@ int main() {
                 out << endl;
             }
             out.close();
-
 
             double time = timer.get();
             infos[K].total_time += time;
@@ -131,13 +130,15 @@ int main() {
         f(CNT_CALL_REMOVE_USER_IN_INTERVAL);
         cout << "=================\n";
         g(INTERVAL_FLOW_OVER);
-        //g(INTERVAL_CHANGE_LEN);
+        g(INTERVAL_INCREASE_LEN);
+        g(INTERVAL_DECREASE_LEN);
         g(INTERVAL_GET_FULL_FREE_SPACE);
 
         f(CNT_CALL_INTERVAL_DO_MERGE_EQUAL);
         f(CNT_CALL_INTERVAL_DO_SPLIT);
 
         g(INTERVAL_MERGE_EQUAL);
+        g(INTERVAL_SPLIT);
 
         cout << "=================\n";
         g(USER_NEW_INTERVAL);
@@ -150,6 +151,8 @@ int main() {
 
         g(USER_CROP);
         g(USER_SWAP);
+        cout << "=================\n";
+        cout << "TIME_ACCUM: " << TimeAccumWrapper::time_accum * 1000 << "ms " << TimeAccumWrapper::time_accum * 100 / total_info.total_time << "% counter: " << TimeAccumWrapper::counter << "\n";
         cout.flush();
     }
 }
