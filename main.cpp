@@ -282,6 +282,8 @@ void train_egor_task_solver() {
 }
 
 int main() {
+    //train_egor_task_solver();
+    //return 0;
     //auto egor_answer = Solver_egor(N, M, K, J, L, reservedRBs, userInfos, artem_answer)
     //EgorTaskSolver solver(1, 10, 1, 1, 2, vector<Interval>{Interval{3, 5, {}}}, vector<UserInfo>{{4, 1, 0}}, {});
     //solver.change_interval_len(0, 3);

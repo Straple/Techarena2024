@@ -43,7 +43,7 @@ int CNT_ACCEPTED_USER_SWAP = 0;
 #include <iostream>
 
 ///////// !!!
-#define MY_DEBUG_MODE
+//#define MY_DEBUG_MODE
 ///////// !!!
 
 #ifdef MY_DEBUG_MODE
@@ -498,12 +498,12 @@ public:
 
 SelectionRandomizer EGOR_TASK_SOLVER_SELECTION_USER_ACTION = std::vector<std::pair<int, int>>{
         {0, 27},
-        {1, 1}, // 0
-        {2, 3}, // 1
-        {3, 3}, // 1
-        {4, 1}, // 0
-        {5, 12},// 9
-        {6, 6}, // 3
+        {1, 0},
+        {2, 1},
+        {3, 1},
+        {4, 0},
+        {5, 9},
+        {6, 3},
 };
 SelectionRandomizer EGOR_TASK_SOLVER_SELECTION_INTERVAL_ACTION = std::vector<std::pair<int, int>>{
         {0, 12},
@@ -589,7 +589,7 @@ struct TestData {
 int get_theory_max_score(int N, int M, int K, int J, int L, const vector<Interval> &reservedRBs,
                          const vector<UserInfo> &userInfos) {
     int max_score = 0;
-    std::vector<int> rbNeeded;
+    std::vector<pair<int, int>> rbNeeded;
     std::vector<pair<int, int>>
             reserved;
     for (int i = 0; i < K; i++) {
@@ -604,11 +604,37 @@ int get_theory_max_score(int N, int M, int K, int J, int L, const vector<Interva
         max_res_len = max(max_res_len, reserved[i].first - reserved[i - 1].second);
     }
     for (auto user: userInfos) {
-        rbNeeded.push_back(min(user.rbNeed, max_res_len));
+        rbNeeded.push_back({min(user.rbNeed, max_res_len), user.beam});
     }
     sort(rbNeeded.begin(), rbNeeded.end(), greater<>());
-    for (int i = 0; i < min(N, J * L); i++) {
-        max_score += rbNeeded[i];
+    int taken = 0;
+    map<int, int> beams_taken;
+    map<int, int> len_per_beam;
+    for (int i = 0; i < N; i++) {
+        len_per_beam[userInfos[i].beam] += userInfos[i].rbNeed;
+    }
+    int ma_len_uniq_beam = 0;
+    int sum_res_len = 0;
+    for (const auto &reserved: reservedRBs) {
+        sum_res_len += reserved.end - reserved.start;
+    }
+
+    for (auto [beam, len]: len_per_beam) {
+        ma_len_uniq_beam += min(len, M - sum_res_len);
+    }
+
+    for (int i = 0; i < N; i++) {
+        beams_taken[rbNeeded[i].second]++;
+        if (beams_taken[rbNeeded[i].second] == (J - 1) * L) {
+            continue;
+        }
+        //1033704
+        //1033702
+        max_score += rbNeeded[i].first;
+        taken++;
+        if (taken == J * L) {
+            break;
+        }
     }
 
     int max_possible = M * L;
@@ -616,7 +642,7 @@ int get_theory_max_score(int N, int M, int K, int J, int L, const vector<Interva
         max_possible -= (reserved.end - reserved.start) * L;
     }
 
-    return min(max_score, max_possible);
+    return min(min(max_score, max_possible), ma_len_uniq_beam);
 }
 
 int get_theory_max_score(const TestData &data) {
@@ -1398,7 +1424,7 @@ struct EgorTaskSolver {
 
     int total_score = 0;
 
-    int current_user = -1;
+    //int current_user = -1;
 
     struct SetInterval {
         // position
@@ -1585,7 +1611,7 @@ struct EgorTaskSolver {
         }
 
         {
-            current_user = 0;
+            //current_user = 0;
             for (int u = 0; u < N; u++) {
                 users_order[u] = u;
             }
@@ -1642,22 +1668,22 @@ struct EgorTaskSolver {
                 start += intervals[i].len;
             }
         }
-
-        /*for (int block = 0; block < intervals.size(); block++) {
-            int start = free_intervals[block].start;
-            for (int interval = 0; interval < intervals[block].size(); interval++) {
-                if (intervals[block][interval].end != 0 && !intervals[block][interval].users.empty()) {
-                    answer.push_back({intervals[block][interval].start, intervals[block][interval].end, {}});
-                    for (int u: intervals[block][interval].users) {
-                        answer.back().users.push_back(u);
-                    }
-                    answer.back().start = start;
-                    answer.back().end += start;
-                    start = answer.back().end;
-                }
-            }
-        }*/
         return answer;
+    }
+
+    [[nodiscard]] vector<Interval> get_answer_but_no_changes() {
+        int stack_iterator = actions.size();
+
+        for (int u = 0; u < N; u++) {
+            user_do_crop(u);
+        }
+
+        auto ans = get_total_answer();
+
+        while (actions.size() > stack_iterator) {
+            rollback();
+        }
+        return ans;
     }
 
     ///===========================
@@ -1666,7 +1692,7 @@ struct EgorTaskSolver {
 
     int get_left_user(int u) {
         //#ifndef MY_DEBUG_MODE
-        //return users_info[u].left;
+        return users_info[u].left;
         //#endif
         CNT_CALL_GET_LEFT_USER++;
         for (int i = 0; i < J; i++) {
@@ -1681,7 +1707,7 @@ struct EgorTaskSolver {
 
     int get_right_user(int u) {
         //#ifndef MY_DEBUG_MODE
-        //return users_info[u].right;
+        return users_info[u].right;
         //#endif
         CNT_CALL_GET_RIGHT_USER++;
         for (int i = J - 1; i >= 0; i--) {
@@ -2411,8 +2437,8 @@ struct EgorTaskSolver {
         /// must too slow
         CNT_CALL_USER_NEW_INTERVAL++;
 
-        int u = users_order[current_user];//rnd.get(0, N - 1);
-        current_user = (current_user + 1) % N;
+        int u = rnd.get(0, N - 1);//users_order[current_user];//
+        //current_user = (current_user + 1) % N;
         int user_left = get_left_user(u);
         int user_right = get_right_user(u);
 
