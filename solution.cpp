@@ -751,7 +751,7 @@ class Snapshoter{
 public:
     std::string name;
     int theor_max;
-    std::string write_directory;
+    std::string _write_directory;
     int frame = 0;
     bool init = false;
     std::vector<string>frame_names;
@@ -762,8 +762,8 @@ public:
     Snapshoter(int K, int test, int theor_max,TestData test_data, std::string name = "solution_snapshots"): name(name),theor_max(theor_max), test_data(test_data){
         fs::create_directory("movies_data");
         fs::create_directory("movies_data/"+name);
-        write_directory = "movies_data/"+name+"/" + to_string(K)+"_"+to_string(test)+"/";
-        fs::create_directory(write_directory);
+        _write_directory = "movies_data/"+name+"/" + to_string(K)+"_"+to_string(test)+"/";
+        fs::create_directory(_write_directory);
         init = true;
     }
     void write(const std::vector<std::vector<Interval>>&intervals, const string& frame_name = "") {
@@ -803,7 +803,7 @@ public:
             score = get_solution_score(test_data, intervals);
         }
         scores.push_back(score);
-        std::ofstream out(write_directory + to_string(frame) + ".txt");
+        std::ofstream out(_write_directory + to_string(frame) + ".txt");
         out << intervals.size() << endl;
         for (int i = 0; i < intervals.size(); i++) {
             out << intervals[i].start << " " << intervals[i].end << endl;
@@ -814,11 +814,12 @@ public:
             out << endl;
         }
         out.close();
+        cout << "UPDATING FRAME: " << frame << endl;
         frame++;
     }
     ~Snapshoter() {
         if (!init) return;
-        std::ofstream out(write_directory + "data" + ".txt");
+        std::ofstream out(_write_directory + "data" + ".txt");
         out << "{" << endl;
         out << "\"theor_max\": " << theor_max << "," << endl;
         out << "\"frames\": " << frame  << ","<< endl;
@@ -831,9 +832,9 @@ public:
         }
         out << "]" << "," << endl;
         out << "\"scores\": [";
-        for (int i = 0; i < frame_names.size(); i++) {
-            out << "\"" + frame_names[i] << "\"";
-            if (i+1 != frame_names.size()) {
+        for (int i = 0; i < scores.size(); i++) {
+            out << "\"" + to_string(scores[i]) << "\"";
+            if (i+1 != scores.size()) {
                 out << ",";
             }
         }
@@ -3040,6 +3041,7 @@ struct EgorTaskSolver {
         //USER_SWAP: 50.0409% 77172/154217
 
         for (int step = 0; step < STEPS; step++) {
+            SNAP(snapshoter.write(get_answer_but_no_changes(), "annealing"));
             temperature = (STEPS - step) * 1.0 / STEPS;
             //temperature *= 0.999999;
 
