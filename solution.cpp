@@ -852,7 +852,6 @@ Snapshoter snapshoter;
 #define SNAP(x)
 #endif
 
-
 int BEAM_MAX_AMOUNT = 32;
 
 int get_blocks_amount(int M, vector<Interval> reservedRBs) {
