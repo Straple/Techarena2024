@@ -519,7 +519,7 @@ SelectionRandomizer EGOR_TASK_SOLVER_SELECTION_USER_OR_INTERVAL_ACTION = std::ve
         {0, 9},
         {1, 11},
 };
-int STEPS = 100'000;
+int STEPS = 800;
 
 // TIME: 2336s
 //score: 94.21
@@ -747,7 +747,7 @@ int get_solution_score(const TestData &testdata, const vector<Interval> &answer)
                               testdata.userInfos, answer);
 }
 
-class Snapshooter{
+class Snapshoter{
 public:
     std::string name;
     int theor_max;
@@ -755,11 +755,11 @@ public:
     int frame = 0;
     bool init = false;
     std::vector<string>frame_names;
-    Snapshooter(){}
+    Snapshoter(){}
     std::vector<Interval>last_intervals;
     std::vector<int>scores;
     TestData test_data;
-    Snapshooter(int K, int test, int theor_max,TestData test_data, std::string name = "solution_snapshots"): name(name),theor_max(theor_max), test_data(test_data){
+    Snapshoter(int K, int test, int theor_max,TestData test_data, std::string name = "solution_snapshots"): name(name),theor_max(theor_max), test_data(test_data){
         fs::create_directory("movies_data");
         fs::create_directory("movies_data/"+name);
         write_directory = "movies_data/"+name+"/" + to_string(K)+"_"+to_string(test)+"/";
@@ -773,6 +773,7 @@ public:
         sort(intervals.begin(), intervals.end(), [&](const auto& lhs, const auto& rhs){
             return lhs.start < rhs.start;
         });
+
         if (last_intervals.size() == 0) return false;
         if (last_intervals.size() != intervals.size()) return false;
         for (int i = 0; i < last_intervals.size(); i++) {
@@ -791,8 +792,6 @@ public:
     }
 
     void write(const std::vector<Interval>&intervals, const string& frame_name = "", int custom_score = -1) {
-
-        last_intervals = intervals;
         if (same_as_last(intervals)) return;
         last_intervals = intervals;
 
@@ -817,7 +816,7 @@ public:
         out.close();
         frame++;
     }
-    ~Snapshooter() {
+    ~Snapshoter() {
         if (!init) return;
         std::ofstream out(write_directory + "data" + ".txt");
         out << "{" << endl;
@@ -843,7 +842,15 @@ public:
         out.close();
     }
 };
-Snapshooter snapshooter;
+Snapshoter snapshoter;
+
+#define ENABLE_SNAPSHOT
+
+#ifdef ENABLE_SNAPSHOT
+#define SNAP(x) x
+#else
+#define SNAP(x)
+#endif
 
 
 int BEAM_MAX_AMOUNT = 32;
@@ -1012,6 +1019,7 @@ vector<vector<Interval>> Solver_artem(int N, int M, int K, int J, int L,
         int space_left = space_left_q.begin()->first;
         int pick_i = space_left_q.begin()->second;
         space_left_q.erase(space_left_q.begin());
+        SNAP(snapshoter.write(pre_answer, "greedy"));
         // СЋР·Р°РµРј OWNEDBY РґРѕ РєРѕРЅС†Р°!!!
         // СЃС‡РёС‚Р°РµРј РєРѕР»-РІРѕ СЃРІРѕР±РѕРґРЅС‹С… СЃР»РѕС‚РѕРІ.
 
@@ -1196,6 +1204,8 @@ vector<vector<Interval>> Solver_artem(int N, int M, int K, int J, int L,
                         get_more--;
                     }
                 }
+                SNAP(snapshoter.write(pre_answer, "moving border"));
+
             }
         }
 
@@ -1203,6 +1213,7 @@ vector<vector<Interval>> Solver_artem(int N, int M, int K, int J, int L,
             rbSuplied[user_id] += pre_answer[pick_i][current_sub_interval[pick_i]].end -
                                   pre_answer[pick_i][current_sub_interval[pick_i]].start;
             pre_answer[pick_i][current_sub_interval[pick_i]].users.push_back(user_id);
+            SNAP(snapshoter.write(pre_answer, "adding user " + to_string(user_id)));
             if (rbSuplied[user_id] >= userInfos[user_id].rbNeed) {
                 to_delete.insert(user_id);
             }
