@@ -309,7 +309,7 @@ int main() {
     return 0;*/
     test_case_info infos[5];
     map<int, map<int, int>> score_per_test;
-    for (int K = 0; K <= 4; K++) {
+    for (int K = 1; K <= 1; K++) {
         cout << "TEST CASE: K=" << K << endl;
         string dir = "tests/case_K=" + to_string(K) + "/";
         std::vector<pair<float, int>> tests_and_scores;
