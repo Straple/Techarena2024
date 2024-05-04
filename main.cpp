@@ -16,7 +16,7 @@ ostream &operator<<(ostream &output, const test_case_info &info) {
                   << "ms | max_time: " << 1000 * info.max_test_time << "ms | mean_time: "
                   << 1000 * info.total_time / max(1, info.tests) << "ms";
 }
-
+extern Snapshooter snapshooter;
 int main() {
     /*MyBitSet<1024> s;
     s.insert(63);
@@ -46,31 +46,31 @@ int main() {
     test_case_info infos[5];
     map<int, map<int, int>> score_per_test;
     constexpr int test_case_K_sizes[] = {666, 215, 80, 39, 0};
-    for (int K = 0; K <= 4; K++) {
+    for (int K = 1; K <= 1; K++) {
         cout << "TEST CASE: K=" << K << endl;
         string dir = "tests/case_K=" + to_string(K) + "/";
         std::vector<pair<float, int>> tests_and_scores;
         infos[K].tests = test_case_K_sizes[K];
-        for (int test = 0; test < test_case_K_sizes[K]; test++) {
+        for (int test = 60; test < 61; test++) {
             ifstream input(dir + to_string(test) + ".txt");
             TestData data;
             input >> data;
-
             Timer timer;
-//            cout << test << "!" << endl;
+            int theor_max = get_theory_max_score(data);
+            snapshooter = Snapshooter(K,test,theor_max ,data,"basic_solve");
             auto intervals = Solver(data);
 
-            std::ofstream out("ans_data_art/case_K="+to_string(K)+"/"+to_string(test)+".txt");
-            out << intervals.size() << endl;
-            for (int i = 0; i < intervals.size(); i++){
-                out << intervals[i].start << " " << intervals[i].end << endl;
-                out << intervals[i].users.size() << endl;
-                for (auto user_id: intervals[i].users ){
-                    out << user_id << " ";
-                }
-                out << endl;
-            }
-            out.close();
+//            std::ofstream out("ans_data_art/case_K="+to_string(K)+"/"+to_string(test)+".txt");
+//            out << intervals.size() << endl;
+//            for (int i = 0; i < intervals.size(); i++){
+//                out << intervals[i].start << " " << intervals[i].end << endl;
+//                out << intervals[i].users.size() << endl;
+//                for (auto user_id: intervals[i].users ){
+//                    out << user_id << " ";
+//                }
+//                out << endl;
+//            }
+//            out.close();
 
             double time = timer.get();
             infos[K].total_time += time;
@@ -80,7 +80,6 @@ int main() {
             score_per_test[K][test] = score;
 
             infos[K].total_score += score;
-            int theor_max = get_theory_max_score(data);
             infos[K].total_theory_score += theor_max;
 
             //cout << score <<  " _ " <<  get_theory_max_score(data) << endl;
