@@ -502,7 +502,7 @@ SelectionRandomizer EGOR_TASK_SOLVER_SELECTION_USER_ACTION = std::vector<std::pa
         {2, 3}, // 1
         {3, 3}, // 1
         {4, 1}, // 0
-        {5, 12}, // 9
+        {5, 12},// 9
         {6, 6}, // 3
 };
 SelectionRandomizer EGOR_TASK_SOLVER_SELECTION_INTERVAL_ACTION = std::vector<std::pair<int, int>>{
@@ -1431,14 +1431,21 @@ struct EgorTaskSolver {
         // score
         int sum_len = 0;
 
-        int calc_score() const {
+        /*int calc_score() const {
             if (sum_len > rbNeed) {
                 return rbNeed;
             } else {
                 return sum_len;
             }
-        }
+        }*/
     };
+
+    int user_score(int u) {
+        ASSERT(0 <= u && u < N, "invalid u");
+        int len = users_info[u].sum_len;
+        int rbNeed = users_info[u].rbNeed;
+        return min(len, rbNeed);
+    }
 
     MyUserInfo users_info[128];
 
@@ -1702,17 +1709,17 @@ struct EgorTaskSolver {
             old_first_bad_block--;
 
             for (int u: intervals[old_first_bad_block].users) {
-                total_score -= users_info[u].calc_score();
+                total_score -= user_score(u);
                 users_info[u].sum_len -= intervals[old_first_bad_block].len;
-                total_score += users_info[u].calc_score();
+                total_score += user_score(u);
             }
         }
 
         while (old_first_bad_block < J && intervals[old_first_bad_block].block != -1) {
             for (int u: intervals[old_first_bad_block].users) {
-                total_score -= users_info[u].calc_score();
+                total_score -= user_score(u);
                 users_info[u].sum_len += intervals[old_first_bad_block].len;
-                total_score += users_info[u].calc_score();
+                total_score += user_score(u);
             }
 
             old_first_bad_block++;
@@ -1724,9 +1731,9 @@ struct EgorTaskSolver {
 
         if (block != -1) {
             for (int u: users) {
-                total_score -= users_info[u].calc_score();
+                total_score -= user_score(u);
                 users_info[u].sum_len += change;
-                total_score += users_info[u].calc_score();
+                total_score += user_score(u);
             }
         }
 
@@ -1763,9 +1770,9 @@ struct EgorTaskSolver {
         ASSERT(user.right == get_right_user(u), "failed right");
 
         if (interval.block != -1) {
-            total_score -= user.calc_score();
+            total_score -= user_score(u);
             user.sum_len += interval.len;
-            total_score += user.calc_score();
+            total_score += user_score(u);
         }
     }
 
@@ -1797,9 +1804,9 @@ struct EgorTaskSolver {
         ASSERT(user.right == get_right_user(u), "failed right");
 
         if (interval.block != -1) {
-            total_score -= user.calc_score();
+            total_score -= user_score(u);
             user.sum_len -= interval.len;
-            total_score += user.calc_score();
+            total_score += user_score(u);
         }
     }
 
@@ -2076,17 +2083,17 @@ struct EgorTaskSolver {
         if (interval + 1 >= J) {
             return false;
         }
-        if ((intervals[interval].users | intervals[interval + 1].users).size() > L) {
+        /*if ((intervals[interval].users | intervals[interval + 1].users).size() > L) {
             return false;
-        }
-        for (int u: intervals[interval].users) {
+        }*/
+        /*for (int u: intervals[interval].users) {
             for (int u2: intervals[interval + 1].users) {
                 if (u != u2 && users_info[u].beam == users_info[u2].beam) {
                     // два разных юзера с одинаковым beam
                     return false;
                 }
             }
-        }
+        }*/
         return true;
     }
 
@@ -2098,13 +2105,38 @@ struct EgorTaskSolver {
         int old_score = total_score;
         int right_len = intervals[interval + 1].len;
 
-        for (int u: intervals[interval + 1].users) {
-            if (!intervals[interval].users.contains(u)) {
-                add_user_in_interval(u, interval);
+        for (int u: intervals[interval].users) {
+            if (intervals[interval + 1].users.size() + 1 <= L &&
+                !intervals[interval + 1].users.contains(u) &&
+                ((intervals[interval + 1].beam_msk >> users_info[u].beam) & 1) == 0) {
+                add_user_in_interval(u, interval + 1);
             }
         }
-        change_interval_len(interval, right_len);
-        remove_interval(interval + 1);
+        change_interval_len(interval + 1, intervals[interval].len);
+        remove_interval(interval);
+
+        /*if(rnd.get_d() < 0.5) {
+            for (int u: intervals[interval + 1].users) {
+                if (intervals[interval].users.size() + 1 <= L &&
+                    !intervals[interval].users.contains(u) &&
+                    ((intervals[interval].beam_msk >> users_info[u].beam) & 1) == 0) {
+                    add_user_in_interval(u, interval);
+                }
+            }
+            change_interval_len(interval, right_len);
+            remove_interval(interval + 1);
+        }
+        else {
+            for (int u: intervals[interval].users) {
+                if (intervals[interval + 1].users.size() + 1 <= L &&
+                    !intervals[interval + 1].users.contains(u) &&
+                    ((intervals[interval + 1].beam_msk >> users_info[u].beam) & 1) == 0) {
+                    add_user_in_interval(u, interval + 1);
+                }
+            }
+            change_interval_len(interval + 1, intervals[interval].len);
+            remove_interval(interval);
+        }*/
     }
 
     void interval_do_split(int interval, int right_len) {
@@ -2163,6 +2195,43 @@ struct EgorTaskSolver {
             ASSERT(old_score == total_score, "failed back score");
         }
     }
+
+    /*void interval_replace() {
+        // возьмем интервал
+        // удалим его
+        // вставим куда-то
+
+        int old_score = total_score;
+        int stack_iterator = actions.size();
+
+        {
+            CHOOSE_INTERVAL(true);
+            remove_interval(interval);
+        }
+
+        CHOOSE_INTERVAL(1 <= interval && interval + 1 < J);
+
+        move_to_interval(J - 1, interval);
+        change_interval_len(interval, rnd.get(1, 30));
+
+        auto and_users = intervals[interval - 1].users & intervals[interval + 1].users;
+        for (int u: and_users) {
+            add_user_in_interval(u, interval);
+        }
+
+        if (old_score < total_score) {
+            //cout << "YES" << endl;
+        }
+
+        if (is_good(old_score)) {
+
+        } else {
+            while (actions.size() > stack_iterator) {
+                rollback();
+            }
+            ASSERT(old_score == total_score, "failed back score");
+        }
+    }*/
 
     void interval_random_action() {
         int s = EGOR_TASK_SOLVER_SELECTION_INTERVAL_ACTION.select();
@@ -2535,7 +2604,7 @@ struct EgorTaskSolver {
 
         remove_user_in_interval(u, right);
 
-        vector<int> kek;
+        /*vector<int> kek;
         for (int u2 = 0; u2 < N; u2++) {
             if (u != u2 && users_info[u2].left == -1 && ((intervals[right].beam_msk >> users_info[u2].beam) & 1) == 0) {
                 kek.push_back(u2);
@@ -2546,7 +2615,7 @@ struct EgorTaskSolver {
         }
         if(!kek.empty()){
             add_user_in_interval(kek[rnd.get(0, kek.size() - 1)], right);
-        }
+        }*/
 
         if (is_good(old_score)) {
             CNT_ACCEPTED_USER_REMOVE_RIGHT++;
@@ -2560,7 +2629,7 @@ struct EgorTaskSolver {
     }
 
     void user_do_swap(int u, int u2) {
-        total_score -= users_info[u].calc_score() + users_info[u2].calc_score();
+        total_score -= user_score(u) + user_score(u2);
 
         swap(user_id_to_u[users_info[u].id], user_id_to_u[users_info[u2].id]);
         swap(users_info[u].sum_len, users_info[u2].sum_len);
@@ -2568,7 +2637,7 @@ struct EgorTaskSolver {
         swap(users_info[u].right, users_info[u2].right);
         swap(users_info[u], users_info[u2]);
 
-        total_score += users_info[u].calc_score() + users_info[u2].calc_score();
+        total_score += user_score(u) + user_score(u2);
     }
 
     void user_swap() {
@@ -2642,21 +2711,31 @@ struct EgorTaskSolver {
     void user_crop() {
         CNT_CALL_USER_CROP++;
 
-        CHOOSE_USER(left != -1 && intervals[left].block != intervals[right].block);
+        for (int u = 0; u < N; u++) {
+            int left = get_left_user(u);
+            int right = get_right_user(u);
 
-        int old_score = total_score;
+            if (left != -1 && intervals[left].block != intervals[right].block) {
+                user_do_crop(u);
+            }
+        }
 
-        int stack_iterator = actions.size();
-        user_do_crop(u);
+        // либо всех откропить, либо одного какого-то, тоже хорошо работает
+        //CHOOSE_USER(left != -1 && intervals[left].block != intervals[right].block);
 
-        if (is_good(old_score)) {
+        //int old_score = total_score;
+        //int stack_iterator = actions.size();
+        //user_do_crop(u);
+
+        // bad
+        /*if (is_good(old_score)) {
             CNT_ACCEPTED_USER_CROP++;
         } else {
             while (actions.size() > stack_iterator) {
                 rollback();
             }
             ASSERT(old_score == total_score, "failed back score");
-        }
+        }*/
     }
 
     void user_random_action() {
@@ -2791,7 +2870,7 @@ struct EgorTaskSolver {
             temperature = (STEPS - step) * 1.0 / STEPS;
             //temperature *= 0.999999;
 
-            ASSERT(STEPS % 10 == 0 && STEPS != 0, "invalid STEPS");
+            /*ASSERT(STEPS % 10 == 0 && STEPS != 0, "invalid STEPS");
             if (step != 0 && step % (STEPS / 9) == 0) {
                 for (int u = 0; u < N; u++) {
                     user_do_crop(u);
@@ -2807,7 +2886,7 @@ struct EgorTaskSolver {
                 //}
                 //static mt19937 marsene(42);
                 //shuffle(user_brute_order.begin(), user_brute_order.end(), marsene);
-            }
+            }*/
 
             /*if (answer_score < total_score) {
                 answer_score = total_score;
