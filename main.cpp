@@ -282,6 +282,11 @@ void train_egor_task_solver() {
 }
 
 int main() {
+    //auto egor_answer = Solver_egor(N, M, K, J, L, reservedRBs, userInfos, artem_answer)
+    //EgorTaskSolver solver(1, 10, 1, 1, 2, vector<Interval>{Interval{3, 5, {}}}, vector<UserInfo>{{4, 1, 0}}, {});
+    //solver.change_interval_len(0, 3);
+    //return 0;
+
     /*MyBitSet<1024> s;
     s.insert(63);
     s.insert(64);
@@ -309,7 +314,7 @@ int main() {
     return 0;*/
     test_case_info infos[5];
     map<int, map<int, int>> score_per_test;
-    for (int K = 1; K <= 1; K++) {
+    for (int K = 0; K <= 3; K++) {
         cout << "TEST CASE: K=" << K << endl;
         string dir = "tests/case_K=" + to_string(K) + "/";
         std::vector<pair<float, int>> tests_and_scores;
@@ -320,15 +325,15 @@ int main() {
             input >> data;
 
             Timer timer;
-//            cout << test << "!" << endl;
+            //            cout << test << "!" << endl;
             auto intervals = Solver(data);
 
-            std::ofstream out("ans_data_art/case_K="+to_string(K)+"/"+to_string(test)+".txt");
+            std::ofstream out("ans_data_art/case_K=" + to_string(K) + "/" + to_string(test) + ".txt");
             out << intervals.size() << endl;
-            for (int i = 0; i < intervals.size(); i++){
+            for (int i = 0; i < intervals.size(); i++) {
                 out << intervals[i].start << " " << intervals[i].end << endl;
                 out << intervals[i].users.size() << endl;
-                for (auto user_id: intervals[i].users ){
+                for (auto user_id: intervals[i].users) {
                     out << user_id << " ";
                 }
                 out << endl;
@@ -435,5 +440,4 @@ int main() {
         cout << "TEST CASE: K=" << K << " | " << infos[K] << endl;
     }
     cout << "TOTAL: " << total_info << endl;
-
 }

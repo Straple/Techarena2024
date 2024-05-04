@@ -516,7 +516,7 @@ SelectionRandomizer EGOR_TASK_SOLVER_SELECTION_USER_OR_INTERVAL_ACTION = std::ve
         {0, 9},
         {1, 11},
 };
-int STEPS = 10'000;
+int STEPS = 100'000;
 
 // TIME: 2336s
 //score: 94.21
@@ -1513,7 +1513,8 @@ struct EgorTaskSolver {
 
     EgorTaskSolver(int NN, int MM, int KK, int JJ, int LL,
                    const vector<Interval> &reservedRBs,
-                   const vector<UserInfo> &userInfos) : N(NN), M(MM), K(KK), J(JJ), L(LL) {
+                   const vector<UserInfo> &userInfos,
+                   vector<Interval> start_intervals) : N(NN), M(MM), K(KK), J(JJ), L(LL) {
 
         ASSERT(2 <= L && L <= 16, "kek");
         ASSERT(0 < J && J <= 16, "hoho");
@@ -1576,19 +1577,39 @@ struct EgorTaskSolver {
             }
         }
 
-        // build J intervals
-        //        {
-        //            int sum_free_len = 0;
-        //            for (int block = 0; block < free_intervals.size(); block++) {
-        //                sum_free_len += free_intervals[block].len();
-        //            }
-        //            int mean_len = sum_free_len / J;
-        //
-        //            for (int j = 0; j < J; j++) {
-        //                intervals.push_back(SetInterval{0, mean_len, {}});
-        //            }
-        //            build_blocks();
-        //        }
+        {
+            current_user = 0;
+            for (int u = 0; u < N; u++) {
+                users_order[u] = u;
+            }
+            sort(users_order, users_order + N, [&](int lhs, int rhs) {
+                return users_info[lhs].rbNeed > users_info[rhs].rbNeed;
+            });
+        }
+
+        // build from start_intervals
+        {
+            sort(start_intervals.begin(), start_intervals.end(), [&](const auto &lhs, const auto &rhs) {
+                return lhs.start < rhs.start;
+            });
+
+            int interval = 0;
+            for (int i = 0; i < start_intervals.size(); i++) {
+                intervals[interval] = SetInterval{-1, start_intervals[i].end - start_intervals[i].start, {}};
+                interval++;
+            }
+            while (interval < J) {
+                intervals[interval] = SetInterval{-1, 0, {}};
+                interval++;
+            }
+            build_blocks();
+
+            for (int i = 0; i < start_intervals.size(); i++) {
+                for (auto u: start_intervals[i].users) {
+                    add_user_in_interval(u, i);
+                }
+            }
+        }
     }
 
     [[nodiscard]] vector<Interval> get_total_answer() {
@@ -1789,7 +1810,7 @@ struct EgorTaskSolver {
     }
 
     void IMPL_move_to_interval(int interval, int to) {
-        if(interval == to) {
+        if (interval == to) {
             IMPL_update_block_after_change_interval();
             return;
         }
@@ -1800,6 +1821,7 @@ struct EgorTaskSolver {
             swap(intervals[i], intervals[i - 1]);
         }
 
+        intervals[to].block = -2;
         IMPL_update_block_after_change_interval();
 
         // update users left and right
@@ -1885,11 +1907,11 @@ struct EgorTaskSolver {
 
     void remove_interval(int i) {
         //cout << "remove_interval: " << i << endl;
-        for (int u: intervals[i].users) {
-            remove_user_in_interval(u, i);
-        }
         if (intervals[i].len != 0) {
             change_interval_len(i, -intervals[i].len);
+        }
+        for (int u: intervals[i].users) {
+            remove_user_in_interval(u, i);
         }
         move_to_interval(i, J - 1);
     }
@@ -1898,11 +1920,11 @@ struct EgorTaskSolver {
     // инсертим его в i
     void insert_interval(int i) {
         //cout << "insert_interval: " << i << endl;
-        for (int u: intervals[J - 1].users) {
-            remove_user_in_interval(u, J - 1);
-        }
         if (intervals[J - 1].len != 0) {
             change_interval_len(J - 1, -intervals[J - 1].len);
+        }
+        for (int u: intervals[J - 1].users) {
+            remove_user_in_interval(u, J - 1);
         }
         move_to_interval(J - 1, i);
     }
@@ -2086,23 +2108,34 @@ struct EgorTaskSolver {
         remove_interval(interval + 1);
     }
 
-    /*void interval_do_split(int interval, int right_len) {
+    void interval_do_split(int interval, int right_len) {
         CNT_CALL_INTERVAL_DO_SPLIT++;
-        // ожидается, что intervals[J-1] не используется
-        // или можно || intervals[J-1].block == -1
-        ASSERT(intervals[J - 1].users.empty(), "kek");
-        for (int i = J - 1; interval < i - 1; i--) {
-            swap(intervals[i - 1], intervals[i]);
-        }
 
-        intervals[interval + 1] = intervals[interval];
-        intervals[interval + 1].len = 0;
+        ASSERT(interval + 1 < J, "invalid interval");
 
+        remove_interval(J - 1);
+        insert_interval(interval + 1);
         change_interval_len(interval, -right_len);
         change_interval_len(interval + 1, right_len);
+        for(int u : intervals[interval].users) {
+            add_user_in_interval(u, interval + 1);
+        }
+
+        // ожидается, что intervals[J-1] не используется
+        // или можно || intervals[J-1].block == -1
+        //ASSERT(intervals[J - 1].users.empty(), "kek");
+        //for (int i = J - 1; interval < i - 1; i--) {
+        //    swap(intervals[i - 1], intervals[i]);
+        //}
+
+        //intervals[interval + 1] = intervals[interval];
+        //intervals[interval + 1].len = 0;
+
+        //change_interval_len(interval, -right_len);
+        //change_interval_len(interval + 1, right_len);
 
         // update users left and right
-        for (int u = 0; u < N; u++) {
+        /*for (int u = 0; u < N; u++) {
             int &left = users_info[u].left;
             if (interval < left) {
                 left++;
@@ -2117,17 +2150,11 @@ struct EgorTaskSolver {
             get_left_user(u);
             get_right_user(u);
 #endif
-        }
-    }*/
+        }*/
+    }
 
     void interval_merge() {
         CNT_CALL_INTERVAL_MERGE_EQUAL++;
-        static int loller = 0;
-        loller++;
-        //cout << "merge " << loller << endl;
-        if(loller == 13853) {
-            cout << "kek\n";
-        }
 
         CHOOSE_INTERVAL(merge_verify(interval));
 
@@ -2143,41 +2170,31 @@ struct EgorTaskSolver {
             while (actions.size() > stack_iterator) {
                 rollback();
             }
-            if(old_score != total_score) {
-                cout << loller << endl;
-            }
             ASSERT(old_score == total_score, "failed back score");
         }
     }
 
-    /*void interval_split() {
+    void interval_split() {
         CNT_CALL_INTERVAL_SPLIT++;
         CHOOSE_INTERVAL(interval + 1 < J);
 
         int old_score = total_score;
 
-        SetInterval save_back = intervals[J - 1];
-        for (int u: intervals[J - 1].users) {
-            remove_user_in_interval(u, J - 1);
-        }
-
         int right_len = rnd.get(0, intervals[interval].len);
 
+        int stack_iterator = actions.size();
         interval_do_split(interval, right_len);
 
         if (is_good(old_score)) {
             CNT_ACCEPTED_INTERVAL_SPLIT++;
         } else {
-            interval_do_merge_equal(interval);
-            intervals[J - 1].len = save_back.len;
-            build_blocks();
-            for (int u: save_back.users) {
-                add_user_in_interval(u, J - 1);
+            while (actions.size() > stack_iterator) {
+                rollback();
             }
 
             ASSERT(old_score == total_score, "failed back score");
         }
-    }*/
+    }
 
     void interval_random_action() {
         int s = EGOR_TASK_SOLVER_SELECTION_INTERVAL_ACTION.select();
@@ -2234,7 +2251,7 @@ struct EgorTaskSolver {
             if (prev_action != -1) {
                 cnt_edges[prev_action][11]++;
             }
-            //interval_split();
+            interval_split();
 
             if (old_score < total_score && prev_action != -1) {
                 cnt_good_edges[prev_action][11]++;
@@ -2766,43 +2783,10 @@ struct EgorTaskSolver {
         }
     }
 
-    vector<Interval> annealing(vector<Interval> start_intervals) {
+    vector<Interval> annealing() {
         temperature = 1;
         prev_action = -1;
 
-        {
-            current_user = 0;
-            for (int u = 0; u < N; u++) {
-                users_order[u] = u;
-            }
-            sort(users_order, users_order + N, [&](int lhs, int rhs) {
-                return users_info[lhs].rbNeed > users_info[rhs].rbNeed;
-            });
-        }
-
-        // build from start_intervals
-        {
-            sort(start_intervals.begin(), start_intervals.end(), [&](const auto &lhs, const auto &rhs) {
-                return lhs.start < rhs.start;
-            });
-
-            int interval = 0;
-            for (int i = 0; i < start_intervals.size(); i++) {
-                intervals[interval] = SetInterval{-1, start_intervals[i].end - start_intervals[i].start, {}};
-                interval++;
-            }
-            while (interval < J) {
-                intervals[interval] = SetInterval{-1, 0, {}};
-                interval++;
-            }
-            build_blocks();
-
-            for (int i = 0; i < start_intervals.size(); i++) {
-                for (auto u: start_intervals[i].users) {
-                    add_user_in_interval(u, i);
-                }
-            }
-        }
 
         //TEST CASE: K=0 | tests: 666 | score: 94.7412% | 646507/682393 | time: 5647.33ms | max_time: 31.324ms | mean_time: 8.47947ms
         //TEST CASE: K=1 | tests: 215 | score: 94.1612% | 210276/223315 | time: 1644.51ms | max_time: 21.472ms | mean_time: 7.64887ms
@@ -2923,17 +2907,11 @@ std::vector<vector<Interval>> ans_to_blocked_ans(int M, int K, const vector<Inte
     return ans;
 }
 
-//TEST CASE: K=0 | tests: 666 | score: 93.3172% | 639374/685162 | time: 612.187ms | max_time: 9.977ms | mean_time: 0.9192ms
-//TEST CASE: K=1 | tests: 215 | score: 91.7999% | 207275/225790 | time: 235.996ms | max_time: 9.534ms | mean_time: 1.09766ms
-//TEST CASE: K=2 | tests: 80 | score: 90.471% | 75242/83167 | time: 119.629ms | max_time: 8.073ms | mean_time: 1.49536ms
-//TEST CASE: K=3 | tests: 39 | score: 90.6576% | 41921/46241 | time: 72.05ms | max_time: 6.908ms | mean_time: 1.84744ms
-//TEST CASE: K=4 | tests: 0 | score: -nan% | 0/0 | time: 0ms | max_time: 0ms | mean_time: 0ms
-//TOTAL: tests: 1000 | score: 92.6422% | 963812/1040360 | time: 1039.86ms | max_time: 9.977ms | mean_time: 1.03986ms
 vector<Interval> Solver_egor(int N, int M, int K, int J, int L,
                              const vector<Interval> &reservedRBs,
-                             const vector<UserInfo> &userInfos, std::vector<Interval> solution) {
-    EgorTaskSolver solver(N, M, K, J, L, reservedRBs, userInfos);
-    auto answer = solver.annealing(solution);
+                             const vector<UserInfo> &userInfos, const std::vector<Interval> &solution) {
+    EgorTaskSolver solver(N, M, K, J, L, reservedRBs, userInfos, solution);
+    auto answer = solver.annealing();
     ASSERT(solver.total_score == get_solution_score(N, M, K, J, L, reservedRBs, userInfos, answer), "invalid total_score");
     return answer;
 }
