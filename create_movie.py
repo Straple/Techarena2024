@@ -167,11 +167,15 @@ def draw_test(test: TEST, photo_name: str):
 
 
 
-TESTS_PATH = "/Users/artembreznev/Techarena2024/tests/case_K="
-MOVIE_DATA_PATH = "/Users/artembreznev/Techarena2024/movies_data"
+#TESTS_PATH = "/Users/artembreznev/Techarena2024/tests/case_K="
+TESTS_PATH = "./tests/case_K="
+
+#MOVIE_DATA_PATH = "/Users/artembreznev/Techarena2024/movies_data"
+MOVIE_DATA_PATH = "./movies_data"
+
 SOLUTION_NAME = "basic_solve"
-TEST_ID = 60
-K = 1
+TEST_ID = 31
+K = 0
 
 
 

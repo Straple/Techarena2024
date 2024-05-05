@@ -420,7 +420,7 @@ public:
     SelectionRandomizer(int n) : kit(n) {
         ASSERT(n > 0, "invalid n");
         for (int i = 0; i < n; i++) {
-            kit[i] = {i, 1};
+            kit[i] = {i, 20};
         }
     }
 
@@ -464,22 +464,6 @@ public:
         return -1;
     }
 
-    void random_kit() {
-        if (SELECTION_RANDOMIZER_LEARN_RANDOM.get_d() < 0.5) {
-            // swap kits
-            int a = SELECTION_RANDOMIZER_LEARN_RANDOM.get(0, kit.size() - 1);
-            int b = SELECTION_RANDOMIZER_LEARN_RANDOM.get(0, kit.size() - 1);
-            swap(kit[a], kit[b]);
-        } else {
-            int a = SELECTION_RANDOMIZER_LEARN_RANDOM.get(0, kit.size() - 1);
-            int change = std::max(-kit[a].second, (int) SELECTION_RANDOMIZER_LEARN_RANDOM.get(-2, 2));
-            if (change == 0) {
-                change = 3;
-            }
-            kit[a].second += change;
-        }
-    }
-
     friend std::ostream &operator<<(std::ostream &output, SelectionRandomizer &selection) {
         output << "{ ";
         for (int i = 0; i < selection.kit.size(); i++) {
@@ -494,29 +478,8 @@ public:
 };
 
 //std::vector<SelectionRandomizer> SELECTION_ACTION(12, SelectionRandomizer(12));
-SelectionRandomizer SELECTION_ACTION = std::vector<int>{10, 0, 4, 0, 2, 2, 5, 5, 5};
-/*if (s == 0) {
-    ACTION_WRAPPER(user_new_interval, 0);
-} else if (s == 1) {
-    ACTION_WRAPPER(user_crop, 1);
-} else if (s == 2) {
-    ACTION_WRAPPER(user_swap, 2);
-} else if (s == 3) {
-    ACTION_WRAPPER(user_add_interval, 3);
-} else if (s == 4) {
-    ACTION_WRAPPER(interval_increase_len, 4);
-} else if (s == 5) {
-    ACTION_WRAPPER(interval_decrease_len, 5);
-} else if (s == 6) {
-    ACTION_WRAPPER(interval_flow_over, 6);
-} else if (s == 7) {
-    ACTION_WRAPPER(interval_merge, 7);
-} else if (s == 8) {
-    ACTION_WRAPPER(interval_split, 8);
-} else {
-    ASSERT(false, "kek");
-}*/
-int STEPS = 900;
+SelectionRandomizer SELECTION_ACTION(11);// = std::vector<int>{10, 0, 4, 0, 2, 2, 5, 5, 5};
+int STEPS = 700;
 
 // TIME: 2336s
 //score: 94.21
@@ -842,7 +805,7 @@ public:
 };
 Snapshoter snapshoter;
 
-#define ENABLE_SNAPSHOT
+//#define ENABLE_SNAPSHOT
 
 #ifdef ENABLE_SNAPSHOT
 #define SNAP(x) x
@@ -1628,7 +1591,9 @@ struct EgorTaskSolver {
     EgorTaskSolver(int NN, int MM, int KK, int JJ, int LL,
                    const vector<Interval> &reservedRBs,
                    const vector<UserInfo> &userInfos,
-                   vector<Interval> start_intervals) : N(NN), M(MM), K(KK), J(JJ), L(LL) {
+                   vector<Interval> start_intervals, int random_seed) : N(NN), M(MM), K(KK), J(JJ), L(LL) {
+
+        rnd.generator = mt19937_64(random_seed);
 
         ASSERT(2 <= L && L <= 16, "invalid L");
         ASSERT(0 < J && J <= 16, "invalid J");
@@ -1818,7 +1783,7 @@ struct EgorTaskSolver {
         return answer;
     }
 
-    /*[[nodiscard]] tuple<int, int, int> get_user_position(int u) const {
+    [[nodiscard]] tuple<int, int, int> get_user_position(int u) const {
         ASSERT(0 <= u && u < N, "invalid u");
         for (int block = 0; block < B; block++) {
             int left = -1;
@@ -1836,7 +1801,7 @@ struct EgorTaskSolver {
             }
         }
         return {-1, -1, -1};
-    }*/
+    }
 
     [[nodiscard]] int get_user_score(int u) const {
         ASSERT(0 <= u && u < N, "invalid u");
@@ -2343,7 +2308,7 @@ struct EgorTaskSolver {
         }
     }
 
-    /*void user_add_left() {
+    void user_add_left() {
         CNT_CALL_USER_ADD_LEFT++;
 
         USER_FOR_BEGIN(l > 0 &&
@@ -2420,7 +2385,7 @@ struct EgorTaskSolver {
             ASSERT(old_score == total_score, "failed back score");
         }
         USER_FOR_END
-    }*/
+    }
 
     void user_do_swap(int u, int u2) {
         ASSERT(users_info[u].beam == users_info[u].beam, "no equals beams");
@@ -2466,7 +2431,7 @@ struct EgorTaskSolver {
         }
     }
 
-    void user_do_crop(int u) {
+    /*void user_do_crop(int u) {
         CNT_CALL_USER_DO_CROP++;
 
         int best_b = -1, best_l = -1, best_r = -1, best_len = -1e9;
@@ -2506,7 +2471,7 @@ struct EgorTaskSolver {
         for (int u = 0; u < N; u++) {
             user_do_crop(u);
         }
-    }
+    }*/
 
     vector<Interval> annealing(vector<Interval> reservedRBs,
                                vector<UserInfo> userInfos) {
@@ -2528,21 +2493,25 @@ struct EgorTaskSolver {
             if (s == 0) {
                 ACTION_WRAPPER(user_new_interval, 0);
             } else if (s == 1) {
-                ACTION_WRAPPER(user_crop, 1);
+                ACTION_WRAPPER(user_add_left, 1);
             } else if (s == 2) {
-                ACTION_WRAPPER(user_swap, 2);
+                ACTION_WRAPPER(user_remove_left, 2);
             } else if (s == 3) {
-                //ACTION_WRAPPER(user_add_interval, 3);
+                ACTION_WRAPPER(user_add_right, 3);
             } else if (s == 4) {
-                ACTION_WRAPPER(interval_increase_len, 4);
+                ACTION_WRAPPER(user_remove_right, 4);
             } else if (s == 5) {
-                ACTION_WRAPPER(interval_decrease_len, 5);
+                ACTION_WRAPPER(user_swap, 5);
             } else if (s == 6) {
-                ACTION_WRAPPER(interval_flow_over, 6);
+                ACTION_WRAPPER(interval_increase_len, 6);
             } else if (s == 7) {
-                ACTION_WRAPPER(interval_merge, 7);
+                ACTION_WRAPPER(interval_decrease_len, 7);
             } else if (s == 8) {
-                ACTION_WRAPPER(interval_split, 8);
+                ACTION_WRAPPER(interval_flow_over, 8);
+            } else if (s == 9) {
+                ACTION_WRAPPER(interval_merge, 9);
+            } else if (s == 10) {
+                ACTION_WRAPPER(interval_split, 10);
             } else {
                 ASSERT(false, "kek");
             }
@@ -2597,8 +2566,8 @@ std::vector<vector<Interval>> ans_to_blocked_ans(int M, int K, const vector<Inte
 
 vector<Interval> Solver_egor(int N, int M, int K, int J, int L,
                              const vector<Interval> &reservedRBs,
-                             const vector<UserInfo> &userInfos, const std::vector<Interval> &solution) {
-    EgorTaskSolver solver(N, M, K, J, L, reservedRBs, userInfos, solution);
+                             const vector<UserInfo> &userInfos, const std::vector<Interval> &solution, int random_seed) {
+    EgorTaskSolver solver(N, M, K, J, L, reservedRBs, userInfos, solution, random_seed);
     auto answer = solver.annealing(reservedRBs, userInfos);
     //ASSERT(solver.total_score == get_solution_score(N, M, K, J, L, reservedRBs, userInfos, answer), "invalid total_score");
     return answer;
@@ -2625,7 +2594,7 @@ vector<Interval> Solver(int N, int M, int K, int J, int L,
         return artem_answer;
     }
 
-    auto egor_answer = Solver_egor(N, M, K, J, L, reservedRBs, userInfos, artem_answer);
+    auto egor_answer = Solver_egor(N, M, K, J, L, reservedRBs, userInfos, artem_answer, 42);
     auto get_egor_blocked = ans_to_blocked_ans(M, K, reservedRBs, egor_answer);
     optimize(N, M, K, J, L, reservedRBs, userInfos, get_egor_blocked);
     egor_answer.clear();

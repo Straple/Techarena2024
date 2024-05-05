@@ -19,12 +19,11 @@ ostream &operator<<(ostream &output, const test_case_info &info) {
                   << 1000 * info.total_time / max(1, info.tests) << "ms";
 }
 
-/*vector<vector<pair<TestData, vector<Interval>>>> train_dataset;
+vector<vector<pair<TestData, vector<Interval>>>> train_dataset;
 
 // (score, theor_max)
 vector<pair<int, int>> calc_train_score() {
     auto do_test = [&]() {
-        SELECTION_ACTION.reset_rnd();
         //for (int i = 0; i < SELECTION_ACTION.size(); i++) {
         //    SELECTION_ACTION[i].reset_rnd();
         //}
@@ -32,10 +31,22 @@ vector<pair<int, int>> calc_train_score() {
         int total_theor_max = 0;
         for (int K = 0; K <= 3; K++) {
             for (auto &[data, start_intervals]: train_dataset[K]) {
-                auto intervals = Solver_egor(data.N, data.M, data.K, data.J, data.L, data.reservedRBs, data.userInfos, start_intervals);
+                THEORY_MAX_SCORE = get_theory_max_score(data.N, data.M, data.K, data.J, data.L, data.reservedRBs, data.userInfos);
+                int score1 = 0;
+                {
+                    SELECTION_ACTION.reset_rnd();
+                    auto intervals = Solver_egor(data.N, data.M, data.K, data.J, data.L, data.reservedRBs, data.userInfos, start_intervals, 42);
 
-                int score = get_solution_score(data, intervals);
-                total_score += score;
+                    score1 = get_solution_score(data, intervals);
+                }
+                int score2 = 0;
+                {
+                    SELECTION_ACTION.reset_rnd();
+                    auto intervals = Solver_egor(data.N, data.M, data.K, data.J, data.L, data.reservedRBs, data.userInfos, start_intervals, 4128635);
+
+                    score2 = get_solution_score(data, intervals);
+                }
+                total_score += (score1 + score2) / 2;
 
                 int theor_max = get_theory_max_score(data);
                 total_theor_max += theor_max;
@@ -46,24 +57,12 @@ vector<pair<int, int>> calc_train_score() {
 
     vector<pair<int, int>> ans;
 
-    STEPS = 100;
-    ans.push_back(do_test());
-    STEPS = 200;
-    ans.push_back(do_test());
-    STEPS = 300;
-    ans.push_back(do_test());
     STEPS = 400;
     ans.push_back(do_test());
-    //STEPS = 600;
-    //ans.push_back(do_test());
-    //STEPS = 800;
-    //ans.push_back(do_test());
-    //STEPS = 1000;
-    //ans.push_back(do_test());
-    //STEPS = 2'000;
-    //ans.push_back(do_test());
-    //STEPS = 5'000;
-    //ans.push_back(do_test());
+    STEPS = 600;
+    ans.push_back(do_test());
+    STEPS = 800;
+    ans.push_back(do_test());
     return ans;
 }
 
@@ -121,7 +120,7 @@ void train_egor_task_solver() {
         logger << "=========================\n";
         logger << "TIME: " << global_time << '\n';
         print_ans(logger, ans);
-        logger << "SELECTION_ACTION:\n";
+        logger << "SELECTION_ACTION: ";
         logger << SELECTION_ACTION << '\n';
         //for (int i = 0; i < 12; i++) {
         //    logger << i << ": " << SELECTION_ACTION[i] << '\n';
@@ -137,9 +136,8 @@ void train_egor_task_solver() {
         cout << step << ' ' << global_time << endl;
 
         bool ok = false;
-        //for (int i = 0; i < 12; i++) {
         for (int j = 0; j < 12; j++) {
-            for (int change = max(-SELECTION_ACTION.kit[j].second, -1); change <= 2; change++) {
+            for (int change = max(-SELECTION_ACTION.kit[j].second, -2); change <= 2; change++) {
                 if (change != 0) {
                     SELECTION_ACTION.kit[j].second += change;
 
@@ -154,7 +152,6 @@ void train_egor_task_solver() {
                 }
             }
         }
-        //}
 
         if (!ok) {
             cout << "OH NO, IT'S BAD" << endl;
@@ -162,16 +159,21 @@ void train_egor_task_solver() {
             SELECTION_ACTION.kit[j].second++;
         }
     }
-}*/
+}
 
 extern Snapshoter snapshoter;
 int main() {
+    train_egor_task_solver();
+    return 0;
+
     /*{
         ifstream input1("scores.txt");
         ifstream input2("scores2.txt");
 
         long long a2_more_1 = 0;
         long long a1_more_2 = 0;
+
+        vector<tuple<int, int, int, int, int>> ps;
         for (int K = 0; K <= 3; K++) {
             for (int test = 0; test < test_case_K_sizes[K]; test++) {
                 int tmp;
@@ -179,19 +181,25 @@ int main() {
                 input1 >> tmp >> tmp >> score1;
                 input2 >> tmp >> tmp >> score2;
 
-                if(score1 < score2){
+                if (score1 < score2) {
                     cout << score1 << ' ' << score2 << '\n';
+
                     a2_more_1 += score2 - score1;
-                }
-                else{
+                } else {
+                    ps.push_back({score1 - score2, score1, score2, K, test});
                     a1_more_2 += score1 - score2;
                 }
             }
         }
         cout << a2_more_1 << '\n';
         cout << a1_more_2 << '\n';
+        sort(ps.begin(), ps.end());
+        for (auto [diff, score1, score2, K, test]: ps) {
+            cout << diff << ' ' << score1 << ' ' << score2 << ' ' << K << ' ' << test << endl;
+        }
     }
     return 0;*/
+
     /*vector<vector<int>> powers = {
             {57, 68, 61, 1, 3, 674, 4, 19, 5, 20, 13, 8},
             {18, 7, 23, 1, 1, 833, 0, 16, 7, 20, 8, 4},
@@ -222,8 +230,7 @@ int main() {
     SELECTION_ACTION[10] = vector<int>{5, 7, 7, 0, 0, 9, 0, 1, 0, 1, 1, 0};
     SELECTION_ACTION[11] = vector<int>{5, 7, 7, 0, 0, 8, 0, 0, 0, 0, 0, 0};*/
 
-    //train_egor_task_solver();
-    //return 0;
+
 
     //auto egor_answer = Solver_egor(N, M, K, J, L, reservedRBs, userInfos, artem_answer)
     //EgorTaskSolver solver(1, 10, 1, 1, 2, vector<Interval>{Interval{3, 5, {}}}, vector<UserInfo>{{4, 1, 0}}, {});
@@ -268,12 +275,11 @@ int main() {
             TestData data;
             input >> data;
 
-
             cout << "test: " << test << "!" << endl;
 
             Timer timer;
             int theor_max = get_theory_max_score(data);
-            snapshoter = Snapshoter(K,test,theor_max ,data,"basic_solve");
+            snapshoter = Snapshoter(K, test, theor_max, data, "basic_solve");
             auto intervals = Solver(data);
             double time = timer.get();
 
@@ -289,25 +295,22 @@ int main() {
             infos[K].total_score += score;
             infos[K].total_theory_score += theor_max;
 
-//            std::ofstream out("ans_data_art/case_K="+to_string(K)+"/"+to_string(test)+".txt");
-//            out << intervals.size() << endl;
-//            for (int i = 0; i < intervals.size(); i++){
-//                out << intervals[i].start << " " << intervals[i].end << endl;
-//                out << intervals[i].users.size() << endl;
-//                for (auto user_id: intervals[i].users ){
-//                    out << user_id << " ";
-//                }
-//                out << endl;
-//            }
-//            out.close();
+            //            std::ofstream out("ans_data_art/case_K="+to_string(K)+"/"+to_string(test)+".txt");
+            //            out << intervals.size() << endl;
+            //            for (int i = 0; i < intervals.size(); i++){
+            //                out << intervals[i].start << " " << intervals[i].end << endl;
+            //                out << intervals[i].users.size() << endl;
+            //                for (auto user_id: intervals[i].users ){
+            //                    out << user_id << " ";
+            //                }
+            //                out << endl;
+            //            }
+            //            out.close();
 
             infos[K].total_time += time;
             infos[K].max_test_time = max(infos[K].max_test_time, time);
 
             score_per_test[K][test] = score;
-
-            infos[K].total_score += score;
-            infos[K].total_theory_score += theor_max;
 
             //cout << score <<  " _ " <<  get_theory_max_score(data) << endl;
             //tests_and_scores.push_back({(float)score/theor_max, test});
