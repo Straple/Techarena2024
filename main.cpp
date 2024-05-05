@@ -24,9 +24,10 @@ vector<vector<pair<TestData, vector<Interval>>>> train_dataset;
 // (score, theor_max)
 vector<pair<int, int>> calc_train_score() {
     auto do_test = [&]() {
-        for (int i = 0; i < SELECTION_ACTION.size(); i++) {
+        SELECTION_ACTION.reset_rnd();
+        /*for (int i = 0; i < SELECTION_ACTION.size(); i++) {
             SELECTION_ACTION[i].reset_rnd();
-        }
+        }*/
         int total_score = 0;
         int total_theor_max = 0;
         for (int K = 0; K <= 3; K++) {
@@ -121,9 +122,10 @@ void train_egor_task_solver() {
         logger << "TIME: " << global_time << '\n';
         print_ans(logger, ans);
         logger << "SELECTION_ACTION:\n";
-        for (int i = 0; i < 12; i++) {
+        logger << SELECTION_ACTION << '\n';
+        /*for (int i = 0; i < 12; i++) {
             logger << i << ": " << SELECTION_ACTION[i] << '\n';
-        }
+        }*/
         logger << endl;
         logger.flush();
     };
@@ -153,30 +155,29 @@ void train_egor_task_solver() {
                 SELECTION_ACTION[i].kit[j].second -= change;
             }
         }*/
-        for (int i = 0; i < 12; i++) {
-            for (int j = 0; j < 12; j++) {
-                for (int change = max(-SELECTION_ACTION[i].kit[j].second, -1); change <= 2; change++) {
-                    if (change != 0) {
-                        SELECTION_ACTION[i].kit[j].second += change;
+        //for (int i = 0; i < 12; i++) {
+        for (int j = 0; j < 12; j++) {
+            for (int change = max(-SELECTION_ACTION.kit[j].second, -1); change <= 2; change++) {
+                if (change != 0) {
+                    SELECTION_ACTION.kit[j].second += change;
 
-                        auto new_ans = calc_train_score();
-                        if (compare(ans, new_ans)) {
-                            ok = true;
-                            ans = new_ans;
-                            log();
-                        } else {
-                            SELECTION_ACTION[i].kit[j].second -= change;
-                        }
+                    auto new_ans = calc_train_score();
+                    if (compare(ans, new_ans)) {
+                        ok = true;
+                        ans = new_ans;
+                        log();
+                    } else {
+                        SELECTION_ACTION.kit[j].second -= change;
                     }
                 }
             }
         }
+        //}
 
         if (!ok) {
             cout << "OH NO, IT'S BAD" << endl;
-            int i = rnd.get(0, 11);
             int j = rnd.get(0, 11);
-            SELECTION_ACTION[i].kit[j].second++;
+            SELECTION_ACTION.kit[j].second++;
         }
 
         /*auto brute = [&](SelectionRandomizer &selection) {
@@ -327,6 +328,7 @@ int main() {
     return 0;*/
     test_case_info infos[5];
     map<int, map<int, int>> score_per_test;
+    ofstream scores_output("scores2.txt");
     for (int K = 0; K <= 3; K++) {
         cout << "TEST CASE: K=" << K << endl;
         string dir = "tests/case_K=" + to_string(K) + "/";
@@ -337,9 +339,25 @@ int main() {
             TestData data;
             input >> data;
 
-            Timer timer;
+
             cout << "test: " << test << "!" << endl;
+
+            Timer timer;
             auto intervals = Solver(data);
+            double time = timer.get();
+
+
+            infos[K].total_time += time;
+            infos[K].max_test_time = max(infos[K].max_test_time, time);
+
+            int score = get_solution_score(data, intervals);
+            score_per_test[K][test] = score;
+
+            scores_output << K << ' ' << test << ' ' << score << endl;
+
+            infos[K].total_score += score;
+            int theor_max = get_theory_max_score(data);
+            infos[K].total_theory_score += theor_max;
 
             std::ofstream out("ans_data_art/case_K=" + to_string(K) + "/" + to_string(test) + ".txt");
             out << intervals.size() << endl;
@@ -352,17 +370,6 @@ int main() {
                 out << endl;
             }
             out.close();
-
-            double time = timer.get();
-            infos[K].total_time += time;
-            infos[K].max_test_time = max(infos[K].max_test_time, time);
-
-            int score = get_solution_score(data, intervals);
-            score_per_test[K][test] = score;
-
-            infos[K].total_score += score;
-            int theor_max = get_theory_max_score(data);
-            infos[K].total_theory_score += theor_max;
 
             //cout << score <<  " _ " <<  get_theory_max_score(data) << endl;
             //tests_and_scores.push_back({(float)score/theor_max, test});
