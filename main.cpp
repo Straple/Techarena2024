@@ -164,9 +164,9 @@ void train_egor_task_solver() {
     }
 }*/
 
-extern Snapshooter snapshooter;
+extern Snapshoter snapshoter;
 int main() {
-    {
+    /*{
         ifstream input1("scores.txt");
         ifstream input2("scores2.txt");
 
@@ -191,7 +191,7 @@ int main() {
         cout << a2_more_1 << '\n';
         cout << a1_more_2 << '\n';
     }
-    return 0;
+    return 0;*/
     /*vector<vector<int>> powers = {
             {57, 68, 61, 1, 3, 674, 4, 19, 5, 20, 13, 8},
             {18, 7, 23, 1, 1, 833, 0, 16, 7, 20, 8, 4},
@@ -273,7 +273,7 @@ int main() {
 
             Timer timer;
             int theor_max = get_theory_max_score(data);
-            snapshooter = Snapshooter(K,test,theor_max ,data,"basic_solve");
+            snapshoter = Snapshoter(K,test,theor_max ,data,"basic_solve");
             auto intervals = Solver(data);
             double time = timer.get();
 
