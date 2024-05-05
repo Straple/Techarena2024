@@ -43,7 +43,7 @@ int CNT_ACCEPTED_USER_SWAP = 0;
 #include <iostream>
 
 ///////// !!!
-#define MY_DEBUG_MODE
+//#define MY_DEBUG_MODE
 ///////// !!!
 
 #ifdef MY_DEBUG_MODE
@@ -514,7 +514,7 @@ public:
 };
 
 std::vector<SelectionRandomizer> SELECTION_ACTION(12, SelectionRandomizer(12));
-int STEPS = 1'000;
+int STEPS = 400;
 
 // TIME: 2336s
 //score: 94.21
@@ -1839,7 +1839,54 @@ struct EgorTaskSolver {
     }
 
     void interval_kek() {
+        // TEST CASE: K=0 | tests: 666 | score: 99.2607% | 647519/652342 | time: 2931.1ms | max_time: 27.813ms | mean_time: 4.40106ms
+        //TEST CASE: K=1 | tests: 215 | score: 97.8836% | 211544/216118 | time: 2055.45ms | max_time: 30.673ms | mean_time: 9.56022ms
+        //TEST CASE: K=2 | tests: 80 | score: 97.7273% | 77487/79289 | time: 1042.49ms | max_time: 34.865ms | mean_time: 13.0311ms
+        //TEST CASE: K=3 | tests: 39 | score: 96.783% | 43773/45228 | time: 622.479ms | max_time: 43.018ms | mean_time: 15.961ms
+        //TEST CASE: K=4 | tests: 0 | score: -nan% | 0/0 | time: 0ms | max_time: 0ms | mean_time: 0ms
+        //TOTAL: tests: 1000 | score: 98.7257% | 980323/992977 | time: 6651.51ms | max_time: 43.018ms | mean_time: 6.65151ms
         return;
+        for (int b = 1; b < B; b++) {
+            for (int b2 = 0; b2 < B; b2++) {
+                for (int i = 0; i < intervals[b].size(); i++) {
+                    int old_score = total_score;
+                    int old_actions_size = actions.size();
+
+                    remove_interval(b, i);
+
+                    if (rnd.get_d() < 0.5) {
+                        insert_interval(b2, 0);
+                        change_interval_len(b2, 0, free_intervals[b2].len() - get_block_len(b2));
+                        if (intervals[b2].size() > 1) {
+                            for (int u: intervals[b2][1].users) {
+                                if (users_info[u].sum_len < users_info[u].rbNeed) {
+                                    add_user_in_interval(u, b2, 0);
+                                }
+                            }
+                        }
+                    } else {
+                        insert_interval(b2, (int) intervals[b2].size());
+                        change_interval_len(b2, intervals[b2].size() - 1, free_intervals[b2].len() - get_block_len(b2));
+                        if (intervals[b2].size() > 1) {
+                            for (int u: intervals[b2][intervals[b2].size() - 2].users) {
+                                if (users_info[u].sum_len < users_info[u].rbNeed) {
+                                    add_user_in_interval(u, b2, intervals[b2].size() - 1);
+                                }
+                            }
+                        }
+                    }
+
+                    if (is_good(old_score)) {
+                        CNT_ACCEPTED_INTERVAL_MERGE_EQUAL++;
+                    } else {
+                        rollback(old_actions_size);
+                        ASSERT(old_score == total_score, "failed back score");
+                    }
+                }
+            }
+        }
+        // очень мало таких ситуаций
+        /*
         ASSERT(get_intervals_size() <= J, "failed intervals size");
         if (get_intervals_size() == J) {
             return;
@@ -1920,43 +1967,6 @@ struct EgorTaskSolver {
                     }
                 }
             }
-        }
-
-        /*i++;
-        for(int k = l; k <= r; k++, i++) {
-            insert_interval(b2, i);
-            change_interval_len(b2, i, intervals[b][l].len);
-            for(int u : intervals[b][l].users) {
-                add_user_in_interval(u, b2, i);
-            }
-            remove_interval(b, l);
-        }*/
-
-        /*CHOOSE_INTERVAL(get_block_len(b) < free_intervals[b].len());
-
-        insert_interval(b, i);
-        change_interval_len(b, i, min(10, (int) rnd.get(1, free_intervals[b].len() - get_block_len(b))));
-
-        if (i == 0) {
-
-        } else {
-            auto users_and = intervals[b][i - 1].users & intervals[b][i + 1].users;
-            for (int u: users_and) {
-                add_user_in_interval(u, b, i);
-            }
-            auto users_xor = intervals[b][i - 1].users ^ intervals[b][i + 1].users;
-            for (int u: users_xor) {
-                if (intervals[b][i].users.size() + 1 <= L && ((intervals[b][i].beam_msk >> users_info[u].beam) & 1) == 0) {
-                    add_user_in_interval(u, b, i);
-                }
-            }
-        }*/
-
-        /*if (is_good(old_score)) {
-
-        } else {
-            rollback(old_actions_size);
-            ASSERT(old_score == total_score, "failed back score");
         }*/
     }
 
@@ -2097,12 +2107,19 @@ struct EgorTaskSolver {
         u = ips[rnd.get(0, ips.size() - 1)];       \
     }
 
+#define USER_FOR_BEGIN(condition)              \
+    for (int index = 0; index < 30; index++) { \
+        int u = rnd.get(0, N - 1);             \
+        auto [b, l, r] = get_user_position(u); \
+        if (condition) {
+
+    /*
 #define USER_FOR_BEGIN(condition)                                   \
     shuffle(users_order.begin(), users_order.end(), rnd.generator); \
     for (int index = 0; index < N; index++) {                       \
         int u = users_order[index];                                 \
         auto [b, l, r] = get_user_position(u);                      \
-        if (condition) {
+        if (condition) {*/
 
 #define USER_FOR_END \
     }                \
@@ -2309,37 +2326,8 @@ struct EgorTaskSolver {
         temperature = 1;
         prev_action = 0;
 
-        //TEST CASE: K=0 | tests: 666 | score: 94.7412% | 646507/682393 | time: 5647.33ms | max_time: 31.324ms | mean_time: 8.47947ms
-        //TEST CASE: K=1 | tests: 215 | score: 94.1612% | 210276/223315 | time: 1644.51ms | max_time: 21.472ms | mean_time: 7.64887ms
-        //TEST CASE: K=2 | tests: 80 | score: 93.5522% | 76724/82012 | time: 780.929ms | max_time: 25.218ms | mean_time: 9.76161ms
-        //TEST CASE: K=3 | tests: 39 | score: 94.0436% | 43245/45984 | time: 405.57ms | max_time: 24.404ms | mean_time: 10.3992ms
-        //TEST CASE: K=4 | tests: 0 | score: -nan% | 0/0 | time: 0ms | max_time: 0ms | mean_time: 0ms
-        //TOTAL: tests: 1000 | score: 94.4905% | 976752/1033704 | time: 8478.33ms | max_time: 31.324ms | mean_time: 8.47833ms
-        //EGOR TASK SOLVER STATISTIC:
-        //CNT_CALL_GET_LEFT_USER: 35403.3
-        //CNT_CALL_GET_RIGHT_USER: 36244.1
-        //=================
-        //CNT_CALL_CHANGE_INTERVAL_LEN: 6416.52
-        //=================
-        //CNT_CALL_ADD_USER_IN_INTERVAL: 5006.4
-        //CNT_CALL_REMOVE_USER_IN_INTERVAL: 4825.14
-        //=================
-        //INTERVAL_FLOW_OVER: 40.0878% 316/789
-        //INTERVAL_INCREASE_LEN: 34.1213% 274/805
-        //INTERVAL_DECREASE_LEN: 21.1914% 166/785
-        //INTERVAL_GET_FULL_FREE_SPACE: 3.39132% 0/10
-        //CNT_CALL_INTERVAL_DO_MERGE_EQUAL: 556.631
-        //CNT_CALL_INTERVAL_DO_SPLIT: 18.573
-        //INTERVAL_MERGE_EQUAL: 33.2781% 538/1616
-        //=================
-        //USER_NEW_INTERVAL: 61.989% 2230/3598
-        //USER_ADD_LEFT: -nan% 0/0
-        //USER_REMOVE_LEFT: -nan% 0/0
-        //USER_ADD_RIGHT: 68.9216% 840/1219
-        //USER_REMOVE_RIGHT: -nan% 0/0
-        //CNT_CALL_USER_DO_CROP: 260.483
-        //USER_CROP: 32.6654% 193/591
-        //USER_SWAP: 50.0409% 77172/154217
+        int best_score = total_score;
+        auto best_ans = get_total_answer();
 
         for (int step = 0; step < STEPS; step++) {
             temperature = (STEPS - step) * 1.0 / STEPS;
@@ -2372,9 +2360,14 @@ struct EgorTaskSolver {
             } else {
                 ASSERT(false, "kek");
             }
+
+            if (best_score < total_score) {
+                best_score = total_score;
+                best_ans = get_total_answer();
+            }
         }
 
-        return get_total_answer();
+        return best_ans;
     }
 };
 
@@ -2416,7 +2409,7 @@ vector<Interval> Solver_egor(int N, int M, int K, int J, int L,
                              const vector<UserInfo> &userInfos, const std::vector<Interval> &solution) {
     EgorTaskSolver solver(N, M, K, J, L, reservedRBs, userInfos, solution);
     auto answer = solver.annealing();
-    ASSERT(solver.total_score == get_solution_score(N, M, K, J, L, reservedRBs, userInfos, answer), "invalid total_score");
+    //    ASSERT(solver.total_score == get_solution_score(N, M, K, J, L, reservedRBs, userInfos, answer), "invalid total_score");
     return answer;
 }
 
