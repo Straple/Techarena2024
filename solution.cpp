@@ -72,6 +72,8 @@ int CNT_ACCEPTED_USER_SWAP = 0;
 // ===================================================================================================================
 
 #include <iostream>
+#include <filesystem>
+namespace fs = std::filesystem;
 
 // тики ведутся с 1-го января 1970 г. 00:00:00 Всемирного времени
 
@@ -583,13 +585,24 @@ struct TestData {
     vector<Interval> reservedRBs;
     vector<UserInfo> userInfos;
 };
+std::vector<Interval> unblock_ans(const std::vector<std::vector<Interval>>& ans) {
+    vector<Interval> answer;
+    for (int i = 0; i < ans.size(); i++) {
+        for (int g = 0; g < ans[i].size(); g++) {
+            if (ans[i][g].users.size()) {
+                answer.push_back(ans[i][g]);
+            }
+        }
+    }
+    return answer;
+}
 
 int get_theory_max_score(int N, int M, int K, int J, int L, const vector<Interval> &reservedRBs,
                          const vector<UserInfo> &userInfos) {
     int max_score = 0;
-    std::vector<pair<int, int>> rbNeeded;
+    std::vector<pair<int,int>> rbNeeded;
     std::vector<pair<int, int>>
-            reserved;
+    reserved;
     for (int i = 0; i < K; i++) {
         reserved.push_back({reservedRBs[i].start, reservedRBs[i].end});
     }
@@ -606,31 +619,31 @@ int get_theory_max_score(int N, int M, int K, int J, int L, const vector<Interva
     }
     sort(rbNeeded.begin(), rbNeeded.end(), greater<>());
     int taken = 0;
-    map<int, int> beams_taken;
-    map<int, int> len_per_beam;
+    map<int,int>beams_taken;
+    map<int,int>len_per_beam;
     for (int i = 0; i < N; i++) {
-        len_per_beam[userInfos[i].beam] += userInfos[i].rbNeed;
+        len_per_beam[userInfos[i].beam]+=userInfos[i].rbNeed;
     }
     int ma_len_uniq_beam = 0;
     int sum_res_len = 0;
     for (const auto &reserved: reservedRBs) {
-        sum_res_len += reserved.end - reserved.start;
+        sum_res_len+=reserved.end-reserved.start;
     }
 
     for (auto [beam, len]: len_per_beam) {
-        ma_len_uniq_beam += min(len, M - sum_res_len);
+        ma_len_uniq_beam+=min(len, M-sum_res_len);
     }
 
     for (int i = 0; i < N; i++) {
         beams_taken[rbNeeded[i].second]++;
-        if (beams_taken[rbNeeded[i].second] == (J - 1) * L) {
+        if (beams_taken[rbNeeded[i].second] == (J-1)*L) {
             continue;
         }
         //1033704
         //1033702
         max_score += rbNeeded[i].first;
         taken++;
-        if (taken == J * L) {
+        if (taken == J*L) {
             break;
         }
     }
@@ -640,7 +653,7 @@ int get_theory_max_score(int N, int M, int K, int J, int L, const vector<Interva
         max_possible -= (reserved.end - reserved.start) * L;
     }
 
-    return min(min(max_score, max_possible), ma_len_uniq_beam);
+    return min(min(max_score, max_possible),ma_len_uniq_beam);
 }
 
 int get_theory_max_score(const TestData &data) {
@@ -729,6 +742,112 @@ int get_solution_score(const TestData &testdata, const vector<Interval> &answer)
     return get_solution_score(testdata.N, testdata.M, testdata.K, testdata.J, testdata.L, testdata.reservedRBs,
                               testdata.userInfos, answer);
 }
+
+class Snapshoter{
+public:
+    std::string name;
+    int theor_max;
+    std::string _write_directory;
+    int frame = 0;
+    bool init = false;
+    std::vector<string>frame_names;
+    Snapshoter(){}
+    std::vector<Interval>last_intervals;
+    std::vector<int>scores;
+    TestData test_data;
+    Snapshoter(int K, int test, int theor_max,TestData test_data, std::string name = "solution_snapshots"): name(name),theor_max(theor_max), test_data(test_data){
+        fs::create_directory("movies_data");
+        fs::create_directory("movies_data/"+name);
+        _write_directory = "movies_data/"+name+"/" + to_string(K)+"_"+to_string(test)+"/";
+        fs::create_directory(_write_directory);
+        init = true;
+    }
+    void write(const std::vector<std::vector<Interval>>&intervals, const string& frame_name = "") {
+        write(unblock_ans(intervals), frame_name);
+    }
+    bool same_as_last(std::vector<Interval>intervals) {
+        sort(intervals.begin(), intervals.end(), [&](const auto& lhs, const auto& rhs){
+            return lhs.start < rhs.start;
+        });
+
+        if (last_intervals.size() == 0) return false;
+        if (last_intervals.size() != intervals.size()) return false;
+        for (int i = 0; i < last_intervals.size(); i++) {
+            if (last_intervals[i].start != intervals[i].start || last_intervals[i].end != intervals[i].end) {
+                return false;
+            }
+            sort(intervals[i].users.begin(), intervals[i].users.end());
+            sort(last_intervals[i].users.begin(), last_intervals[i].users.end());
+            for (int g = 0; g < intervals[i].users.size(); g++) {
+                if (intervals[i].users[g] != last_intervals[i].users[g]) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    void write(const std::vector<Interval>&intervals, const string& frame_name = "", int custom_score = -1) {
+        if (same_as_last(intervals)) return;
+        last_intervals = intervals;
+
+        frame_names.push_back(frame_name);
+        int score = 0;
+        if (custom_score != -1) {
+            score = custom_score;
+        } else {
+            score = get_solution_score(test_data, intervals);
+        }
+        scores.push_back(score);
+        std::ofstream out(_write_directory + to_string(frame) + ".txt");
+        out << intervals.size() << endl;
+        for (int i = 0; i < intervals.size(); i++) {
+            out << intervals[i].start << " " << intervals[i].end << endl;
+            out << intervals[i].users.size() << endl;
+            for (auto user_id: intervals[i].users) {
+                out << user_id << " ";
+            }
+            out << endl;
+        }
+        out.close();
+        cout << "UPDATING FRAME: " << frame << endl;
+        frame++;
+    }
+    ~Snapshoter() {
+        if (!init) return;
+        std::ofstream out(_write_directory + "data" + ".txt");
+        out << "{" << endl;
+        out << "\"theor_max\": " << theor_max << "," << endl;
+        out << "\"frames\": " << frame  << ","<< endl;
+        out << "\"frame_names\": [";
+        for (int i = 0; i < frame_names.size(); i++) {
+            out << "\"" + frame_names[i] << "\"";
+            if (i+1 != frame_names.size()) {
+                out << ",";
+            }
+        }
+        out << "]" << "," << endl;
+        out << "\"scores\": [";
+        for (int i = 0; i < scores.size(); i++) {
+            out << "\"" + to_string(scores[i]) << "\"";
+            if (i+1 != scores.size()) {
+                out << ",";
+            }
+        }
+        out << "]" << endl;
+        out << "}" << endl;
+        out.close();
+    }
+};
+Snapshoter snapshoter;
+
+#define ENABLE_SNAPSHOT
+
+#ifdef ENABLE_SNAPSHOT
+#define SNAP(x) x
+#else
+#define SNAP(x)
+#endif
 
 int BEAM_MAX_AMOUNT = 32;
 
@@ -896,6 +1015,7 @@ vector<vector<Interval>> Solver_artem(int N, int M, int K, int J, int L,
         int space_left = space_left_q.begin()->first;
         int pick_i = space_left_q.begin()->second;
         space_left_q.erase(space_left_q.begin());
+        SNAP(snapshoter.write(pre_answer, "greedy"));
         // СЋР·Р°РµРј OWNEDBY РґРѕ РєРѕРЅС†Р°!!!
         // СЃС‡РёС‚Р°РµРј РєРѕР»-РІРѕ СЃРІРѕР±РѕРґРЅС‹С… СЃР»РѕС‚РѕРІ.
 
@@ -903,7 +1023,7 @@ vector<vector<Interval>> Solver_artem(int N, int M, int K, int J, int L,
         //-------------------------
         std::vector<std::pair<int, int>> candidates;
         std::set<int> to_delete;
-        if (coef != -1.0) {
+        /*if (coef != -1.0) {
             for (auto user_id: activeUsers[pick_i]) {
                 float curr_len = pre_answer[pick_i][current_sub_interval[pick_i]].end -
                                  pre_answer[pick_i][current_sub_interval[pick_i]].start;
@@ -947,7 +1067,7 @@ vector<vector<Interval>> Solver_artem(int N, int M, int K, int J, int L,
                 }
             }
             candidates.clear();
-        }
+        }*/
 
         for (auto &user: userInfos) {
             if (used_users.find(user.id) == used_users.end() && beamOwnedBy[pick_i][user.beam] == -1) {
@@ -960,7 +1080,7 @@ vector<vector<Interval>> Solver_artem(int N, int M, int K, int J, int L,
 
         sort(candidates.begin(), candidates.end(), greater<>());
         int get_more = L - activeUsers[pick_i].size();
-        std::set<int> new_users;
+        std::set<int>new_users;
         for (int g = 0; g < (int) candidates.size(); g++) {
             if (get_more == 0) break;
             if (beamOwnedBy[pick_i][userInfos[candidates[g].second].beam] == -1) {
@@ -985,7 +1105,7 @@ vector<vector<Interval>> Solver_artem(int N, int M, int K, int J, int L,
                         ma_not_empty = max(ma_not_empty, need - now);
                     }
                 }
-                //                cout << ma_not_empty << " " << int_len << " " << current_sub_interval[pick_i] << " " << pre_answer[pick_i].size() << endl;
+//                cout << ma_not_empty << " " << int_len << " " << current_sub_interval[pick_i] << " " << pre_answer[pick_i].size() << endl;
 
                 if (ma_not_empty == int_len) {
                     break;
@@ -1013,8 +1133,8 @@ vector<vector<Interval>> Solver_artem(int N, int M, int K, int J, int L,
                 } else {
                     break;
                 }
-                //                break;
-                //                break;
+//                break;
+//                break;
             }
         }
         int minus = 0;
@@ -1027,30 +1147,30 @@ vector<vector<Interval>> Solver_artem(int N, int M, int K, int J, int L,
                 int metric = 0;
                 for (auto user_id: activeUsers[pick_i]) {
                     if (new_users.count(user_id)) {
-                        metric -= i;
+                        metric-=i;
                     } else {
                         int will_supplied_if_moved = rbSuplied[user_id] + i;
                         if (will_supplied_if_moved >= userInfos[user_id].rbNeed) {
                             metric += len - i;
-                            metric -= will_supplied_if_moved - userInfos[user_id].rbNeed;
+                            metric -= will_supplied_if_moved-userInfos[user_id].rbNeed;
                         }
                     }
                 }
-                //                cout << i << " " << metric << "|";
+//                cout << i << " " << metric << "|";
                 if (metric > best_metric) {
                     best_metric = metric;
                     best_ind = i;
                 }
             }
-            //            cout << endl;
-            if (best_ind != 0) {// Р СР С•Р В¶Р Р…Р С• Р С‘ РЎС“Р В±РЎР‚Р В°РЎвЂљРЎРЉ, Р С—РЎР‚Р С•РЎРѓРЎвЂљР С• Р Т‘Р В»РЎРЏ РЎС“Р Т‘Р С•Р В±РЎРѓРЎвЂљР Р†Р В° Р С‘ Р С–Р В°РЎР‚Р В°Р Р…РЎвЂљР С‘Р С‘
+//            cout << endl;
+            if (best_ind != 0) { // можно и убрать, просто для удобства и гарантии
                 minus = best_ind;
-                //                cout << "UPD!" << " " << best_ind << endl;
+//                cout << "UPD!" << " " << best_ind << endl;
                 pre_answer[pick_i][current_sub_interval[pick_i] - 1].end += best_ind;
                 pre_answer[pick_i][current_sub_interval[pick_i]].start += best_ind;
 
                 for (auto user_id: pre_answer[pick_i][current_sub_interval[pick_i] - 1].users) {
-                    rbSuplied[user_id] += best_ind;
+                    rbSuplied[user_id]+=best_ind;
                     if (rbSuplied[user_id] >= userInfos[user_id].rbNeed) {
                         if (activeUsers[pick_i].count(user_id)) {
                             beamOwnedBy[pick_i][userInfos[user_id].beam] = -1;
@@ -1070,7 +1190,7 @@ vector<vector<Interval>> Solver_artem(int N, int M, int K, int J, int L,
 
                 sort(candidates.begin(), candidates.end(), greater<>());
                 int get_more = L - activeUsers[pick_i].size();
-                std::set<int> new_users;
+                std::set<int>new_users;
                 for (int g = 0; g < (int) candidates.size(); g++) {
                     if (get_more == 0) break;
                     if (beamOwnedBy[pick_i][userInfos[candidates[g].second].beam] == -1) {
@@ -1080,6 +1200,8 @@ vector<vector<Interval>> Solver_artem(int N, int M, int K, int J, int L,
                         get_more--;
                     }
                 }
+                SNAP(snapshoter.write(pre_answer, "moving border"));
+
             }
         }
 
@@ -1087,6 +1209,7 @@ vector<vector<Interval>> Solver_artem(int N, int M, int K, int J, int L,
             rbSuplied[user_id] += pre_answer[pick_i][current_sub_interval[pick_i]].end -
                                   pre_answer[pick_i][current_sub_interval[pick_i]].start;
             pre_answer[pick_i][current_sub_interval[pick_i]].users.push_back(user_id);
+            SNAP(snapshoter.write(pre_answer, "adding user " + to_string(user_id)));
             if (rbSuplied[user_id] >= userInfos[user_id].rbNeed) {
                 to_delete.insert(user_id);
             }
@@ -1106,7 +1229,8 @@ vector<vector<Interval>> Solver_artem(int N, int M, int K, int J, int L,
     return pre_answer;
 }
 
-int get_solution_score_light(int N, vector<vector<Interval>> &ans, const vector<UserInfo> &userInfos, std::vector<int> &suplied) {
+int
+get_solution_score_light(int N, vector<vector<Interval>> &ans, const vector<UserInfo> &userInfos, std::vector<int> &suplied) {
     for (int i = 0; i < N; i++) {
         suplied[i] = 0;
     }
@@ -1196,15 +1320,15 @@ void optimize_one_gap(int N, int M, int K, int J, int L,
                     }
                 }
                 if (best_score_gain > minus) {
-                    //                    cerr << "+" << best_score_gain - minus << endl;
+//                    cerr << "+" << best_score_gain - minus << endl;
                     if (is_empty_winner) {
                         empty.erase(best_receiver);
                         //cerr << "IS EMPTY" << endl;
                     }
-                    //                    cerr << "OPTIMIZING1" << endl;
-                    //                    cerr << "PUTTING" << best_receiver << "(" << userInfos[best_receiver].beam << ")" << " instead of " << i << "(" << userInfos[i].beam << ")" << " " << mi[i] << endl;
+//                    cerr << "OPTIMIZING1" << endl;
+//                    cerr << "PUTTING" << best_receiver << "(" << userInfos[best_receiver].beam << ")" << " instead of " << i << "(" << userInfos[i].beam << ")" << " " << mi[i] << endl;
                     auto iter = find(solution[mi[i]].users.begin(), solution[mi[i]].users.end(), i);
-                    solution[mi[i]].users.erase(iter);// optimize_it
+                    solution[mi[i]].users.erase(iter); // optimize_it
                     solution[mi[i]].users.push_back(best_receiver);
 
                     suplied[i] = suplied[i] - current_len;
@@ -1237,14 +1361,16 @@ void optimize_one_gap(int N, int M, int K, int J, int L,
                         mi_set[mi[i]].insert(i);
                     }
                     // cerr << endl;
+
+
                 }
             }
         }
 
         // Обрезаем голову, отдаём хвосту
         for (int i = 0; i < N; i++) {
-            if (ma[i] != -10000) {// можно сделать так что бь mi == 0
-                bool is_last = ma[i] + 1 == solution.size();
+            if (ma[i] != -10000 ) {// можно сделать так что бь mi == 0
+                bool is_last =  ma[i] + 1 == solution.size();
                 int best_score_gain = -1;
                 int best_receiver = -1;
                 int current_len = solution[ma[i]].end - solution[ma[i]].start;
@@ -1285,15 +1411,15 @@ void optimize_one_gap(int N, int M, int K, int J, int L,
                     }
                 }
                 if (best_score_gain > minus) {
-                    //                    cerr << "+" << best_score_gain << "-" <<  minus << endl;
-                    //                    cerr << "OPTIMIZING2" << endl;
+//                    cerr << "+" << best_score_gain << "-" <<  minus << endl;
+//                    cerr << "OPTIMIZING2" << endl;
                     if (is_empty_winner) {
                         empty.erase(best_receiver);
                         //cerr << "EMPTY" << endl;
                     }
-                    //                    cerr << "PUTTING" << best_receiver << "(" << userInfos[best_receiver].beam << ")" << " instead of " << i << "(" << userInfos[i].beam << ")" << " " << mi[i] << endl;
+//                    cerr << "PUTTING" << best_receiver << "(" << userInfos[best_receiver].beam << ")" << " instead of " << i << "(" << userInfos[i].beam << ")" << " " << mi[i] << endl;
                     auto iter = find(solution[ma[i]].users.begin(), solution[ma[i]].users.end(), i);
-                    solution[ma[i]].users.erase(iter);// optimize_it
+                    solution[ma[i]].users.erase(iter); // optimize_it
                     solution[ma[i]].users.push_back(best_receiver);
                     suplied[i] = suplied[i] - current_len;
                     suplied[best_receiver] = suplied[best_receiver] + current_len;
@@ -1329,6 +1455,8 @@ void optimize_one_gap(int N, int M, int K, int J, int L,
             }
         }
     }
+
+
 }
 
 void optimize(int N, int M, int K, int J, int L,
@@ -1362,27 +1490,27 @@ vector<Interval> Solver_Artem_grad(int N, int M, int K, int J, int L,
                                    vector<UserInfo> userInfos) {
 
     vector<int> suplied(N, 0);
-    std::vector<std::vector<std::vector<Interval>>> anses;
+    std::vector<std::vector<std::vector<Interval>>>anses;
     anses.push_back(Solver_artem(N, M, K, J, L, reservedRBs, userInfos, -2.0));
-    //    anses.push_back(Solver_artem(N, M, K, J, L, reservedRBs, userInfos, -2.0, 0.75));
-    //    anses.push_back(Solver_artem(N, M, K, J, L, reservedRBs, userInfos, -2.0, 0.5));
-    //    anses.push_back(Solver_artem(N, M, K, J, L, reservedRBs, userInfos, -2.0, 0.3));
+//    anses.push_back(Solver_artem(N, M, K, J, L, reservedRBs, userInfos, -2.0, 0.75));
+//    anses.push_back(Solver_artem(N, M, K, J, L, reservedRBs, userInfos, -2.0, 0.5));
+//    anses.push_back(Solver_artem(N, M, K, J, L, reservedRBs, userInfos, -2.0, 0.3));
 
 
-    //    anses.push_back(Solver_artem(N, M, K, J, L, reservedRBs, userInfos, -2.0, 0.7));
-    //    anses.push_back(Solver_artem(N, M, K, J, L, reservedRBs, userInfos, -2.0, 0.6));
+//    anses.push_back(Solver_artem(N, M, K, J, L, reservedRBs, userInfos, -2.0, 0.7));
+//    anses.push_back(Solver_artem(N, M, K, J, L, reservedRBs, userInfos, -2.0, 0.6));
     int biggest_score = -1;
     int biggest_index = -1;
-    for (int i = 0; i < anses.size(); i++) {
+    for (int i = 0; i < anses.size(); i++){
         optimize(N, M, K, J, L, reservedRBs, userInfos, anses[i]);
         int score = get_solution_score_light(N, anses[i], userInfos, suplied);
-        if (score > biggest_score) {
+        if (score > biggest_score){
             biggest_score = score;
             biggest_index = i;
         }
     }
-    std::vector<vector<Interval>> pre_answer = anses[biggest_index];
-    vector<Interval> answer;
+    std::vector<vector<Interval>>pre_answer = anses[biggest_index];
+    vector <Interval> answer;
     for (int i = 0; i < pre_answer.size(); i++) {
         for (int g = 0; g < pre_answer[i].size(); g++) {
             if (pre_answer[i][g].users.size()) {
@@ -2501,8 +2629,6 @@ vector<Interval> Solver(int N, int M, int K, int J, int L,
     }
 
     auto egor_answer = Solver_egor(N, M, K, J, L, reservedRBs, userInfos, artem_answer);
-    //return egor_answer;
-
     auto get_egor_blocked = ans_to_blocked_ans(M, K, reservedRBs, egor_answer);
     optimize(N, M, K, J, L, reservedRBs, userInfos, get_egor_blocked);
     egor_answer.clear();

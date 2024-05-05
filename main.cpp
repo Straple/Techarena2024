@@ -164,6 +164,7 @@ void train_egor_task_solver() {
     }
 }*/
 
+extern Snapshooter snapshooter;
 int main() {
     {
         ifstream input1("scores.txt");
@@ -271,6 +272,8 @@ int main() {
             cout << "test: " << test << "!" << endl;
 
             Timer timer;
+            int theor_max = get_theory_max_score(data);
+            snapshooter = Snapshooter(K,test,theor_max ,data,"basic_solve");
             auto intervals = Solver(data);
             double time = timer.get();
 
@@ -284,20 +287,27 @@ int main() {
             //scores_output << K << ' ' << test << ' ' << score << endl;
 
             infos[K].total_score += score;
-            int theor_max = get_theory_max_score(data);
             infos[K].total_theory_score += theor_max;
 
-            std::ofstream out("ans_data_art/case_K=" + to_string(K) + "/" + to_string(test) + ".txt");
-            out << intervals.size() << endl;
-            for (int i = 0; i < intervals.size(); i++) {
-                out << intervals[i].start << " " << intervals[i].end << endl;
-                out << intervals[i].users.size() << endl;
-                for (auto user_id: intervals[i].users) {
-                    out << user_id << " ";
-                }
-                out << endl;
-            }
-            out.close();
+//            std::ofstream out("ans_data_art/case_K="+to_string(K)+"/"+to_string(test)+".txt");
+//            out << intervals.size() << endl;
+//            for (int i = 0; i < intervals.size(); i++){
+//                out << intervals[i].start << " " << intervals[i].end << endl;
+//                out << intervals[i].users.size() << endl;
+//                for (auto user_id: intervals[i].users ){
+//                    out << user_id << " ";
+//                }
+//                out << endl;
+//            }
+//            out.close();
+
+            infos[K].total_time += time;
+            infos[K].max_test_time = max(infos[K].max_test_time, time);
+
+            score_per_test[K][test] = score;
+
+            infos[K].total_score += score;
+            infos[K].total_theory_score += theor_max;
 
             //cout << score <<  " _ " <<  get_theory_max_score(data) << endl;
             //tests_and_scores.push_back({(float)score/theor_max, test});
