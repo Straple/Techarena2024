@@ -173,7 +173,7 @@ std::ostream &operator<<(std::ostream &output, const Timer &time) {
 
 #include <random>
 
-class randomizer {
+struct randomizer {
     std::mt19937_64 generator;
 
 public:
@@ -389,6 +389,12 @@ public:
     friend MyBitSet operator&(MyBitSet lhs, const MyBitSet &rhs) {
         for (int i = 0; i < bits_size; i++) {
             lhs.bits[i] &= rhs.bits[i];
+        }
+        return lhs;
+    }
+    friend MyBitSet operator^(MyBitSet lhs, const MyBitSet &rhs) {
+        for (int i = 0; i < bits_size; i++) {
+            lhs.bits[i] ^= rhs.bits[i];
         }
         return lhs;
     }
@@ -1403,45 +1409,40 @@ struct EgorTaskSolver {
     int J;
     int L;
 
+    int B;// колво блоков
+
     int prev_action = 0;
     int score_prev_action = 0;
 
-    int free_intervals_size = 0;
-    MyInterval free_intervals[5];
+    vector<MyInterval> free_intervals;
 
     ///============================
     /// internal data
     ///============================
 
     randomizer rnd;
-    mt19937 marsene_twist;
 
     int total_score = 0;
 
     //int current_user = -1;
 
     struct SetInterval {
-        // position
-        int block = -1;
         int len = 0;
-
-        // info
         MyBitSet<128> users;
         uint32_t beam_msk = 0;
 
         friend bool operator==(const SetInterval &lhs, const SetInterval &rhs) {
-            return lhs.block == rhs.block &&
-                   lhs.len == rhs.len &&
+            return lhs.len == rhs.len &&
                    lhs.users == rhs.users &&
                    lhs.beam_msk == rhs.beam_msk;
         }
     };
 
-    SetInterval intervals[16];
+    vector<vector<SetInterval>> intervals;
 
     struct MyUserInfo {
         // position
-        int left = -1, right = -1;
+        //int left = -1, right = -1;
 
         // user info
         int id = -1;
@@ -1450,91 +1451,56 @@ struct EgorTaskSolver {
 
         // score
         int sum_len = 0;
-
-        /*int calc_score() const {
-            if (sum_len > rbNeed) {
-                return rbNeed;
-            } else {
-                return sum_len;
-            }
-        }*/
     };
 
-    int user_score(int u) {
-        ASSERT(0 <= u && u < N, "invalid u");
-        int len = users_info[u].sum_len;
-        int rbNeed = users_info[u].rbNeed;
-        return min(len, rbNeed);
-    }
+    vector<MyUserInfo> users_info;
 
-    MyUserInfo users_info[128];
+    vector<int> users_with_equal_beam[32];
 
-    int user_id_to_u[128];
+    vector<int> user_id_to_u;
 
-    int users_order[128];
-
-    int users_with_equal_beam_data[128];
-    int users_with_equal_beam_size[32];
-    int *users_with_equal_beam[32];
+    vector<int> users_order;
 
     struct Action {
         enum Type {
             ADD_USER_IN_INTERVAL,
             REMOVE_USER_IN_INTERVAL,
             CHANGE_INTERVAL_LEN,
-            MOVE_TO_INTERVAL,
+            REMOVE_INTERVAL,
+            ADD_INTERVAL,
         } type;
 
-        int u = -1;
+        int b = -1;
         int i = -1;
-        int change_len = 0;
+        int u = -1;
+        int c = 0;
     };
 
     vector<Action> actions;
 
     void rollback() {
         ASSERT(!actions.empty(), "actions is empty");
-        auto [type, u, i, change_len] = actions.back();
+        auto [type, b, i, u, c] = actions.back();
         actions.pop_back();
 
         if (type == Action::Type::ADD_USER_IN_INTERVAL) {
-            IMPL_remove_user_in_interval(u, i);
+            IMPL_remove_user_in_interval(u, b, i);
         } else if (type == Action::Type::REMOVE_USER_IN_INTERVAL) {
-            IMPL_add_user_in_interval(u, i);
+            IMPL_add_user_in_interval(u, b, i);
         } else if (type == Action::Type::CHANGE_INTERVAL_LEN) {
-            IMPL_change_interval_len(i, -change_len);
-            IMPL_update_block_after_change_interval();
-        } else if (type == Action::Type::MOVE_TO_INTERVAL) {
-            IMPL_move_to_interval(change_len, i);
+            IMPL_change_interval_len(b, i, -c);
+        } else if (type == Action::Type::REMOVE_INTERVAL) {
+            intervals[b].insert(intervals[b].begin() + i, SetInterval());
+        } else if (type == Action::Type::ADD_INTERVAL) {
+            intervals[b].erase(intervals[b].begin() + i);
         } else {
             ASSERT(false, "invalid type");
         }
     }
 
-    // проходит по intervals
-    // инициализирует .block так, чтобы длины не превышали free_interval
-    // если .block = -1, то этот интервал никуда не влез
-    void build_blocks() {
-        int cur_block = 0;
-        int cur_len = 0;
-
-        int i;
-        for (i = 0; i < J; i++) {
-            if (cur_len + intervals[i].len > free_intervals[cur_block].len()) {
-                // не помещаемся
-                cur_block++;
-                if (cur_block == free_intervals_size) {
-                    break;
-                }
-                cur_len = 0;
-                i--;
-            } else {
-                cur_len += intervals[i].len;
-                intervals[i].block = cur_block;
-            }
-        }
-        for (; i < J; i++) {
-            intervals[i].block = -1;
+    void rollback(int size) {
+        while (actions.size() > size) {
+            rollback();
         }
     }
 
@@ -1543,13 +1509,17 @@ struct EgorTaskSolver {
                    const vector<UserInfo> &userInfos,
                    vector<Interval> start_intervals) : N(NN), M(MM), K(KK), J(JJ), L(LL) {
 
-        ASSERT(2 <= L && L <= 16, "kek");
-        ASSERT(0 < J && J <= 16, "hoho");
+        ASSERT(2 <= L && L <= 16, "invalid L");
+        ASSERT(0 < J && J <= 16, "invalid J");
+
+
+        users_info.resize(N);
+        user_id_to_u.resize(N);
 
         {
-            for (int beam = 0; beam < 32; beam++) {
+            /*for (int beam = 0; beam < 32; beam++) {
                 users_with_equal_beam_size[beam] = 0;
-            }
+            }*/
             for (int u = 0; u < N; u++) {
                 ASSERT(u == userInfos[u].id, "are you stupid or something?");
                 ASSERT(0 <= userInfos[u].beam && userInfos[u].beam < 32, "invalid beam");
@@ -1557,33 +1527,15 @@ struct EgorTaskSolver {
                 users_info[u].rbNeed = userInfos[u].rbNeed;
                 users_info[u].beam = userInfos[u].beam;
 
-                users_with_equal_beam_size[userInfos[u].beam]++;
+                //users_with_equal_beam_size[userInfos[u].beam]++;
                 user_id_to_u[users_info[u].id] = u;
-            }
-
-            // reserved data
-            users_with_equal_beam[0] = users_with_equal_beam_data;
-            for (int beam = 1; beam < 32; beam++) {
-                users_with_equal_beam[beam] = users_with_equal_beam[beam - 1] + users_with_equal_beam_size[beam - 1];
-            }
-
-            for (int beam = 0; beam < 32; beam++) {
-                users_with_equal_beam_size[beam] = 0;
-            }
-            // push_back
-            for (int u = 0; u < N; u++) {
-                int beam = users_info[u].beam;
-                users_with_equal_beam[beam][users_with_equal_beam_size[beam]] = users_info[u].id;
-                users_with_equal_beam_size[beam]++;
+                users_with_equal_beam[userInfos[u].beam].push_back(userInfos[u].id);
             }
         }
 
         // build free_intervals
         {
-            bool is_free[513];
-            for (int i = 0; i < 513; i++) {
-                is_free[i] = true;
-            }
+            vector<bool> is_free(M + 1, true);
             is_free[M] = false;
 
             for (const auto &[start, end, users]: reservedRBs) {
@@ -1593,23 +1545,21 @@ struct EgorTaskSolver {
             }
 
             int start = -1;
-            for (int i = 0; i < 513; i++) {
+            for (int i = 0; i <= M; i++) {
                 if (!is_free[i]) {
                     if (start != i - 1) {
-                        free_intervals[free_intervals_size] = {start + 1, i};
-                        free_intervals_size++;
+                        free_intervals.push_back({start + 1, i});
                     }
                     start = i;
                 }
             }
+            B = free_intervals.size();
         }
 
         {
-            //current_user = 0;
-            for (int u = 0; u < N; u++) {
-                users_order[u] = u;
-            }
-            sort(users_order, users_order + N, [&](int lhs, int rhs) {
+            users_order.resize(N);
+            iota(users_order.begin(), users_order.end(), 0);
+            sort(users_order.begin(), users_order.end(), [&](int lhs, int rhs) {
                 return users_info[lhs].rbNeed > users_info[rhs].rbNeed;
             });
         }
@@ -1620,340 +1570,175 @@ struct EgorTaskSolver {
                 return lhs.start < rhs.start;
             });
 
-            int interval = 0;
-            for (int i = 0; i < start_intervals.size(); i++) {
-                intervals[interval] = SetInterval{-1, start_intervals[i].end - start_intervals[i].start, {}};
-                interval++;
-            }
-            while (interval < J) {
-                intervals[interval] = SetInterval{-1, 0, {}};
-                interval++;
-            }
-            build_blocks();
+            intervals.resize(B);
 
-            for (int i = 0; i < start_intervals.size(); i++) {
-                for (auto u: start_intervals[i].users) {
-                    add_user_in_interval(u, i);
+            for (auto [start, end, users]: start_intervals) {
+                bool already_push = false;
+                for (int block = 0; block < B; block++) {
+                    if (free_intervals[block].start <= start && end <= free_intervals[block].end) {
+                        ASSERT(!already_push, "double push");
+                        already_push = true;
+                        intervals[block].push_back({end - start, {}, 0});
+                        for (int u: users) {
+                            add_user_in_interval(u, block, intervals[block].size() - 1);
+                        }
+                    }
                 }
+                ASSERT(already_push, "no push");
+            }
+            for (int i = start_intervals.size(); i < J; i++) {
+                intervals[rnd.get(0, B - 1)].push_back(SetInterval());
             }
         }
-    }
-
-    [[nodiscard]] vector<Interval> get_total_answer() {
-        vector<Interval> answer;
-        int start = free_intervals[0].start;
-        int cur_block = 0;
-        for (int i = 0; i < J; i++) {
-            if (intervals[i].block == -1) {
-                continue;
-            }
-
-            if (intervals[i].block != cur_block) {
-                // new block
-                cur_block = intervals[i].block;
-                start = free_intervals[cur_block].start;
-            }
-
-            if (!intervals[i].users.empty() && intervals[i].len != 0) {
-                answer.push_back({start, start + intervals[i].len, {}});
-                for (int u: intervals[i].users) {
-                    answer.back().users.push_back(users_info[u].id);
-                }
-                start += intervals[i].len;
-            }
-        }
-        return answer;
-    }
-
-    [[nodiscard]] vector<Interval> get_answer_but_no_changes() {
-        int stack_iterator = actions.size();
-
-        for (int u = 0; u < N; u++) {
-            user_do_crop(u);
-        }
-
-        auto ans = get_total_answer();
-
-        while (actions.size() > stack_iterator) {
-            rollback();
-        }
-        return ans;
     }
 
     ///===========================
     ///===========ACTIONS=========
     ///===========================
 
-    int get_left_user(int u) {
-        //#ifndef MY_DEBUG_MODE
-        return users_info[u].left;
-        //#endif
-        CNT_CALL_GET_LEFT_USER++;
-        for (int i = 0; i < J; i++) {
-            if (intervals[i].users.contains(u)) {
-                ASSERT(i == users_info[u].left, "failed calc left");
-                return i;
-            }
+    void IMPL_change_interval_len(int b, int i, int c) {
+        auto &interval = intervals[b][i];
+        for (int u: interval.users) {
+            total_score -= get_user_score(u);
+            users_info[u].sum_len += c;
+            total_score += get_user_score(u);
         }
-        ASSERT(-1 == users_info[u].left, "failed calc left");
-        return -1;
+        interval.len += c;
+        ASSERT(0 <= interval.len, "invalid interval");
     }
 
-    int get_right_user(int u) {
-        //#ifndef MY_DEBUG_MODE
-        return users_info[u].right;
-        //#endif
-        CNT_CALL_GET_RIGHT_USER++;
-        for (int i = J - 1; i >= 0; i--) {
-            if (intervals[i].users.contains(u)) {
-                ASSERT(i == users_info[u].right, "failed calc right");
-                return i;
-            }
-        }
-        ASSERT(-1 == users_info[u].right, "failed calc right");
-        return -1;
-    }
-
-    void IMPL_update_block_after_change_interval() {
-        int old_first_bad_block = J;
-        for (int i = 0; i < J; i++) {
-            if (intervals[i].block == -1) {
-                old_first_bad_block = i;
-                break;
-            }
-        }
-
-        build_blocks();
-
-        while (0 < old_first_bad_block && intervals[old_first_bad_block - 1].block == -1) {
-            old_first_bad_block--;
-
-            for (int u: intervals[old_first_bad_block].users) {
-                total_score -= user_score(u);
-                users_info[u].sum_len -= intervals[old_first_bad_block].len;
-                total_score += user_score(u);
-            }
-        }
-
-        while (old_first_bad_block < J && intervals[old_first_bad_block].block != -1) {
-            for (int u: intervals[old_first_bad_block].users) {
-                total_score -= user_score(u);
-                users_info[u].sum_len += intervals[old_first_bad_block].len;
-                total_score += user_score(u);
-            }
-
-            old_first_bad_block++;
-        }
-    }
-
-    void IMPL_change_interval_len(int interval, int change) {
-        auto &[block, len, users, beam_msk] = intervals[interval];
-
-        if (block != -1) {
-            for (int u: users) {
-                total_score -= user_score(u);
-                users_info[u].sum_len += change;
-                total_score += user_score(u);
-            }
-        }
-
-        len += change;
-        ASSERT(0 <= len, "invalid interval");
-    }
-
-    void change_interval_len(int interval, int change) {
+    void change_interval_len(int b, int i, int c) {
         CNT_CALL_CHANGE_INTERVAL_LEN++;
-        actions.push_back({Action::Type::CHANGE_INTERVAL_LEN, -1, interval, change});
-        IMPL_change_interval_len(interval, change);
-        IMPL_update_block_after_change_interval();
+        actions.push_back({Action::Type::CHANGE_INTERVAL_LEN, b, i, -1, c});
+        IMPL_change_interval_len(b, i, c);
     }
 
-    void IMPL_add_user_in_interval(int u, int i) {
-        auto &interval = intervals[i];
+    void IMPL_add_user_in_interval(int u, int b, int i) {
+        auto &interval = intervals[b][i];
         auto &user = users_info[u];
 
         ASSERT(interval.users.size() + 1 <= L, "failed add");
         ASSERT(!interval.users.contains(u), "user already contains");
-        ASSERT(!((interval.beam_msk >> user.beam) & 1), "equal beams");
+        ASSERT(((interval.beam_msk >> user.beam) & 1) == 0, "equal beams");
 
+        total_score -= get_user_score(u);
+
+        user.sum_len += interval.len;
         interval.users.insert(u);
         interval.beam_msk ^= (uint32_t(1) << user.beam);
 
-        if (user.left == -1) {
-            user.left = user.right = i;
-        } else {
-            user.left = min(user.left, i);
-            user.right = max(user.right, i);
-        }
-
-        ASSERT(user.left == get_left_user(u), "failed left");
-        ASSERT(user.right == get_right_user(u), "failed right");
-
-        if (interval.block != -1) {
-            total_score -= user_score(u);
-            user.sum_len += interval.len;
-            total_score += user_score(u);
-        }
+        total_score += get_user_score(u);
     }
 
-    void add_user_in_interval(int u, int i) {
+    void add_user_in_interval(int u, int b, int i) {
         CNT_CALL_ADD_USER_IN_INTERVAL++;
-        actions.push_back({Action::Type::ADD_USER_IN_INTERVAL, u, i, 0});
-        IMPL_add_user_in_interval(u, i);
+        actions.push_back({Action::Type::ADD_USER_IN_INTERVAL, b, i, u, 0});
+        IMPL_add_user_in_interval(u, b, i);
     }
 
-    void IMPL_remove_user_in_interval(int u, int i) {
-        auto &interval = intervals[i];
+    void IMPL_remove_user_in_interval(int u, int b, int i) {
+        auto &interval = intervals[b][i];
         auto &user = users_info[u];
 
         ASSERT(interval.users.contains(u), "user no contains");
+        ASSERT(((interval.beam_msk >> users_info[u].beam) & 1) == 1, "user no contains");
 
+        total_score -= get_user_score(u);
+
+        user.sum_len -= interval.len;
         interval.users.erase(u);
         interval.beam_msk ^= (uint32_t(1) << user.beam);
 
-        if (user.left == i) {
-            user.left++;
-        } else if (user.right == i) {
-            user.right--;
-        }
-        if (user.left > user.right) {
-            user.left = user.right = -1;
-        }
-
-        ASSERT(user.left == get_left_user(u), "failed left");
-        ASSERT(user.right == get_right_user(u), "failed right");
-
-        if (interval.block != -1) {
-            total_score -= user_score(u);
-            user.sum_len -= interval.len;
-            total_score += user_score(u);
-        }
+        total_score += get_user_score(u);
     }
 
-    void remove_user_in_interval(int u, int i) {
+    void remove_user_in_interval(int u, int b, int i) {
         CNT_CALL_REMOVE_USER_IN_INTERVAL++;
-        actions.push_back({Action::Type::REMOVE_USER_IN_INTERVAL, u, i, 0});
-        IMPL_remove_user_in_interval(u, i);
+        actions.push_back({Action::Type::REMOVE_USER_IN_INTERVAL, b, i, u, 0});
+        IMPL_remove_user_in_interval(u, b, i);
     }
 
-    void IMPL_move_to_interval(int interval, int to) {
-        if (interval == to) {
-            IMPL_update_block_after_change_interval();
-            return;
+    void remove_interval(int b, int i) {
+        if (intervals[b][i].len != 0) {
+            change_interval_len(b, i, -intervals[b][i].len);
         }
-        for (int i = interval; i < to; i++) {
-            swap(intervals[i], intervals[i + 1]);
-        }
-        for (int i = interval; i > to; i--) {
-            swap(intervals[i], intervals[i - 1]);
+        for (int u: intervals[b][i].users) {
+            remove_user_in_interval(u, b, i);
         }
 
-        intervals[to].block = -2;
-        IMPL_update_block_after_change_interval();
+        actions.push_back({Action::Type::REMOVE_INTERVAL, b, i, -1, 0});
+        intervals[b].erase(intervals[b].begin() + i);
+    }
 
-        // update users left and right
-        for (int u = 0; u < N; u++) {
-            int &left = users_info[u].left;
-            if (interval < to) {
-                if (left < interval) {
+    void insert_interval(int b, int i) {
+        actions.push_back({Action::Type::ADD_INTERVAL, b, i, -1, 0});
+        intervals[b].insert(intervals[b].begin() + i, SetInterval());
+    }
 
-                } else if (left == interval) {
-                    left = to;
-                } else if (left < to) {
-                    left--;
-                } else if (left == to) {
-                    left--;
-                } else if (left > to) {
+    ///==========================
+    ///===========GETTERS========
+    ///==========================
 
-                } else {
-                    ASSERT(false, "failed");
+    [[nodiscard]] vector<Interval> get_total_answer() const {
+        vector<Interval> answer;
+        for (int block = 0; block < B; block++) {
+            int start = free_intervals[block].start;
+            for (auto [len, users, beam_msk]: intervals[block]) {
+                if (len != 0 && !users.empty()) {
+                    answer.push_back(Interval{start, start + len, {}});
+                    start += len;
+                    for (int u: users) {
+                        answer.back().users.push_back(users_info[u].id);
+                    }
                 }
-            } else if (to < interval) {
-                if (left < to) {
-
-                } else if (left == to) {
-                    left++;
-                } else if (left < interval) {
-                    left++;
-                } else if (left == interval) {
-                    left = to;
-                } else if (left > interval) {
-
-                } else {
-                    ASSERT(false, "failed");
-                }
-            } else {
-                ASSERT(false, "failed");
             }
+            ASSERT(start <= free_intervals[block].end, "invalid segment");
+        }
+        return answer;
+    }
 
-            int &right = users_info[u].right;
-            if (interval < to) {
-                if (right < interval) {
-
-                } else if (right == interval) {
-                    right = to;
-                } else if (right < to) {
-                    right--;
-                } else if (right == to) {
-                    right--;
-                } else if (right > to) {
-
-                } else {
-                    ASSERT(false, "failed");
+    [[nodiscard]] tuple<int, int, int> get_user_position(int u) const {
+        ASSERT(0 <= u && u < N, "invalid u");
+        for (int block = 0; block < B; block++) {
+            int left = -1;
+            int right = -1;
+            for (int i = 0; i < intervals[block].size(); i++) {
+                if (intervals[block][i].users.contains(u)) {
+                    right = i;
+                    if (left == -1) {
+                        left = i;
+                    }
                 }
-            } else if (to < interval) {
-                if (right < to) {
-
-                } else if (right == to) {
-                    right++;
-                } else if (right < interval) {
-                    right++;
-                } else if (right == interval) {
-                    right = to;
-                } else if (right > interval) {
-
-                } else {
-                    ASSERT(false, "failed");
-                }
-            } else {
-                ASSERT(false, "failed");
             }
-
-#ifdef MY_DEBUG_MODE
-            get_left_user(u);
-            get_right_user(u);
-#endif
+            if (left != -1) {
+                return {block, left, right};
+            }
         }
+        return {-1, -1, -1};
     }
 
-    void move_to_interval(int i, int to) {
-        //cout << "move_to_interval: " << i << ' ' << to << endl;
-        actions.push_back({Action::Type::MOVE_TO_INTERVAL, 0, i, to});
-        IMPL_move_to_interval(i, to);
+    [[nodiscard]] int get_user_score(int u) const {
+        ASSERT(0 <= u && u < N, "invalid u");
+        int len = users_info[u].sum_len;
+        int rbNeed = users_info[u].rbNeed;
+        return min(len, rbNeed);
     }
 
-    void remove_interval(int i) {
-        //cout << "remove_interval: " << i << endl;
-        if (intervals[i].len != 0) {
-            change_interval_len(i, -intervals[i].len);
+    [[nodiscard]] int get_block_len(int b) const {
+        ASSERT(0 <= b && b < B, "invalid b");
+        int len = 0;
+        for (auto &interval: intervals[b]) {
+            len += interval.len;
         }
-        for (int u: intervals[i].users) {
-            remove_user_in_interval(u, i);
-        }
-        move_to_interval(i, J - 1);
+        return len;
     }
 
-    // берем интервал из конца
-    // инсертим его в i
-    void insert_interval(int i) {
-        //cout << "insert_interval: " << i << endl;
-        if (intervals[J - 1].len != 0) {
-            change_interval_len(J - 1, -intervals[J - 1].len);
+    [[nodiscard]] int get_intervals_size() const {
+        int size = 0;
+        for (int b = 0; b < B; b++) {
+            size += intervals[b].size();
         }
-        for (int u: intervals[J - 1].users) {
-            remove_user_in_interval(u, J - 1);
-        }
-        move_to_interval(J - 1, i);
+        return size;
     }
 
     ///==========================
@@ -1970,61 +1755,47 @@ struct EgorTaskSolver {
     ///===========INTERVAL=======
     ///==========================
 
-#define CHOOSE_INTERVAL(condition)                         \
-    int interval;                                          \
-    {                                                      \
-        vector<int> ips;                                   \
-        for (int interval = 0; interval < J; interval++) { \
-            if (condition) {                               \
-                ips.push_back(interval);                   \
-            }                                              \
-        }                                                  \
-        if (ips.empty()) {                                 \
-            return;                                        \
-        }                                                  \
-        interval = ips[rnd.get(0, ips.size() - 1)];        \
+#define CHOOSE_INTERVAL(condition)                          \
+    int b, i;                                               \
+    {                                                       \
+        vector<pair<int, int>> ips;                         \
+        for (int b = 0; b < B; b++) {                       \
+            for (int i = 0; i < intervals[b].size(); i++) { \
+                if (condition) {                            \
+                    ips.emplace_back(b, i);                 \
+                }                                           \
+            }                                               \
+        }                                                   \
+        if (ips.empty()) {                                  \
+            return;                                         \
+        }                                                   \
+        int k = rnd.get(0, ips.size() - 1);                 \
+        b = ips[k].first;                                   \
+        i = ips[k].second;                                  \
     }
 
     void interval_flow_over() {
         CNT_CALL_INTERVAL_FLOW_OVER++;
 
-        CHOOSE_INTERVAL(interval + 1 < J);
+        CHOOSE_INTERVAL(i + 1 < intervals[b].size());
 
-        int change = rnd.get(-intervals[interval].len, intervals[interval + 1].len);
+        int change = rnd.get(-intervals[b][i].len, intervals[b][i + 1].len);
 
         int old_score = total_score;
 
-        change_interval_len(interval, change);
-        change_interval_len(interval + 1, -change);
-        //change_interval_len_IMPL(interval, change);
-        //change_interval_len_IMPL(interval + 1, -change);
-        //update_block_after_change_interval();
-
-        /*if (change > 0) {
-            change_interval_len(interval + 1, -change);
-            change_interval_len(interval, change);
+        if (change > 0) {
+            change_interval_len(b, i + 1, -change);
+            change_interval_len(b, i, change);
         } else {
-            change_interval_len(interval, change);
-            change_interval_len(interval + 1, -change);
-        }*/
+            change_interval_len(b, i, change);
+            change_interval_len(b, i + 1, -change);
+        }
 
         if (is_good(old_score)) {
             CNT_ACCEPTED_INTERVAL_FLOW_OVER++;
         } else {
             rollback();
             rollback();
-            //change_interval_len(interval, -change);
-            //change_interval_len(interval + 1, change);
-            //change_interval_len_IMPL(interval, -change);
-            //change_interval_len_IMPL(interval + 1, change);
-            //update_block_after_change_interval();
-            /*if (change > 0) {
-                change_interval_len(interval, -change);
-                change_interval_len(interval + 1, change);
-            } else {
-                change_interval_len(interval + 1, change);
-                change_interval_len(interval, -change);
-            }*/
             ASSERT(old_score == total_score, "failed back score");
         }
     }
@@ -2032,19 +1803,18 @@ struct EgorTaskSolver {
     void interval_increase_len() {
         CNT_CALL_INTERVAL_INCREASE_LEN++;
 
-        CHOOSE_INTERVAL(true);
+        CHOOSE_INTERVAL(get_block_len(b) < free_intervals[b].len());
 
-        int change = rnd.get(1, 10);
+        int change = rnd.get(1, min(10, (free_intervals[b].len() - get_block_len(b))));
 
         int old_score = total_score;
 
-        change_interval_len(interval, change);
+        change_interval_len(b, i, change);
 
         if (is_good(old_score)) {
             CNT_ACCEPTED_INTERVAL_INCREASE_LEN++;
         } else {
             rollback();
-            //change_interval_len(interval, -change);
             ASSERT(old_score == total_score, "failed back score");
         }
     }
@@ -2052,24 +1822,145 @@ struct EgorTaskSolver {
     void interval_decrease_len() {
         CNT_CALL_INTERVAL_DECREASE_LEN++;
 
-        CHOOSE_INTERVAL(intervals[interval].len > 0);
+        CHOOSE_INTERVAL(intervals[b][i].len > 0);
 
-        int change = rnd.get(-intervals[interval].len, -1);
+        int change = rnd.get(-intervals[b][i].len, -1);
 
         int old_score = total_score;
 
-        change_interval_len(interval, change);
+        change_interval_len(b, i, change);
 
         if (is_good(old_score)) {
             CNT_ACCEPTED_INTERVAL_DECREASE_LEN++;
         } else {
             rollback();
-            //change_interval_len(interval, -change);
             ASSERT(old_score == total_score, "failed back score");
         }
     }
 
-    void interval_get_full_free_space(int interval) {
+    void interval_kek() {
+        return;
+        ASSERT(get_intervals_size() <= J, "failed intervals size");
+        if (get_intervals_size() == J) {
+            return;
+        }
+
+        int old_score = total_score;
+        int old_actions_size = actions.size();
+
+        vector<vector<int>> kek;
+        for (int b = 0; b < B; b++) {
+            for (int l = 0; l < intervals[b].size(); l++) {
+                int len = 0;
+                for (int r = l; r < intervals[b].size(); r++) {
+
+                    len += intervals[b][r].len;
+
+                    // можно ли вырезать этот отрезок интервалов
+                    if (
+                            (l == 0 || (intervals[b][l - 1].users & intervals[b][l].users).empty()) &&
+                            (r == (int) intervals[b].size() - 1 || (intervals[b][r + 1].users & intervals[b][r].users).empty())) {
+
+                        for (int b2 = 0; b2 < B; b2++) {
+                            if (b != b2 && get_block_len(b2) + len <= free_intervals[b2].len()) {
+
+                                kek.push_back({b, l, r, b2, 0});
+
+                                for (int i = 1; i < intervals[b2].size(); i++) {
+                                    if ((intervals[b2][i - 1].users & intervals[b2][i].users).empty()) {
+                                        kek.push_back({b, l, r, b2, i});
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        if (kek.empty()) {
+            return;
+        }
+
+        vector<int> state = kek[rnd.get(0, kek.size() - 1)];
+        int b = state[0];
+        int l = state[1];
+        int r = state[2];
+        int b2 = state[3];
+        int i = state[4];
+        cout << b << ' ' << l << ' ' << r << ' ' << b2 << ' ' << i << endl;
+
+        if (b == 1) {
+            cout << "here" << endl;
+        }
+        intervals[b2].insert(intervals[b2].begin() + i, intervals[b].begin() + l, intervals[b].begin() + r + 1);
+        intervals[b].erase(intervals[b].begin() + l, intervals[b].begin() + r + 1);
+
+        for (int k = l; k <= r; k++) {
+            //intervals[b2].insert(intervals[b2].begin() + i, intervals[b][
+            //intervals[b2].insert(intervals[b2].begin() + i + k + 1, intervals[b][k]);
+        }
+        for (int k = l; k <= r; k++) {
+            //intervals[b].erase(intervals[b].begin() + l);
+            //remove_interval(b, l);
+        }
+
+        for (int u = 0; u < N; u++) {
+            auto [b, l, r] = get_user_position(u);
+            for (int b2 = 0; b2 < B; b2++) {
+                for (int i = 0; i < intervals[b2].size(); i++) {
+                    if (intervals[b2][i].users.contains(u)) {
+                        ASSERT(b2 == b, "invalid b");
+                        ASSERT(l <= i && i <= r, "invalid i");
+                    } else {
+                        if (!(b != b2 || i < l || r < i)) {
+                            cout << "failed: " << b2 << ' ' << i << endl;
+                        }
+                        ASSERT(b != b2 || i < l || r < i, "kek");
+                    }
+                }
+            }
+        }
+
+        /*i++;
+        for(int k = l; k <= r; k++, i++) {
+            insert_interval(b2, i);
+            change_interval_len(b2, i, intervals[b][l].len);
+            for(int u : intervals[b][l].users) {
+                add_user_in_interval(u, b2, i);
+            }
+            remove_interval(b, l);
+        }*/
+
+        /*CHOOSE_INTERVAL(get_block_len(b) < free_intervals[b].len());
+
+        insert_interval(b, i);
+        change_interval_len(b, i, min(10, (int) rnd.get(1, free_intervals[b].len() - get_block_len(b))));
+
+        if (i == 0) {
+
+        } else {
+            auto users_and = intervals[b][i - 1].users & intervals[b][i + 1].users;
+            for (int u: users_and) {
+                add_user_in_interval(u, b, i);
+            }
+            auto users_xor = intervals[b][i - 1].users ^ intervals[b][i + 1].users;
+            for (int u: users_xor) {
+                if (intervals[b][i].users.size() + 1 <= L && ((intervals[b][i].beam_msk >> users_info[u].beam) & 1) == 0) {
+                    add_user_in_interval(u, b, i);
+                }
+            }
+        }*/
+
+        /*if (is_good(old_score)) {
+
+        } else {
+            rollback(old_actions_size);
+            ASSERT(old_score == total_score, "failed back score");
+        }*/
+    }
+
+    /*void interval_get_full_free_space(int interval) {
         CNT_CALL_INTERVAL_GET_FULL_FREE_SPACE++;
         int block = intervals[interval].block;
         if (block == -1) {
@@ -2097,161 +1988,84 @@ struct EgorTaskSolver {
             //    ASSERT(old_score == total_score, "failed back score");
             //}
         }
+    }*/
+
+    bool merge_verify(int b, int i) {
+        return i + 1 < intervals[b].size();
     }
 
-    bool merge_verify(int interval) {
-        if (interval + 1 >= J) {
-            return false;
-        }
-        /*if ((intervals[interval].users | intervals[interval + 1].users).size() > L) {
-            return false;
-        }*/
-        /*for (int u: intervals[interval].users) {
-            for (int u2: intervals[interval + 1].users) {
-                if (u != u2 && users_info[u].beam == users_info[u2].beam) {
-                    // два разных юзера с одинаковым beam
-                    return false;
-                }
-            }
-        }*/
-        return true;
-    }
-
-    void interval_do_merge(int interval) {
+    void interval_do_merge(int b, int i) {
         CNT_CALL_INTERVAL_DO_MERGE_EQUAL++;
 
-        ASSERT(merge_verify(interval), "invalid merge");
+        ASSERT(merge_verify(b, i), "invalid merge");
 
-        int old_score = total_score;
-        int right_len = intervals[interval + 1].len;
-
-        for (int u: intervals[interval].users) {
-            if (intervals[interval + 1].users.size() + 1 <= L &&
-                !intervals[interval + 1].users.contains(u) &&
-                ((intervals[interval + 1].beam_msk >> users_info[u].beam) & 1) == 0) {
-                add_user_in_interval(u, interval + 1);
+        for (int u: intervals[b][i + 1].users) {
+            if (intervals[b][i].users.size() + 1 <= L &&
+                !intervals[b][i].users.contains(u) &&
+                ((intervals[b][i].beam_msk >> users_info[u].beam) & 1) == 0) {
+                add_user_in_interval(u, b, i);
             }
         }
-        change_interval_len(interval + 1, intervals[interval].len);
-        remove_interval(interval);
-
-        /*if(rnd.get_d() < 0.5) {
-            for (int u: intervals[interval + 1].users) {
-                if (intervals[interval].users.size() + 1 <= L &&
-                    !intervals[interval].users.contains(u) &&
-                    ((intervals[interval].beam_msk >> users_info[u].beam) & 1) == 0) {
-                    add_user_in_interval(u, interval);
-                }
-            }
-            change_interval_len(interval, right_len);
-            remove_interval(interval + 1);
-        }
-        else {
-            for (int u: intervals[interval].users) {
-                if (intervals[interval + 1].users.size() + 1 <= L &&
-                    !intervals[interval + 1].users.contains(u) &&
-                    ((intervals[interval + 1].beam_msk >> users_info[u].beam) & 1) == 0) {
-                    add_user_in_interval(u, interval + 1);
-                }
-            }
-            change_interval_len(interval + 1, intervals[interval].len);
-            remove_interval(interval);
-        }*/
+        int right_len = intervals[b][i + 1].len;
+        remove_interval(b, i + 1);
+        change_interval_len(b, i, right_len);
     }
 
-    void interval_do_split(int interval, int right_len) {
+    void interval_do_split(int b, int i, int right_len) {
         CNT_CALL_INTERVAL_DO_SPLIT++;
 
-        ASSERT(interval + 1 < J, "invalid interval");
-
-        remove_interval(J - 1);
-        insert_interval(interval + 1);
-        change_interval_len(interval, -right_len);
-        change_interval_len(interval + 1, right_len);
-        for (int u: intervals[interval].users) {
-            add_user_in_interval(u, interval + 1);
+        insert_interval(b, i + 1);
+        change_interval_len(b, i, -right_len);
+        change_interval_len(b, i + 1, right_len);
+        for (int u: intervals[b][i].users) {
+            add_user_in_interval(u, b, i + 1);
         }
     }
 
     void interval_merge() {
         CNT_CALL_INTERVAL_MERGE_EQUAL++;
 
-        CHOOSE_INTERVAL(merge_verify(interval));
+        CHOOSE_INTERVAL(merge_verify(b, i));
 
         int old_score = total_score;
-        int right_len = intervals[interval + 1].len;
+        int old_actions_size = actions.size();
 
-        int stack_iterator = actions.size();
-        interval_do_merge(interval);
+        int right_len = intervals[b][i + 1].len;
+
+        interval_do_merge(b, i);
 
         if (is_good(old_score)) {
             CNT_ACCEPTED_INTERVAL_MERGE_EQUAL++;
         } else {
-            while (actions.size() > stack_iterator) {
-                rollback();
-            }
+            rollback(old_actions_size);
             ASSERT(old_score == total_score, "failed back score");
         }
     }
 
     void interval_split() {
         CNT_CALL_INTERVAL_SPLIT++;
-        CHOOSE_INTERVAL(interval + 1 < J);
+
+        ASSERT(get_intervals_size() <= J, "failed intervals size");
+        if (get_intervals_size() == J) {
+            return;
+        }
 
         int old_score = total_score;
+        int old_actions_size = actions.size();
 
-        int right_len = rnd.get(0, intervals[interval].len);
+        CHOOSE_INTERVAL(true);
 
-        int stack_iterator = actions.size();
-        interval_do_split(interval, right_len);
+        int right_len = rnd.get(0, intervals[b][i].len);
+
+        interval_do_split(b, i, right_len);
 
         if (is_good(old_score)) {
             CNT_ACCEPTED_INTERVAL_SPLIT++;
         } else {
-            while (actions.size() > stack_iterator) {
-                rollback();
-            }
-
+            rollback(old_actions_size);
             ASSERT(old_score == total_score, "failed back score");
         }
     }
-
-    /*void interval_replace() {
-        // возьмем интервал
-        // удалим его
-        // вставим куда-то
-
-        int old_score = total_score;
-        int stack_iterator = actions.size();
-
-        {
-            CHOOSE_INTERVAL(true);
-            remove_interval(interval);
-        }
-
-        CHOOSE_INTERVAL(1 <= interval && interval + 1 < J);
-
-        move_to_interval(J - 1, interval);
-        change_interval_len(interval, rnd.get(1, 30));
-
-        auto and_users = intervals[interval - 1].users & intervals[interval + 1].users;
-        for (int u: and_users) {
-            add_user_in_interval(u, interval);
-        }
-
-        if (old_score < total_score) {
-            //cout << "YES" << endl;
-        }
-
-        if (is_good(old_score)) {
-
-        } else {
-            while (actions.size() > stack_iterator) {
-                rollback();
-            }
-            ASSERT(old_score == total_score, "failed back score");
-        }
-    }*/
 
 #define ACTION_WRAPPER(action_foo, action_id)     \
     int old_score = total_score;                  \
@@ -2263,50 +2077,31 @@ struct EgorTaskSolver {
     prev_action = action_id;                      \
     score_prev_action = old_score;
 
-    /*void interval_random_action() {
-        int s = INTERVAL_ACTION[prev_action].select();
-        if (s == 0) {
-            ACTION_WRAPPER(interval_increase_len, 7);
-        } else if (s == 1) {
-            ACTION_WRAPPER(interval_decrease_len, 8);
-        } else if (s == 2) {
-            ACTION_WRAPPER(interval_flow_over, 9);
-        } else if (s == 3) {
-            ACTION_WRAPPER(interval_merge, 10);
-        } else if (s == 4) {
-            ACTION_WRAPPER(interval_split, 11);
-        } else {
-            ASSERT(false, "kek");
-        }
-    }*/
-
     ///======================
     ///===========USER=======
     ///======================
 
-#define CHOOSE_USER(condition)               \
-    int u;                                   \
-    {                                        \
-        vector<int> ips;                     \
-        for (int u = 0; u < N; u++) {        \
-            int left = get_left_user(u);     \
-            int right = get_right_user(u);   \
-            if (condition) {                 \
-                ips.push_back(u);            \
-            }                                \
-        }                                    \
-        if (ips.empty()) {                   \
-            return;                          \
-        }                                    \
-        u = ips[rnd.get(0, ips.size() - 1)]; \
+#define CHOOSE_USER(condition)                     \
+    int u;                                         \
+    {                                              \
+        vector<int> ips;                           \
+        for (int u = 0; u < N; u++) {              \
+            auto [b, l, r] = get_user_position(u); \
+            if (condition) {                       \
+                ips.push_back(u);                  \
+            }                                      \
+        }                                          \
+        if (ips.empty()) {                         \
+            return;                                \
+        }                                          \
+        u = ips[rnd.get(0, ips.size() - 1)];       \
     }
 
-#define USER_FOR_BEGIN(condition)                         \
-    shuffle(users_order, users_order + N, marsene_twist); \
-    for (int index = 0; index < N; index++) {             \
-        int u = users_order[index];                       \
-        int left = get_left_user(u);                      \
-        int right = get_right_user(u);                    \
+#define USER_FOR_BEGIN(condition)                                   \
+    shuffle(users_order.begin(), users_order.end(), rnd.generator); \
+    for (int index = 0; index < N; index++) {                       \
+        int u = users_order[index];                                 \
+        auto [b, l, r] = get_user_position(u);                      \
         if (condition) {
 
 #define USER_FOR_END \
@@ -2314,105 +2109,29 @@ struct EgorTaskSolver {
     }
 
     void user_new_interval() {
-        /*CNT_CALL_USER_NEW_INTERVAL++;
-
-        int u = users_order[current_user];//rnd.get(0, N - 1);
-        current_user = (current_user + 1) % N;
-
-        int user_left = get_left_user(u);
-        int user_right = get_right_user(u);
-
-        bool okay[16];
-        for (int i = 0; i < J; i++) {
-            okay[i] = intervals[i].block != -1 &&
-                      (intervals[i].users.contains(u) ||// либо мы уже здесь стоим
-                       // либо мы можем сюда поставить
-                       (intervals[i].users.size() + 1 <= L && ((intervals[i].beam_msk >> users_info[u].beam) & 1) == 0));
-        }
-
-        auto f = [&](int len) {
-            if (len > users_info[u].rbNeed) {
-                return 2 * (len - users_info[u].rbNeed);
-            } else {
-                return users_info[u].rbNeed - len;
-            }
-        };
-
-        int best_left = -1, best_right = -1, best_f = 1e9, best_sum_len = 0;
-        for (int left = 0; left < J; left++) {
-            int sum_len = 0;
-            for (int right = left; right < J && okay[right] && intervals[left].block == intervals[right].block; right++) {
-                sum_len += intervals[right].len;
-
-                int cur_f = f(sum_len);
-                if (cur_f < best_f && !(user_left == left && user_right == right)) {
-                    best_f = cur_f;
-                    best_sum_len = sum_len;
-                    best_left = left;
-                    best_right = right;
-                }
-            }
-        }
-
-        ASSERT(user_left == -1 || !(best_left == user_left && best_right == user_right), "failed get best");
-
-        if (best_left == -1) {
-            return;
-        }
-
-        int old_score = total_score;
-
-        total_score -= users_info[u].calc_score();
-        swap(users_info[u].sum_len, best_sum_len);
-        total_score += users_info[u].calc_score();
-        swap(users_info[u].sum_len, best_sum_len);
-
-        if (is_good(old_score)) {
-            CNT_ACCEPTED_USER_NEW_INTERVAL++;
-
-            int nice_score = total_score;
-            total_score = old_score;
-
-            if (user_left != -1) {
-                for (int i = user_left; i <= user_right; i++) {
-                    remove_user_in_interval(u, i);
-                }
-            }
-            for (int i = best_left; i <= best_right; i++) {
-                add_user_in_interval(u, i);
-            }
-            ASSERT(nice_score == total_score, "failed nice score");
-
-        } else {
-            total_score = old_score;
-        }*/
-
-        /// old version
-        /// must too slow
         CNT_CALL_USER_NEW_INTERVAL++;
 
-        int u = rnd.get(0, N - 1);//users_order[current_user];//
-        //current_user = (current_user + 1) % N;
-        int user_left = get_left_user(u);
-        int user_right = get_right_user(u);
+        int u = rnd.get(0, N - 1);
+        auto [old_b, old_l, old_r] = get_user_position(u);
 
         int old_score = total_score;
+        int old_actions_size = actions.size();
 
-        int removed_count = 0;
-
-        bool okay[16];
-        for (int i = 0; i < J; i++) {
-            if (intervals[i].users.contains(u)) {
-                removed_count++;
-                remove_user_in_interval(u, i);
+        // remove user
+        if (old_b != -1) {
+            for (int i = old_l; i <= old_r; i++) {
+                remove_user_in_interval(u, old_b, i);
             }
-            okay[i] = intervals[i].block != -1 &&
-                      intervals[i].users.size() + 1 <= L && ((intervals[i].beam_msk >> users_info[u].beam) & 1) == 0;
+            /*#ifdef MY_DEBUG_MODE
+            for (int b = 0; b < B; b++) {
+                for (int i = 0; i < intervals[b].size(); i++) {
+                    if (intervals[b][i].users.contains(u)) {
+                        ASSERT(false, "kek");
+                    }
+                }
+            }
+#endif*/
         }
-
-        ASSERT(get_left_user(u) == users_info[u].left, "failed left");
-        ASSERT(get_right_user(u) == users_info[u].right, "failed right");
-        ASSERT(get_left_user(u) == -1, "kek");
 
         auto f = [&](int len) {
             if (len > users_info[u].rbNeed) {
@@ -2422,56 +2141,43 @@ struct EgorTaskSolver {
             }
         };
 
-        int best_left = -1, best_right = -1, best_f = 1e9;
-        for (int left = 0; left < J; left++) {
-            int sum_len = 0;
-            for (int right = left; right < J && okay[right] &&
-                                   intervals[left].block == intervals[right].block &&
-                                   intervals[left].block != -1;
-                 right++) {
-                sum_len += intervals[right].len;
+        int best_b = -1, best_l = -1, best_r = -1, best_f = 1e9;
+        for (int b = 0; b < B; b++) {
+            for (int l = 0; l < intervals[b].size(); l++) {
+                int sum_len = 0;
+                for (int r = l; r < intervals[b].size(); r++) {
+                    sum_len += intervals[b][r].len;
 
-                int cur_f = f(sum_len);
-                if (cur_f < best_f /* && (user_right <= left || right <= user_left) && !(user_right == right && user_left == left)*/) {
-                    best_f = cur_f;
-                    best_left = left;
-                    best_right = right;
+                    if (intervals[b][r].users.size() == L || ((intervals[b][r].beam_msk >> users_info[u].beam) & 1) == 1) {
+                        break;
+                    }
+
+                    int cur_f = f(sum_len);
+
+                    if (cur_f < best_f) {
+                        best_f = cur_f;
+                        best_b = b;
+                        best_l = l;
+                        best_r = r;
+                    }
                 }
             }
         }
 
-        if (best_left == -1) {
-            // rollback
-            while (removed_count > 0) {
-                removed_count--;
-                rollback();
-            }
+        if (best_b == -1) {
+            rollback(old_actions_size);
             ASSERT(old_score == total_score, "failed back score");
             return;
         }
 
-        ASSERT(get_left_user(u) == users_info[u].left, "failed left");
-        ASSERT(get_right_user(u) == users_info[u].right, "failed right");
-        for (int i = best_left; i <= best_right; i++) {
-            add_user_in_interval(u, i);
+        for (int i = best_l; i <= best_r; i++) {
+            add_user_in_interval(u, best_b, i);
         }
-        ASSERT(get_left_user(u) == users_info[u].left, "failed left");
-        ASSERT(get_right_user(u) == users_info[u].right, "failed right");
 
         if (is_good(old_score)) {
             CNT_ACCEPTED_USER_NEW_INTERVAL++;
         } else {
-            for (int i = best_left; i <= best_right; i++) {
-                rollback();
-            }
-            ASSERT(get_left_user(u) == users_info[u].left, "failed left");
-            ASSERT(get_right_user(u) == users_info[u].right, "failed right");
-            while (removed_count > 0) {
-                removed_count--;
-                rollback();
-            }
-            ASSERT(get_left_user(u) == users_info[u].left, "failed left");
-            ASSERT(get_right_user(u) == users_info[u].right, "failed right");
+            rollback(old_actions_size);
             ASSERT(old_score == total_score, "failed back score");
         }
     }
@@ -2479,23 +2185,19 @@ struct EgorTaskSolver {
     void user_add_left() {
         CNT_CALL_USER_ADD_LEFT++;
 
-        USER_FOR_BEGIN(left > 0 &&
-                       intervals[left - 1].users.size() < L &&
-                       ((intervals[left - 1].beam_msk >> users_info[u].beam) & 1) == 0 &&
-                       intervals[left - 1].block != -1)
+        USER_FOR_BEGIN(l > 0 &&
+                       intervals[b][l - 1].users.size() < L &&
+                       ((intervals[b][l - 1].beam_msk >> users_info[u].beam) & 1) == 0)
 
-
-        left--;
-
+        l--;
         int old_score = total_score;
 
-        add_user_in_interval(u, left);
+        add_user_in_interval(u, b, l);
 
         if (is_good(old_score)) {
             CNT_ACCEPTED_USER_ADD_LEFT++;
         } else {
             rollback();
-            //remove_user_in_interval(u, left);
             ASSERT(old_score == total_score, "failed back score");
         }
         USER_FOR_END
@@ -2504,69 +2206,37 @@ struct EgorTaskSolver {
     void user_add_right() {
         CNT_CALL_USER_ADD_RIGHT++;
 
-        USER_FOR_BEGIN(right != -1 && right + 1 < J &&
-                       intervals[right + 1].users.size() < L &&
-                       ((intervals[right + 1].beam_msk >> users_info[u].beam) & 1) == 0 &&
-                       intervals[right + 1].block != -1)
+        USER_FOR_BEGIN(r != -1 && r + 1 < intervals[b].size() &&
+                       intervals[b][r + 1].users.size() < L &&
+                       ((intervals[b][r + 1].beam_msk >> users_info[u].beam) & 1) == 0)
 
-
-        right++;
+        r++;
         int old_score = total_score;
 
-        add_user_in_interval(u, right);
+        add_user_in_interval(u, b, r);
 
         if (is_good(old_score)) {
             CNT_ACCEPTED_USER_ADD_RIGHT++;
         } else {
             rollback();
-            //remove_user_in_interval(u, right);
             ASSERT(old_score == total_score, "failed back score");
         }
         USER_FOR_END
-
-        /*CHOOSE_USER(right != -1 && right + 1 < J &&
-                    intervals[right + 1].users.size() < L &&
-                    ((intervals[right + 1].beam_msk >> users_info[u].beam) & 1) == 0 &&
-                    intervals[right + 1].block != -1);
-
-        int right = get_right_user(u);
-        right++;
-
-        int old_score = total_score;
-
-        add_user_in_interval(u, right);
-
-        if (is_good(old_score)) {
-            CNT_ACCEPTED_USER_ADD_RIGHT++;
-        } else {
-            remove_user_in_interval(u, right);
-            ASSERT(old_score == total_score, "failed back score");
-        }*/
     }
 
     void user_remove_left() {
         CNT_CALL_USER_REMOVE_LEFT++;
 
-        USER_FOR_BEGIN(left != -1 && intervals[left].block != -1)
+        USER_FOR_BEGIN(l != -1)
 
         int old_score = total_score;
-        int stack_iterator = actions.size();
 
-        remove_user_in_interval(u, left);
-
-        /*for (int u2 = 0; u2 < N; u2++) {
-            if (u != u2 && users_info[u2].left == -1 && ((intervals[left].beam_msk >> users_info[u2].beam) & 1) == 0) {
-                add_user_in_interval(u2, left);
-                break;
-            }
-        }*/
+        remove_user_in_interval(u, b, l);
 
         if (is_good(old_score)) {
             CNT_ACCEPTED_USER_REMOVE_LEFT++;
         } else {
-            while (actions.size() > stack_iterator) {
-                rollback();
-            }
+            rollback();
             ASSERT(old_score == total_score, "failed back score");
         }
 
@@ -2575,68 +2245,51 @@ struct EgorTaskSolver {
 
     void user_remove_right() {
         CNT_CALL_USER_REMOVE_RIGHT++;
-        //cout << "lol" << endl;
 
-        USER_FOR_BEGIN(right != -1)
+        USER_FOR_BEGIN(r != -1)
 
         int old_score = total_score;
-        int stack_iterator = actions.size();
 
-        remove_user_in_interval(u, right);
-
-        /*vector<int> kek;
-        for (int u2 = 0; u2 < N; u2++) {
-            if (u != u2 && users_info[u2].left == -1 && ((intervals[right].beam_msk >> users_info[u2].beam) & 1) == 0) {
-                kek.push_back(u2);
-                //cout << "kek" << endl;
-                //add_user_in_interval(u2, right);
-                break;
-            }
-        }
-        if(!kek.empty()){
-            add_user_in_interval(kek[rnd.get(0, kek.size() - 1)], right);
-        }*/
+        remove_user_in_interval(u, b, r);
 
         if (is_good(old_score)) {
             CNT_ACCEPTED_USER_REMOVE_RIGHT++;
         } else {
-            while (actions.size() > stack_iterator) {
-                rollback();
-            }
+            rollback();
             ASSERT(old_score == total_score, "failed back score");
         }
         USER_FOR_END
     }
 
     void user_do_swap(int u, int u2) {
-        total_score -= user_score(u) + user_score(u2);
+        ASSERT(users_info[u].beam == users_info[u].beam, "no equals beams");
+
+        total_score -= get_user_score(u) + get_user_score(u2);
 
         swap(user_id_to_u[users_info[u].id], user_id_to_u[users_info[u2].id]);
-        swap(users_info[u].sum_len, users_info[u2].sum_len);
-        swap(users_info[u].left, users_info[u2].left);
-        swap(users_info[u].right, users_info[u2].right);
-        swap(users_info[u], users_info[u2]);
 
-        total_score += user_score(u) + user_score(u2);
+        swap(users_info[u].rbNeed, users_info[u2].rbNeed);
+        swap(users_info[u].id, users_info[u2].id);
+
+        total_score += get_user_score(u) + get_user_score(u2);
     }
 
     void user_swap() {
         for (int beam = 0; beam < 32; beam++) {
             // (sum_len, u)
             vector<pair<int, int>> ups;
-            for (int i = 0; i < users_with_equal_beam_size[beam]; i++) {
-                int u_id = users_with_equal_beam[beam][i];
+            for (int u_id: users_with_equal_beam[beam]) {
                 int u = user_id_to_u[u_id];
                 ups.push_back({users_info[u].sum_len, u});
             }
             // без 981236
-            shuffle(ups.begin(), ups.end(), marsene_twist);// 981748
+            shuffle(ups.begin(), ups.end(), rnd.generator);// 981748
             //sort(ups.begin(), ups.end()); // 981683
             for (int i = 0; i + 1 < ups.size(); i++) {
                 CNT_CALL_USER_SWAP++;
 
-                int &u = ups[i].second;
-                int &u2 = ups[i + 1].second;
+                int u = ups[i].second;
+                int u2 = ups[i + 1].second;
 
                 int old_score = total_score;
 
@@ -2651,93 +2304,6 @@ struct EgorTaskSolver {
             }
         }
     }
-
-    void user_do_crop(int u) {
-        CNT_CALL_USER_DO_CROP++;
-        int best_left = -1, best_right = -1, best_len = -1e9;
-        for (int left = 0; left < J; left++) {
-            int len = 0;
-            for (int right = left; right < J && intervals[right].users.contains(u) &&
-                                   intervals[right].block == intervals[left].block &&
-                                   intervals[right].block != -1;
-                 right++) {
-
-                len += intervals[right].len;
-
-                if (best_len < len) {
-                    best_len = len;
-                    best_left = left;
-                    best_right = right;
-                }
-            }
-        }
-
-        if (best_left == -1) {
-            return;
-        }
-        for (int i = 0; i < best_left; i++) {
-            if (intervals[i].users.contains(u)) {
-                remove_user_in_interval(u, i);
-            }
-        }
-        for (int i = J - 1; i > best_right; i--) {
-            if (intervals[i].users.contains(u)) {
-                remove_user_in_interval(u, i);
-            }
-        }
-    }
-
-    // обрезает отрезок юзера до содержащегося только в одном блоке
-    void user_crop() {
-        CNT_CALL_USER_CROP++;
-
-        for (int u = 0; u < N; u++) {
-            int left = get_left_user(u);
-            int right = get_right_user(u);
-
-            if (left != -1 && intervals[left].block != intervals[right].block) {
-                user_do_crop(u);
-            }
-        }
-
-        // либо всех откропить, либо одного какого-то, тоже хорошо работает
-        //CHOOSE_USER(left != -1 && intervals[left].block != intervals[right].block);
-
-        //int old_score = total_score;
-        //int stack_iterator = actions.size();
-        //user_do_crop(u);
-
-        // bad
-        /*if (is_good(old_score)) {
-            CNT_ACCEPTED_USER_CROP++;
-        } else {
-            while (actions.size() > stack_iterator) {
-                rollback();
-            }
-            ASSERT(old_score == total_score, "failed back score");
-        }*/
-    }
-
-    /*void user_random_action() {
-        int s = USER_ACTION[prev_action].select();
-        if (s == 0) {
-            ACTION_WRAPPER(user_new_interval, 0);
-        } else if (s == 1) {
-            ACTION_WRAPPER(user_add_left, 1);
-        } else if (s == 2) {
-            ACTION_WRAPPER(user_add_right, 2);
-        } else if (s == 3) {
-            ACTION_WRAPPER(user_remove_left, 3);
-        } else if (s == 4) {
-            ACTION_WRAPPER(user_remove_right, 4);
-        } else if (s == 5) {
-            ACTION_WRAPPER(user_swap, 5);
-        } else if (s == 6) {
-            ACTION_WRAPPER(user_crop, 6);
-        } else {
-            ASSERT(false, "kek");
-        }
-    }*/
 
     vector<Interval> annealing() {
         temperature = 1;
@@ -2777,30 +2343,6 @@ struct EgorTaskSolver {
 
         for (int step = 0; step < STEPS; step++) {
             temperature = (STEPS - step) * 1.0 / STEPS;
-            //temperature *= 0.999999;
-
-            /*ASSERT(STEPS % 10 == 0 && STEPS != 0, "invalid STEPS");
-            if (step != 0 && step % (STEPS / 9) == 0) {
-                for (int u = 0; u < N; u++) {
-                    user_do_crop(u);
-                }
-
-                if (total_score >= THEORY_MAX_SCORE) {
-                    return get_total_answer();
-                }
-
-                //ASSERT(intervals.size() == J, "invalid intervals");
-                //for(int i = 0; i < J; i++) {
-                //    interval_get_full_free_space(i);
-                //}
-                //static mt19937 marsene(42);
-                //shuffle(user_brute_order.begin(), user_brute_order.end(), marsene);
-            }*/
-
-            /*if (answer_score < total_score) {
-                answer_score = total_score;
-                answer = get_total_answer();
-            }*/
 
             int s = SELECTION_ACTION[prev_action].select();
             if (s == 0) {
@@ -2816,7 +2358,7 @@ struct EgorTaskSolver {
             } else if (s == 5) {
                 ACTION_WRAPPER(user_swap, 5);
             } else if (s == 6) {
-                ACTION_WRAPPER(user_crop, 6);
+                ACTION_WRAPPER(interval_kek, 6);
             } else if (s == 7) {
                 ACTION_WRAPPER(interval_increase_len, 7);
             } else if (s == 8) {
@@ -2830,28 +2372,6 @@ struct EgorTaskSolver {
             } else {
                 ASSERT(false, "kek");
             }
-
-            /*int s = EGOR_TASK_SOLVER_SELECTION_USER_OR_INTERVAL_ACTION.select();
-            if (s == 0) {
-                interval_random_action();
-            } else if (s == 1) {
-                user_random_action();
-            } else {
-                ASSERT(false, "kek");
-            }*/
-        }
-
-        //ASSERT(get_solution_score(N, M, K, J, L, reservedRBs, userInfos, answer) == answer_score,
-        //       "failed answer score");
-
-        // добить все интервалы до максимального свободного пространства
-        for (int i = 0; i < J; i++) {
-            interval_get_full_free_space(i);
-        }
-
-        // обрезать юзеров так, чтобы они были только в одном блоке
-        for (int u = 0; u < N; u++) {
-            user_do_crop(u);
         }
 
         return get_total_answer();

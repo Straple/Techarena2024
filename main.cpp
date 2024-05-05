@@ -338,7 +338,7 @@ int main() {
             input >> data;
 
             Timer timer;
-            //            cout << test << "!" << endl;
+            cout << "test: " << test << "!" << endl;
             auto intervals = Solver(data);
 
             std::ofstream out("ans_data_art/case_K=" + to_string(K) + "/" + to_string(test) + ".txt");
