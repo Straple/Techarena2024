@@ -1575,15 +1575,15 @@ struct EgorTaskSolver {
         actions.pop_back();
 
         if (type == Action::Type::ADD_USER_IN_INTERVAL) {
-            IMPL_remove_user_in_interval(u, b, i);
+            IMPL_remove_user_in_interval(u, b, i); // O(1)
         } else if (type == Action::Type::REMOVE_USER_IN_INTERVAL) {
-            IMPL_add_user_in_interval(u, b, i);
+            IMPL_add_user_in_interval(u, b, i); // O(1)
         } else if (type == Action::Type::CHANGE_INTERVAL_LEN) {
-            IMPL_change_interval_len(b, i, -c);
+            IMPL_change_interval_len(b, i, -c); // O(L)
         } else if (type == Action::Type::REMOVE_INTERVAL) {
-            intervals[b].insert(intervals[b].begin() + i, SetInterval());
+            intervals[b].insert(intervals[b].begin() + i, SetInterval()); // O(J)
         } else if (type == Action::Type::ADD_INTERVAL) {
-            intervals[b].erase(intervals[b].begin() + i);
+            intervals[b].erase(intervals[b].begin() + i); // O(J)
         } else {
             ASSERT(false, "invalid type");
         }
@@ -1932,13 +1932,87 @@ struct EgorTaskSolver {
     }
 
     void interval_kek() {
+        return;
+
+
+
+
+
+
+
+
+
+
         int old_score = total_score;
         //int old_actions_size = actions.size();
 
         auto old_intervals = intervals;
         auto old_users_info = users_info;
 
+        if(get_intervals_size() == J){
+            vector<tuple<int, int, int>> ps;
+            for (int b = 0; b < B; b++) {
+                for (int i = 0; i < intervals[b].size(); i++) {
+                    int old_actions_size = actions.size();
+                    remove_interval(b, i);
+                    ps.push_back({total_score, b, i});
+                    rollback(old_actions_size);
+                    ASSERT(old_score == total_score, "invalid back score");
+                }
+            }
+
+            ASSERT(!ps.empty(), "empty ps");
+            //sort(ps.begin(), ps.end(), greater<>());
+            auto [to_score, b, i] = ps[rnd.get(0, (int)ps.size() - 1)];
+            remove_interval(b, i);
+            ASSERT(to_score == total_score, "invalid to score");
+        }
+
+        {
+            vector<pair<int, int>> ps;
+            for (int b = 0; b < B; b++) {
+                for (int i = 0; i <= intervals[b].size(); i++) {
+                    if (i == 0 || i == intervals[b].size() || (intervals[b][i - 1].users & intervals[b][i].users).empty()) {
+                        ps.push_back({b, i});
+                    }
+                }
+            }
+
+            ASSERT(!ps.empty(), "empty ps");
+            auto [b, i] = ps[rnd.get(0, ps.size() - 1)];
+            insert_interval(b, i);
+            int may_add_len = free_intervals[b].len() - get_block_len(b);
+            if (may_add_len != 0) {
+                change_interval_len(b, i, may_add_len);
+            }
+        }
+
         for (int b = 0; b < B; b++) {
+            for (int i = 0; i < intervals[b].size(); i++) {
+                intervals[b][i].users.clear();
+                intervals[b][i].beam_msk = 0;
+            }
+        }
+        for (int u = 0; u < N; u++) {
+            users_info[u].sum_len = 0;
+        }
+        total_score = 0;
+
+        {
+            vector<int> p(N);
+            iota(p.begin(), p.end(), 0);
+            sort(p.begin(), p.end(), [&](int lhs, int rhs) {
+                return users_info[lhs].rbNeed > users_info[rhs].rbNeed;
+            });
+
+
+            for (int u: p) {
+                user_do_new_interval(u);
+            }
+        }
+
+        // 980408
+        /*for (int b = 0; b < B; b++) {
             for (int i = 0; i < intervals[b].size(); i++) {
                 intervals[b][i].users.clear();
                 intervals[b][i].beam_msk = 0;
@@ -1970,7 +2044,7 @@ struct EgorTaskSolver {
             for (int u: p) {
                 user_do_new_interval(u);
             }
-        }
+        }*/
 
         {
             /*set<pair<int, int>, greater<>> ps;
@@ -2573,7 +2647,7 @@ struct EgorTaskSolver {
         }
     }
 
-    /*void user_do_crop(int u) {
+    void user_do_crop(int u) {
         CNT_CALL_USER_DO_CROP++;
 
         int best_b = -1, best_l = -1, best_r = -1, best_len = -1e9;
@@ -2613,7 +2687,7 @@ struct EgorTaskSolver {
         for (int u = 0; u < N; u++) {
             user_do_crop(u);
         }
-    }*/
+    }
 
     vector<Interval> annealing(vector<Interval> reservedRBs,
                                vector<UserInfo> userInfos) {
