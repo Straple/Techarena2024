@@ -57,10 +57,10 @@ vector<pair<int, int>> calc_train_score() {
 
     vector<pair<int, int>> ans;
 
-    STEPS = 400;
-    ans.push_back(do_test());
-    STEPS = 600;
-    ans.push_back(do_test());
+    //STEPS = 400;
+    //ans.push_back(do_test());
+    //STEPS = 600;
+    //ans.push_back(do_test());
     STEPS = 800;
     ans.push_back(do_test());
     return ans;
@@ -136,7 +136,38 @@ void train_egor_task_solver() {
         cout << step << ' ' << global_time << endl;
 
         bool ok = false;
-        for (int j = 0; j < 12; j++) {
+
+        for (int kek = 0; kek < 10; kek++) {
+            int i = rnd.get(0, 10);
+            int j = rnd.get(0, 10);
+            vector<pair<int, int>> ips;
+            for (int c1 = max(-SELECTION_ACTION.kit[i].second, -5); c1 <= 5; c1++) {
+                for (int c2 = max(-SELECTION_ACTION.kit[j].second, -5); c2 <= 5; c2++) {
+                    if (!(c1 == 0 && c2 == 0)) {
+                        ips.push_back({c1, c2});
+                    }
+                }
+            }
+            shuffle(ips.begin(), ips.end(), rnd.generator);
+            for (auto [c1, c2]: ips) {
+                if (SELECTION_ACTION.kit[i].second + c1 >= 0 && SELECTION_ACTION.kit[j].second + c2 >= 0) {
+                    SELECTION_ACTION.kit[i].second += c1;
+                    SELECTION_ACTION.kit[j].second += c2;
+
+                    auto new_ans = calc_train_score();
+                    if (compare(ans, new_ans)) {
+                        ok = true;
+                        ans = new_ans;
+                        log();
+                    } else {
+                        SELECTION_ACTION.kit[i].second -= c1;
+                        SELECTION_ACTION.kit[j].second -= c2;
+                    }
+                }
+            }
+        }
+
+        /*for (int j = 0; j < 11; j++) {
             for (int change = max(-SELECTION_ACTION.kit[j].second, -2); change <= 2; change++) {
                 if (change != 0) {
                     SELECTION_ACTION.kit[j].second += change;
@@ -155,9 +186,9 @@ void train_egor_task_solver() {
 
         if (!ok) {
             cout << "OH NO, IT'S BAD" << endl;
-            int j = rnd.get(0, 11);
+            int j = rnd.get(0, 10);
             SELECTION_ACTION.kit[j].second++;
-        }
+        }*/
     }
 }
 
@@ -229,7 +260,6 @@ int main() {
     SELECTION_ACTION[9] = vector<int>{6, 7, 7, 0, 0, 9, 0, 1, 0, 1, 1, 0};
     SELECTION_ACTION[10] = vector<int>{5, 7, 7, 0, 0, 9, 0, 1, 0, 1, 1, 0};
     SELECTION_ACTION[11] = vector<int>{5, 7, 7, 0, 0, 8, 0, 0, 0, 0, 0, 0};*/
-
 
 
     //auto egor_answer = Solver_egor(N, M, K, J, L, reservedRBs, userInfos, artem_answer)

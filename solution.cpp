@@ -420,7 +420,7 @@ public:
     SelectionRandomizer(int n) : kit(n) {
         ASSERT(n > 0, "invalid n");
         for (int i = 0; i < n; i++) {
-            kit[i] = {i, 20};
+            kit[i] = {i, 10};
         }
     }
 
