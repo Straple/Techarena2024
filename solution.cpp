@@ -265,6 +265,12 @@ public:
         flip(x);
     }
 
+    void clear() {
+        for (int i = 0; i < bits_size; i++) {
+            bits[i] = 0;
+        }
+    }
+
     [[nodiscard]] bool contains(int x) const {
         ASSERT(0 <= x && x < reserved_size, "invalid x");
         return (bits[x / bits_cnt] >> (x % bits_cnt)) & 1;
@@ -482,7 +488,7 @@ public:
 //98.38% 976925/992977
 //
 //SELECTION_ACTION: { 32, 4, 6, 10, 10, 10, 4, 2, 24, 7, 7}
-SelectionRandomizer SELECTION_ACTION = std::vector<int>{ 10, 1, 1, 1, 1, 16, 9, 6, 22, 12, 11, 30};
+SelectionRandomizer SELECTION_ACTION = std::vector<int>{10, 1, 1, 1, 1, 16, 9, 6, 22, 12, 11, 30};
 /*if (s == 0) {
     ACTION_WRAPPER(user_new_interval, 0);
 } else if (s == 1) {
@@ -1927,7 +1933,21 @@ struct EgorTaskSolver {
 
     void interval_kek() {
         int old_score = total_score;
-        int old_actions_size = actions.size();
+        //int old_actions_size = actions.size();
+
+        auto old_intervals = intervals;
+        auto old_users_info = users_info;
+
+        for (int b = 0; b < B; b++) {
+            for (int i = 0; i < intervals[b].size(); i++) {
+                intervals[b][i].users.clear();
+                intervals[b][i].beam_msk = 0;
+            }
+        }
+        for (int u = 0; u < N; u++) {
+            users_info[u].sum_len = 0;
+        }
+        total_score = 0;
 
         {
             CHOOSE_INTERVAL(merge_verify(b, i));
@@ -1939,9 +1959,42 @@ struct EgorTaskSolver {
             int right_len = rnd.get(0, intervals[b][i].len);
             interval_do_split(b, i, right_len);
         }
+        {
+            vector<int> p(N);
+            iota(p.begin(), p.end(), 0);
+            sort(p.begin(), p.end(), [&](int lhs, int rhs) {
+                return users_info[lhs].rbNeed > users_info[rhs].rbNeed;
+            });
+
+
+            for (int u: p) {
+                user_do_new_interval(u);
+            }
+        }
 
         {
-            for (int b = 0; b < B; b++) {
+            /*set<pair<int, int>, greater<>> ps;
+            {
+                CHOOSE_INTERVAL(merge_verify(b, i));
+                for (int u: intervals[b][i].users) {
+                    ps.insert({users_info[u].rbNeed, u});
+                }
+                for (int u: intervals[b][i + 1].users) {
+                    ps.insert({users_info[u].rbNeed, u});
+                }
+                interval_do_merge(b, i);
+            }
+
+            {
+                CHOOSE_INTERVAL(true);
+                int right_len = rnd.get(0, intervals[b][i].len);
+                for (int u: intervals[b][i].users) {
+                    ps.insert({users_info[u].rbNeed, u});
+                }
+                interval_do_split(b, i, right_len);
+            }*/
+
+            /*for (int b = 0; b < B; b++) {
                 for (int i = 0; i < intervals[b].size(); i++) {
                     for (int u: intervals[b][i].users) {
                         remove_user_in_interval(u, b, i);
@@ -1957,14 +2010,17 @@ struct EgorTaskSolver {
 
             for (int u: p) {
                 user_do_new_interval(u);
-            }
+            }*/
         }
 
         if (is_good(old_score)) {
-            CNT_ACCEPTED_INTERVAL_MERGE_EQUAL++;
+
         } else {
-            rollback(old_actions_size);
-            ASSERT(old_score == total_score, "failed back score");
+            //rollback(old_actions_size);
+            intervals = old_intervals;
+            users_info = old_users_info;
+            total_score = old_score;
+            //ASSERT(old_score == total_score, "failed back score");
         }
 
         return;
@@ -2356,7 +2412,7 @@ struct EgorTaskSolver {
 
                     int cur_f = f(sum_len);
 
-                    if (cur_f < best_f && (b != old_b || r < old_l || old_r < l)) {
+                    if (cur_f < best_f /*&& (b != old_b || r < old_l || old_r < l)*/) {
                         best_f = cur_f;
                         best_b = b;
                         best_l = l;
