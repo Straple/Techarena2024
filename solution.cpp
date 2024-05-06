@@ -43,7 +43,7 @@ int CNT_ACCEPTED_USER_SWAP = 0;
 #include <iostream>
 
 ///////// !!!
-//#define MY_DEBUG_MODE
+#define MY_DEBUG_MODE
 ///////// !!!
 
 #ifdef MY_DEBUG_MODE
@@ -477,40 +477,41 @@ public:
     }
 };
 
-//std::vector<SelectionRandomizer> SELECTION_ACTION(12, SelectionRandomizer(12));
-SelectionRandomizer SELECTION_ACTION(11);// = std::vector<int>{10, 0, 4, 0, 2, 2, 5, 5, 5};
-int STEPS = 700;
-
-// TIME: 2336s
-//score: 94.21
-//93.93% 970937/1033704
-//94.06% 972277/1033704
-//94.22% 973974/1033704
-//94.34% 975218/1033704
+// TIME: 722.9s
+//score: 98.38
+//98.38% 976925/992977
 //
-//USER:
-//[
-//  0 27
-//  1 0
-//  2 1
-//  3 1
-//  4 0
-//  5 9
-//  6 3
-//]
-//INTERVAL:
-//[
-//  0 12
-//  1 6
-//  2 18
-//  3 8
-//  4 6
-//]
-//USER OR INTERVAL:
-//[
-//  0 9
-//  1 11
-//]
+//SELECTION_ACTION: { 32, 4, 6, 10, 10, 10, 4, 2, 24, 7, 7}
+SelectionRandomizer SELECTION_ACTION = std::vector<int>{ 10, 1, 1, 1, 1, 16, 9, 6, 22, 12, 11, 30};
+/*if (s == 0) {
+    ACTION_WRAPPER(user_new_interval, 0);
+} else if (s == 1) {
+    ACTION_WRAPPER(user_add_left, 1);
+} else if (s == 2) {
+    ACTION_WRAPPER(user_remove_left, 2);
+} else if (s == 3) {
+    ACTION_WRAPPER(user_add_right, 3);
+} else if (s == 4) {
+    ACTION_WRAPPER(user_remove_right, 4);
+} else if (s == 5) {
+    ACTION_WRAPPER(user_swap, 5);
+} else if (s == 6) {
+    ACTION_WRAPPER(interval_increase_len, 6);
+} else if (s == 7) {
+    ACTION_WRAPPER(interval_decrease_len, 7);
+} else if (s == 8) {
+    ACTION_WRAPPER(interval_flow_over, 8);
+} else if (s == 9) {
+    ACTION_WRAPPER(interval_merge, 9);
+} else if (s == 10) {
+    ACTION_WRAPPER(interval_split, 10);
+} else if (s == 11) {
+    ACTION_WRAPPER(interval_kek, 11);
+} else {
+    ASSERT(false, "kek");
+}*/
+// 980264
+int STEPS = 1000;
 
 // ===================================================================================================================
 // =========================SOLUTION==================================================================================
@@ -1925,13 +1926,74 @@ struct EgorTaskSolver {
     }
 
     void interval_kek() {
-        // TEST CASE: K=0 | tests: 666 | score: 99.2607% | 647519/652342 | time: 2931.1ms | max_time: 27.813ms | mean_time: 4.40106ms
-        //TEST CASE: K=1 | tests: 215 | score: 97.8836% | 211544/216118 | time: 2055.45ms | max_time: 30.673ms | mean_time: 9.56022ms
-        //TEST CASE: K=2 | tests: 80 | score: 97.7273% | 77487/79289 | time: 1042.49ms | max_time: 34.865ms | mean_time: 13.0311ms
-        //TEST CASE: K=3 | tests: 39 | score: 96.783% | 43773/45228 | time: 622.479ms | max_time: 43.018ms | mean_time: 15.961ms
-        //TEST CASE: K=4 | tests: 0 | score: -nan% | 0/0 | time: 0ms | max_time: 0ms | mean_time: 0ms
-        //TOTAL: tests: 1000 | score: 98.7257% | 980323/992977 | time: 6651.51ms | max_time: 43.018ms | mean_time: 6.65151ms
-        for (int b = 1; b < B; b++) {
+        int old_score = total_score;
+        int old_actions_size = actions.size();
+
+        {
+            CHOOSE_INTERVAL(merge_verify(b, i));
+            interval_do_merge(b, i);
+        }
+
+        {
+            CHOOSE_INTERVAL(true);
+            int right_len = rnd.get(0, intervals[b][i].len);
+            interval_do_split(b, i, right_len);
+        }
+
+        {
+            for (int b = 0; b < B; b++) {
+                for (int i = 0; i < intervals[b].size(); i++) {
+                    for (int u: intervals[b][i].users) {
+                        remove_user_in_interval(u, b, i);
+                    }
+                }
+            }
+
+            vector<int> p(N);
+            iota(p.begin(), p.end(), 0);
+            sort(p.begin(), p.end(), [&](int lhs, int rhs) {
+                return users_info[lhs].rbNeed > users_info[rhs].rbNeed;
+            });
+
+            for (int u: p) {
+                user_do_new_interval(u);
+            }
+        }
+
+        if (is_good(old_score)) {
+            CNT_ACCEPTED_INTERVAL_MERGE_EQUAL++;
+        } else {
+            rollback(old_actions_size);
+            ASSERT(old_score == total_score, "failed back score");
+        }
+
+        return;
+        // выбрать самый мало дающий интервал и удалить его
+        /*int best_b = -1, best_i = -1, best_score = -1e9;
+        for (int b = 0; b < B; b++) {
+            for (int i = 0; i < intervals[b].size(); i++) {
+
+                int old_actions_size = actions.size();
+
+                remove_interval(b, i);
+
+                if (best_score < total_score) {
+                    best_score = total_score;
+                    best_b = b;
+                    best_i = i;
+                }
+
+                rollback(old_actions_size);
+            }
+        }
+
+        if (best_b == -1) {
+            return;
+        }
+
+        remove_interval(best_b, best_i);*/
+
+        /*for (int b = 1; b < B; b++) {
             for (int b2 = 0; b2 < B; b2++) {
                 for (int i = 0; i < intervals[b].size(); i++) {
                     int old_score = total_score;
@@ -1969,7 +2031,7 @@ struct EgorTaskSolver {
                     }
                 }
             }
-        }
+        }*/
         // очень мало таких ситуаций
         /*
         ASSERT(get_intervals_size() <= J, "failed intervals size");
@@ -2141,7 +2203,7 @@ struct EgorTaskSolver {
         CNT_CALL_INTERVAL_SPLIT++;
 
         ASSERT(get_intervals_size() <= J, "failed intervals size");
-        if (get_intervals_size() == J) {
+        if (get_intervals_size() >= J) {
             return;
         }
 
@@ -2153,6 +2215,24 @@ struct EgorTaskSolver {
         int right_len = rnd.get(0, intervals[b][i].len);
 
         interval_do_split(b, i, right_len);
+
+        /*for (int b = 0; b < B; b++) {
+            for (int i = 0; i < intervals[b].size(); i++) {
+                for (int u: intervals[b][i].users) {
+                    remove_user_in_interval(u, b, i);
+                }
+            }
+        }
+
+        vector<int> p(N);
+        iota(p.begin(), p.end(), 0);
+        sort(p.begin(), p.end(), [&](int lhs, int rhs) {
+            return users_info[lhs].rbNeed > users_info[rhs].rbNeed;
+        });
+        for (int u: p) {
+            user_do_new_interval(u);
+        }*/
+
 
         if (is_good(old_score)) {
             CNT_ACCEPTED_INTERVAL_SPLIT++;
@@ -2234,14 +2314,10 @@ struct EgorTaskSolver {
         }
     }*/
 
-    void user_new_interval() {
+    void user_do_new_interval(int u) {
         CNT_CALL_USER_NEW_INTERVAL++;
 
-        int u = rnd.get(0, N - 1);
-        //auto [old_b, old_l, old_r] = get_user_position(u);
-
-        int old_score = total_score;
-        int old_actions_size = actions.size();
+        auto [old_b, old_l, old_r] = get_user_position(u);
 
         // remove user
         {
@@ -2280,7 +2356,7 @@ struct EgorTaskSolver {
 
                     int cur_f = f(sum_len);
 
-                    if (cur_f < best_f /* && (b != old_b || r < old_l || old_r < l)*/) {
+                    if (cur_f < best_f && (b != old_b || r < old_l || old_r < l)) {
                         best_f = cur_f;
                         best_b = b;
                         best_l = l;
@@ -2291,14 +2367,24 @@ struct EgorTaskSolver {
         }
 
         if (best_b == -1) {
-            rollback(old_actions_size);
-            ASSERT(old_score == total_score, "failed back score");
             return;
         }
 
         for (int i = best_l; i <= best_r; i++) {
             add_user_in_interval(u, best_b, i);
         }
+    }
+
+    void user_new_interval() {
+        CNT_CALL_USER_NEW_INTERVAL++;
+
+        int u = rnd.get(0, N - 1);
+        //auto [old_b, old_l, old_r] = get_user_position(u);
+
+        int old_score = total_score;
+        int old_actions_size = actions.size();
+
+        user_do_new_interval(u);
 
         if (is_good(old_score)) {
             CNT_ACCEPTED_USER_NEW_INTERVAL++;
@@ -2482,12 +2568,13 @@ struct EgorTaskSolver {
         auto best_ans = get_total_answer();
 
         for (int step = 0; step < STEPS; step++) {
-            temperature = (STEPS - step) * 1.0 / STEPS;
+            temperature = ((STEPS - step) * 1.0 / STEPS);
+            //temperature *= 0.9999;
 
             ASSERT(get_solution_score(N, M, K, J, L, reservedRBs, userInfos, get_total_answer()) == total_score, "invalid total_score");
-            if (THEORY_MAX_SCORE <= total_score) {
-                break;
-            }
+            //if (THEORY_MAX_SCORE <= total_score) {
+            //    break;
+            //}
 
             int s = SELECTION_ACTION.select();
             if (s == 0) {
@@ -2512,6 +2599,8 @@ struct EgorTaskSolver {
                 ACTION_WRAPPER(interval_merge, 9);
             } else if (s == 10) {
                 ACTION_WRAPPER(interval_split, 10);
+            } else if (s == 11) {
+                ACTION_WRAPPER(interval_kek, 11);
             } else {
                 ASSERT(false, "kek");
             }

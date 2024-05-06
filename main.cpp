@@ -106,20 +106,20 @@ void train_egor_task_solver() {
         return merge_score(old_ans) < merge_score(new_ans);
     };
 
-    auto ans = calc_train_score();
-
     Timer global_time;
 
     ofstream logger("train_log.txt");
 
+    auto super_ans = calc_train_score();
+
     auto log = [&]() {
         cout << "NICE!!! " << global_time << endl;
-        print_ans(cout, ans);
+        print_ans(cout, super_ans);
 
         logger << "=========================\n";
         logger << "=========================\n";
         logger << "TIME: " << global_time << '\n';
-        print_ans(logger, ans);
+        print_ans(logger, super_ans);
         logger << "SELECTION_ACTION: ";
         logger << SELECTION_ACTION << '\n';
         //for (int i = 0; i < 12; i++) {
@@ -129,6 +129,8 @@ void train_egor_task_solver() {
         logger.flush();
     };
 
+    auto ans = super_ans;
+
     //auto super_puper_ans = ans;
     log();
 
@@ -137,33 +139,48 @@ void train_egor_task_solver() {
 
         bool ok = false;
 
-        for (int kek = 0; kek < 10; kek++) {
-            int i = rnd.get(0, 10);
-            int j = rnd.get(0, 10);
-            vector<pair<int, int>> ips;
-            for (int c1 = max(-SELECTION_ACTION.kit[i].second, -5); c1 <= 5; c1++) {
-                for (int c2 = max(-SELECTION_ACTION.kit[j].second, -5); c2 <= 5; c2++) {
-                    if (!(c1 == 0 && c2 == 0)) {
-                        ips.push_back({c1, c2});
+        vector<tuple<int, int, int, int>> ips;
+        for (int i = 0; i < 11; i++) {
+            for (int j = 0; j < 11; j++) {
+
+                for (int c1 = max(-SELECTION_ACTION.kit[i].second, -5); c1 <= 5; c1++) {
+                    for (int c2 = max(-SELECTION_ACTION.kit[j].second, -5); c2 <= 5; c2++) {
+                        if (!(c1 == 0 && c2 == 0)) {
+                            ips.push_back({i, j, c1, c2});
+                        }
                     }
                 }
             }
-            shuffle(ips.begin(), ips.end(), rnd.generator);
-            for (auto [c1, c2]: ips) {
-                if (SELECTION_ACTION.kit[i].second + c1 >= 0 && SELECTION_ACTION.kit[j].second + c2 >= 0) {
-                    SELECTION_ACTION.kit[i].second += c1;
-                    SELECTION_ACTION.kit[j].second += c2;
+        }
+        shuffle(ips.begin(), ips.end(), rnd.generator);
+        for (auto [i, j, c1, c2]: ips) {
+            if (SELECTION_ACTION.kit[i].second + c1 >= 0 && SELECTION_ACTION.kit[j].second + c2 >= 0) {
+                SELECTION_ACTION.kit[i].second += c1;
+                SELECTION_ACTION.kit[j].second += c2;
 
-                    auto new_ans = calc_train_score();
-                    if (compare(ans, new_ans)) {
-                        ok = true;
-                        ans = new_ans;
+                auto new_ans = calc_train_score();
+                if (compare(ans, new_ans)) {
+                    ok = true;
+                    ans = new_ans;
+
+                    cout << "UPDATE ANS: " << global_time << endl;
+                    print_ans(cout, ans);
+
+                    if (compare(super_ans, ans)) {
+                        super_ans = ans;
                         log();
-                    } else {
-                        SELECTION_ACTION.kit[i].second -= c1;
-                        SELECTION_ACTION.kit[j].second -= c2;
                     }
+                } else {
+                    SELECTION_ACTION.kit[i].second -= c1;
+                    SELECTION_ACTION.kit[j].second -= c2;
                 }
+            }
+        }
+
+        if (!ok) {
+            cout << "BAD" << endl;
+            for (int i = 0; i < SELECTION_ACTION.kit.size(); i++) {
+                SELECTION_ACTION.kit[i].second++;
             }
         }
 
@@ -194,8 +211,8 @@ void train_egor_task_solver() {
 
 extern Snapshoter snapshoter;
 int main() {
-    train_egor_task_solver();
-    return 0;
+    //train_egor_task_solver();
+    //return 0;
 
     /*{
         ifstream input1("scores.txt");
@@ -305,7 +322,7 @@ int main() {
             TestData data;
             input >> data;
 
-            cout << "test: " << test << "!" << endl;
+            //cout << "test: " << test << "!" << endl;
 
             Timer timer;
             int theor_max = get_theory_max_score(data);
