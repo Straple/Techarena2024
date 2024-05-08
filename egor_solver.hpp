@@ -6,8 +6,16 @@
 #include "selection_randomizer.hpp"
 #include "tools.hpp"
 
-SelectionRandomizer SELECTION_ACTION = std::vector<int>{10, 1, 1, 1, 1, 16, 9, 6, 22, 12, 11, 30};
-int STEPS = 300;
+//TEST CASE: K=0 | tests: 666 | score: 99.219% | 647247/652342 | time: 11025.8ms | max_time: 29.784ms | mean_time: 16.5553ms
+//TEST CASE: K=1 | tests: 215 | score: 97.7355% | 211224/216118 | time: 3998.73ms | max_time: 23.965ms | mean_time: 18.5988ms
+//TEST CASE: K=2 | tests: 80 | score: 97.5734% | 77365/79289 | time: 1437.42ms | max_time: 15.822ms | mean_time: 17.9678ms
+//TEST CASE: K=3 | tests: 39 | score: 96.4027% | 43601/45228 | time: 672.092ms | max_time: 14.211ms | mean_time: 17.2331ms
+//TEST CASE: K=4 | tests: 0 | score: -nan% | 0/0 | time: 0ms | max_time: 0ms | mean_time: 0ms
+//TOTAL: tests: 1000 | score: 98.6364% | 979437/992977 | time: 17134.1ms | max_time: 29.784ms | mean_time: 17.1341ms
+
+SelectionRandomizer SELECTION_ACTION(12);
+// = std::vector<int>{10, 1, 1, 1, 1, 16, 9, 6, 22, 12, 11, 30};
+int STEPS = 10'000;
 
 struct EgorTaskSolver {
     ///============================
@@ -32,8 +40,6 @@ struct EgorTaskSolver {
     ///============================
 
     randomizer rnd;
-
-    int total_score = 0;
 
     struct SetInterval {
         int len = 0;
@@ -85,6 +91,35 @@ struct EgorTaskSolver {
 
     vector<Action> actions;
 
+    struct Metric {
+        // сумма min(rbNeed, len) по всем пользователям
+        // то есть обычный score
+        long long accepted = 0;
+
+        // размер пустого пространства,
+        // которое не заполнено пользователем
+        // чем больше, тем лучше, так как можно поставить пользователей
+        long long free_space = 0;
+
+        // сумма которую мы перевыполнили для пользователей
+        // чем она больше, тем хуже,
+        // так как мы могли бы отдать это место пользователем
+        long long overflow = 0;
+
+        // размер пространства, которое вообще не занято интервалами
+        // но не является зарезервированным
+        // изначально=M
+        // затем выкидываем длины зарезервированных
+        long long unused_space = 0;
+
+        friend bool operator==(Metric lhs, Metric rhs) {
+            return lhs.accepted == rhs.accepted &&
+                   lhs.free_space == rhs.free_space &&
+                   lhs.overflow == rhs.overflow &&
+                   lhs.unused_space == rhs.unused_space;
+        }
+    } metric;
+
     void rollback();
 
     void rollback(int size);
@@ -128,14 +163,100 @@ struct EgorTaskSolver {
 
     [[nodiscard]] int get_intervals_size() const;
 
+    [[nodiscard]] Metric get_metric() const;
+
     ///==========================
     ///===========RANDOM=========
     ///==========================
 
     double temperature = 1;
 
-    bool is_good(int old_score) {
-        return total_score > old_score || rnd.get_d() < exp((total_score - old_score) / temperature);
+    bool is_good(Metric old_metric) {
+        ASSERT(get_metric() == metric, "invalid metric");
+
+        auto calc_f = [&](Metric m) {
+            /// !!!
+            return m.accepted;// 979437
+            ///return m.accepted * m.accepted; // 979474
+            ///return pow(m.accepted, 3); // 979474
+            //return sqrt(m.accepted); // 932116
+
+            //return -m.overflow; // 25356
+
+            //return m.accepted + m.free_space; // 50823
+            //return m.accepted * 10 + m.free_space; // 973878
+            ///return m.accepted * 100 + m.free_space; // 977389
+            ///return m.accepted * 1000 + m.free_space; // 977434
+            ///return m.accepted * 10000 + m.free_space; // 977434
+            ///return m.accepted * 100000 + m.free_space; // 977434
+
+            //return m.accepted * 100 - m.free_space; // 975114
+            //return m.accepted * 1000 - m.free_space; // 975116
+
+            //return m.accepted * 10 - m.overflow; // 975273
+            //return m.accepted * 100 - m.overflow; // 976539
+            //return m.accepted * 1000 - m.overflow; //976555
+            //return m.accepted * 10000 - m.overflow; //976555
+
+            //return m.accepted - m.unused_space; // 979322
+            //return m.accepted - m.unused_space * L; // 979341
+            //return m.accepted *2 - m.unused_space; // 979435
+            //return m.accepted *3 - m.unused_space; // 979452
+            //return m.accepted *4 - m.unused_space; // 979484
+            //return m.accepted * 5 - m.unused_space;// 979385
+            //return m.accepted * 10 - m.unused_space; // 979359
+            //return m.accepted * m.accepted - m.unused_space; // 979374
+
+            // return m.accepted + m.unused_space; // 970043
+            //return m.accepted * 10 + m.unused_space; // 978390
+            //return m.accepted * 100 + m.unused_space;// 978419
+        };
+
+        double f = calc_f(metric);
+        double old_f = calc_f(old_metric);
+        //ASSERT(f > 0, "invalid f");
+        //ASSERT(old_f > 0, "invalid old_f");
+
+        return f > old_f || rnd.get_d() < exp((f - old_f) / temperature);
+
+        /*if (metric.accepted > old_metric.accepted) {
+            return true;
+        } else if (metric.accepted == old_metric.accepted) {
+            //return true; // 979363
+            //return false;// 966147
+
+            auto calc_f = [](Metric m) {
+                //return m.overflow + m.free_space; // 967490
+                //return -m.overflow + m.free_space; // 970315
+                //return -m.overflow + m.free_space * 10; // 970425
+                //return -m.overflow + m.free_space * 100; // 970374
+                //return -m.overflow + m.free_space * 15; // 970438
+                //return -m.overflow + m.free_space * 12; // 970469
+                //return m.free_space;
+                return m.overflow;
+            };
+
+            //double f = calc_f(metric);
+            //double old_f = calc_f(old_metric);
+            //ASSERT(f > 0, "invalid f");
+            //ASSERT(old_f > 0, "invalid old_f");
+
+            //969488
+            //978105
+
+            //979529
+            //return f < old_f || rnd.get_d() < exp((f - old_f) / temperature);
+
+            //977855
+            return rnd.get_d() < exp((old_metric.overflow - metric.overflow) / temperature);
+
+            //962261
+            return rnd.get_d() < exp((metric.overflow - old_metric.overflow) / temperature);
+        }
+        return rnd.get_d() < exp((metric.accepted - old_metric.accepted) / temperature);*/
+
+        // 979437
+        //return metric.accepted > old_metric.accepted || rnd.get_d() < exp((metric.accepted - old_metric.accepted) / temperature);
     }
 
     ///==========================
@@ -163,6 +284,14 @@ struct EgorTaskSolver {
     ///======================
 
     void user_do_new_interval(int u);
+
+    void user_add_left();
+
+    void user_add_right();
+
+    void user_remove_left();
+
+    void user_remove_right();
 
     void user_new_interval();
 

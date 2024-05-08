@@ -1,4 +1,5 @@
 #pragma once
+
 ///==========================
 ///===========GETTERS========
 ///==========================
@@ -65,3 +66,21 @@ int EgorTaskSolver::get_intervals_size() const {
     return size;
 }
 
+[[nodiscard]] EgorTaskSolver::Metric EgorTaskSolver::get_metric() const {
+    EgorTaskSolver::Metric m;
+    for (auto interval: free_intervals) {
+        m.unused_space += interval.len();
+    }
+    for (int u = 0; u < N; u++) {
+        m.accepted += min(users_info[u].rbNeed, users_info[u].sum_len);
+        m.overflow += max(0, users_info[u].sum_len - users_info[u].rbNeed);
+    }
+
+    for (int b = 0; b < B; b++) {
+        for (auto interval: intervals[b]) {
+            m.unused_space -= interval.len;
+            m.free_space += interval.len * (L - interval.users.size());
+        }
+    }
+    return m;
+}

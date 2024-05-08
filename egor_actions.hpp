@@ -37,11 +37,17 @@ void EgorTaskSolver::rollback(int size) {
 void EgorTaskSolver::IMPL_change_interval_len(int b, int i, int c) {
     auto &interval = intervals[b][i];
     for (int u: interval.users) {
-        total_score -= get_user_score(u);
+        metric.accepted -= min(users_info[u].rbNeed, users_info[u].sum_len);
+        metric.overflow -= max(0, users_info[u].sum_len - users_info[u].rbNeed);
+
         users_info[u].sum_len += c;
-        total_score += get_user_score(u);
+
+        metric.accepted += min(users_info[u].rbNeed, users_info[u].sum_len);
+        metric.overflow += max(0, users_info[u].sum_len - users_info[u].rbNeed);
     }
     interval.len += c;
+    metric.free_space += c * (L - interval.users.size());
+    metric.unused_space -= c;
     ASSERT(0 <= interval.len, "invalid interval");
 }
 
@@ -59,13 +65,17 @@ void EgorTaskSolver::IMPL_add_user_in_interval(int u, int b, int i) {
     ASSERT(!interval.users.contains(u), "user already contains");
     ASSERT(((interval.beam_msk >> user.beam) & 1) == 0, "equal beams");
 
-    total_score -= get_user_score(u);
+    metric.accepted -= min(user.rbNeed, user.sum_len);
+    metric.overflow -= max(0, user.sum_len - user.rbNeed);
 
     user.sum_len += interval.len;
     interval.users.insert(u);
     interval.beam_msk ^= (uint32_t(1) << user.beam);
 
-    total_score += get_user_score(u);
+    metric.accepted += min(user.rbNeed, user.sum_len);
+    metric.overflow += max(0, user.sum_len - user.rbNeed);
+
+    metric.free_space -= interval.len;
 }
 
 void EgorTaskSolver::add_user_in_interval(int u, int b, int i) {
@@ -81,13 +91,17 @@ void EgorTaskSolver::IMPL_remove_user_in_interval(int u, int b, int i) {
     ASSERT(interval.users.contains(u), "user no contains");
     ASSERT(((interval.beam_msk >> users_info[u].beam) & 1) == 1, "user no contains");
 
-    total_score -= get_user_score(u);
+    metric.accepted -= min(user.rbNeed, user.sum_len);
+    metric.overflow -= max(0, user.sum_len - user.rbNeed);
 
     user.sum_len -= interval.len;
     interval.users.erase(u);
     interval.beam_msk ^= (uint32_t(1) << user.beam);
 
-    total_score += get_user_score(u);
+    metric.accepted += min(user.rbNeed, user.sum_len);
+    metric.overflow += max(0, user.sum_len - user.rbNeed);
+
+    metric.free_space += interval.len;
 }
 
 void EgorTaskSolver::remove_user_in_interval(int u, int b, int i) {

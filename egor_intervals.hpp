@@ -30,7 +30,7 @@ void EgorTaskSolver::interval_flow_over() {
 
     int change = rnd.get(-intervals[b][i].len, intervals[b][i + 1].len);
 
-    int old_score = total_score;
+    auto old_metric = metric;
 
     if (change > 0) {
         change_interval_len(b, i + 1, -change);
@@ -40,12 +40,12 @@ void EgorTaskSolver::interval_flow_over() {
         change_interval_len(b, i + 1, -change);
     }
 
-    if (is_good(old_score)) {
+    if (is_good(old_metric)) {
         CNT_ACCEPTED_INTERVAL_FLOW_OVER++;
     } else {
         rollback();
         rollback();
-        ASSERT(old_score == total_score, "failed back score");
+        ASSERT(old_metric == metric, "failed back score");
     }
 }
 
@@ -56,15 +56,15 @@ void EgorTaskSolver::interval_increase_len() {
 
     int change = rnd.get(1, min(10, (free_intervals[b].len() - get_block_len(b))));
 
-    int old_score = total_score;
+    auto old_metric = metric;
 
     change_interval_len(b, i, change);
 
-    if (is_good(old_score)) {
+    if (is_good(old_metric)) {
         CNT_ACCEPTED_INTERVAL_INCREASE_LEN++;
     } else {
         rollback();
-        ASSERT(old_score == total_score, "failed back score");
+        ASSERT(old_metric == metric, "failed back score");
     }
 }
 
@@ -75,15 +75,15 @@ void EgorTaskSolver::interval_decrease_len() {
 
     int change = rnd.get(-intervals[b][i].len, -1);
 
-    int old_score = total_score;
+    auto old_metric = metric;
 
     change_interval_len(b, i, change);
 
-    if (is_good(old_score)) {
+    if (is_good(old_metric)) {
         CNT_ACCEPTED_INTERVAL_DECREASE_LEN++;
     } else {
         rollback();
-        ASSERT(old_score == total_score, "failed back score");
+        ASSERT(old_metric == metric, "failed back score");
     }
 }
 
@@ -124,18 +124,19 @@ void EgorTaskSolver::interval_merge() {
 
     CHOOSE_INTERVAL(merge_verify(b, i));
 
-    int old_score = total_score;
+    auto old_metric = metric;
+
     int old_actions_size = actions.size();
 
     int right_len = intervals[b][i + 1].len;
 
     interval_do_merge(b, i);
 
-    if (is_good(old_score)) {
+    if (is_good(old_metric)) {
         CNT_ACCEPTED_INTERVAL_MERGE_EQUAL++;
     } else {
         rollback(old_actions_size);
-        ASSERT(old_score == total_score, "failed back score");
+        ASSERT(old_metric == metric, "failed back score");
     }
 }
 
@@ -147,7 +148,8 @@ void EgorTaskSolver::interval_split() {
         return;
     }
 
-    int old_score = total_score;
+    auto old_metric = metric;
+
     int old_actions_size = actions.size();
 
     CHOOSE_INTERVAL(true);
@@ -157,27 +159,27 @@ void EgorTaskSolver::interval_split() {
     interval_do_split(b, i, right_len);
 
     /*for (int b = 0; b < B; b++) {
-            for (int i = 0; i < intervals[b].size(); i++) {
-                for (int u: intervals[b][i].users) {
-                    remove_user_in_interval(u, b, i);
-                }
+        for (int i = 0; i < intervals[b].size(); i++) {
+            for (int u: intervals[b][i].users) {
+                remove_user_in_interval(u, b, i);
             }
         }
+    }
 
-        vector<int> p(N);
-        iota(p.begin(), p.end(), 0);
-        sort(p.begin(), p.end(), [&](int lhs, int rhs) {
-            return users_info[lhs].rbNeed > users_info[rhs].rbNeed;
-        });
-        for (int u: p) {
-            user_do_new_interval(u);
-        }*/
+    vector<int> p(N);
+    iota(p.begin(), p.end(), 0);
+    sort(p.begin(), p.end(), [&](int lhs, int rhs) {
+        return users_info[lhs].rbNeed > users_info[rhs].rbNeed;
+    });
+    for (int u: p) {
+        user_do_new_interval(u);
+    }*/
 
 
-    if (is_good(old_score)) {
+    if (is_good(old_metric)) {
         CNT_ACCEPTED_INTERVAL_SPLIT++;
     } else {
         rollback(old_actions_size);
-        ASSERT(old_score == total_score, "failed back score");
+        ASSERT(old_metric == metric, "failed back score");
     }
 }
