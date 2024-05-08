@@ -19,7 +19,7 @@ int main() {
             TestData data;
             input >> data;
 
-            //cout << "test: " << test << "!" << endl;
+            cout << "test: " << test << "!" << endl;
 
             Timer timer;
             int theor_max = get_theory_max_score(data);
@@ -130,7 +130,7 @@ int main() {
 #undef g
     }
 
-    cout << "============================================================\n";
+    /*cout << "============================================================\n";
     cout << "{\n";
     for (int i = 0; i < 12; i++) {
         cout << "{";
@@ -151,7 +151,7 @@ int main() {
     }
     cout << "}\n";
     cout << "============================================================\n";
-    cout << endl;
+    cout << endl;*/
 
     for (int K = 0; K <= 4; K++) {
         cout << "TEST CASE: K=" << K << " | " << infos[K] << endl;

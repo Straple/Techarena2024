@@ -25,7 +25,9 @@ void my_write(ifstream &input) {
         return;
     }
 
-    if (line.size() >= 10 && line.substr(0, 10) == "#include \"") {
+    if(line == "#pragma once") {
+        // no write
+    }else if (line.size() >= 10 && line.substr(0, 10) == "#include \"") {
         // parse include
         line = line.substr(10);
         ASSERT(!line.empty(), "line is empty");

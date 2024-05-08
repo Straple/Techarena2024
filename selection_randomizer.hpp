@@ -6,7 +6,6 @@
 
 struct SelectionRandomizer {
     randomizer rnd;
-    static inline randomizer SELECTION_RANDOMIZER_LEARN_RANDOM;
 
     // (id, power)
     std::vector<std::pair<int, int>> kit;
