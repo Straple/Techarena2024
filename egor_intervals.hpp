@@ -158,6 +158,20 @@ void EgorTaskSolver::interval_split() {
 
     interval_do_split(b, i, right_len);
 
+    // TODO: попробовать удалить тех, которые и так выполнены
+    // они будут в intervals[b][i], intervals[b][i+1]
+    // 980385 -> 980478
+    for(int u : intervals[b][i].users){
+        auto [_, l, r] = get_user_position(u);
+        if(l == i && users_info[u].sum_len - intervals[b][i].len >= users_info[u].rbNeed){
+            remove_user_in_interval(u, b, i);
+        }
+        // TODO: это как будто не работает
+        else if(r == i && users_info[u].sum_len - intervals[b][i + 1].len >= users_info[u].rbNeed){
+            remove_user_in_interval(u, b, i + 1);
+        }
+    }
+
     /*for (int b = 0; b < B; b++) {
         for (int i = 0; i < intervals[b].size(); i++) {
             for (int u: intervals[b][i].users) {

@@ -17,6 +17,9 @@ SelectionRandomizer SELECTION_ACTION(12);
 // = std::vector<int>{10, 1, 1, 1, 1, 16, 9, 6, 22, 12, 11, 30};
 int STEPS = 10'000;
 
+const int METRIC_CNT = 3;
+int METRIC_TYPE = 0;
+
 struct EgorTaskSolver {
     ///============================
     /// task data
@@ -99,6 +102,7 @@ struct EgorTaskSolver {
         // размер пустого пространства,
         // которое не заполнено пользователем
         // чем больше, тем лучше, так как можно поставить пользователей
+        // TODO: чем больше, тем не совсем лучше, надо смотреть
         long long free_space = 0;
 
         // сумма которую мы перевыполнили для пользователей
@@ -171,12 +175,68 @@ struct EgorTaskSolver {
 
     double temperature = 1;
 
+    //add score: 0 693 288
+    //TEST CASE: K=0 | tests: 666 | score: 99.2982% | 647764/652342 | time: 28137.4ms | max_time: 77.561ms | mean_time: 42.2483ms
+    //TEST CASE: K=1 | tests: 215 | score: 97.8553% | 211483/216118 | time: 9188.19ms | max_time: 39.351ms | mean_time: 42.7358ms
+    //TEST CASE: K=2 | tests: 80 | score: 97.7727% | 77523/79289 | time: 3777.18ms | max_time: 38.059ms | mean_time: 47.2147ms
+    //TEST CASE: K=3 | tests: 39 | score: 96.4336% | 43615/45228 | time: 1849.04ms | max_time: 35.504ms | mean_time: 47.4114ms
+    //TEST CASE: K=4 | tests: 0 | score: -nan% | 0/0 | time: 0ms | max_time: 0ms | mean_time: 0ms
+    //TOTAL: tests: 1000 | score: 98.7319% | 980385/992977 | time: 42951.8ms | max_time: 77.561ms | mean_time: 42.9518ms
     bool is_good(Metric old_metric) {
-        ASSERT(get_metric() == metric, "invalid metric");
+        //ASSERT(get_metric() == metric, "invalid metric");
 
+        // 979437 -> 980155 -> 980332 -> 980459
         auto calc_f = [&](Metric m) {
+            //add score: 0 897 417
+            if (METRIC_TYPE == 0) {
+                return m.accepted;
+            } else if (METRIC_TYPE == 1) {
+                // +712
+                //return 100 * m.accepted - m.unused_space - m.overflow - m.free_space;
+
+                // 720
+                //return 100 * m.accepted - 2 * m.unused_space - m.overflow - m.free_space;
+
+                // 769
+                //return 100 * m.accepted - 5 * m.unused_space - m.overflow - m.free_space;
+
+                //779
+                return 100 * m.accepted - 10 * m.unused_space - m.overflow - m.free_space;
+
+                //772
+                //return 1000 * m.accepted - 99 * m.unused_space - 10 * m.overflow - 10 * m.free_space;
+            } else if (METRIC_TYPE == 2) {
+                return m.accepted * 5 - m.unused_space;
+            }
+            /*else if(METRIC_TYPE == 3){
+                //980520
+                //return m.accepted * 100 + m.free_space;
+                //980526
+                //return m.accepted * 10 + m.free_space;
+
+                return m.accepted * 10 - m.overflow;
+            }*/
+            /*else if(METRIC_TYPE == 1){
+                // add score: 0 834 199 51
+                // 980488
+                return m.accepted * 5 - m.unused_space;
+            }
+            else if(METRIC_TYPE == 2){
+                return m.accepted + m.unused_space;
+            }
+            else if(METRIC_TYPE == 3){
+                return 100 * m.accepted - m.unused_space - m.overflow;
+            }*/
+            /*else if(METRIC_TYPE == 3){
+                return m.accepted * 10000 + m.overflow;
+            }
+            else if(METRIC_TYPE == 4){
+                return m.accepted * 10 + m.free_space;
+            }*/
+
+            ASSERT(false, "invalid METRIC_TYPE");
             /// !!!
-            return m.accepted;// 979437
+            //return m.accepted;// 979437
             ///return m.accepted * m.accepted; // 979474
             ///return pow(m.accepted, 3); // 979474
             //return sqrt(m.accepted); // 932116
@@ -207,7 +267,7 @@ struct EgorTaskSolver {
             //return m.accepted * 10 - m.unused_space; // 979359
             //return m.accepted * m.accepted - m.unused_space; // 979374
 
-            // return m.accepted + m.unused_space; // 970043
+            //return m.accepted + m.unused_space; // 970043
             //return m.accepted * 10 + m.unused_space; // 978390
             //return m.accepted * 100 + m.unused_space;// 978419
         };

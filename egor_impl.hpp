@@ -93,8 +93,7 @@ EgorTaskSolver::EgorTaskSolver(int NN, int MM, int KK, int JJ, int LL,
     }
 }
 
-
-//#define ACTION_WRAPPER(action_foo, action_id)     \
+//#define ACTION_WRAPPER(action_foo, action_id)   \
     int old_score = total_score;                  \
     cnt_edges[prev_action][action_id]++;          \
     action_foo();                                 \
@@ -112,8 +111,8 @@ vector<Interval> EgorTaskSolver::annealing(vector<Interval> reservedRBs,
     temperature = 1;
     prev_action = 0;
 
-    //int best_score = total_score;
-    //auto best_ans = get_total_answer();
+    int best_score = metric.accepted;
+    auto best_ans = get_total_answer();
 
     for (int step = 0; step < STEPS; step++) {
         temperature = ((STEPS - step) * 1.0 / STEPS);
@@ -153,10 +152,10 @@ vector<Interval> EgorTaskSolver::annealing(vector<Interval> reservedRBs,
             ASSERT(false, "kek");
         }
 
-        /*if (best_score < total_score) {
-            best_score = total_score;
+        if (best_score < metric.accepted) {
+            best_score = metric.accepted;
             best_ans = get_total_answer();
-        }*/
+        }
 
         actions.clear();
 
@@ -166,15 +165,16 @@ vector<Interval> EgorTaskSolver::annealing(vector<Interval> reservedRBs,
     //for (int u = 0; u < N; u++) {
     //user_do_crop(u);
     //}
-    return get_total_answer();
-    //return best_ans;
+    //return get_total_answer();
+    return best_ans;
 }
 
 vector<Interval> Solver_egor(int N, int M, int K, int J, int L,
                              const vector<Interval> &reservedRBs,
                              const vector<UserInfo> &userInfos, const std::vector<Interval> &solution, int random_seed) {
+    SELECTION_ACTION.reset_rnd();
     EgorTaskSolver solver(N, M, K, J, L, reservedRBs, userInfos, solution, random_seed);
     auto answer = solver.annealing(reservedRBs, userInfos);
-    ASSERT(solver.metric.accepted == get_solution_score(N, M, K, J, L, reservedRBs, userInfos, answer), "invalid total_score");
+    //ASSERT(solver.metric.accepted == get_solution_score(N, M, K, J, L, reservedRBs, userInfos, answer), "invalid total_score");
     return answer;
 }

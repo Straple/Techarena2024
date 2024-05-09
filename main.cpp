@@ -9,6 +9,9 @@ int main() {
     test_case_info infos[5];
     map<int, map<int, int>> score_per_test;
     //ofstream scores_output("scores2.txt");
+
+    // (diff, score, K, test, METRIC_TYPE)
+    vector<tuple<int, int, int, int, int>> best_diff;
     for (int K = 0; K <= 3; K++) {
         cout << "TEST CASE: K=" << K << endl;
         string dir = "tests/case_K=" + to_string(K) + "/";
@@ -21,17 +24,33 @@ int main() {
 
             cout << "test: " << test << "!" << endl;
 
-            Timer timer;
             int theor_max = get_theory_max_score(data);
             snapshoter = Snapshoter(K, test, theor_max, data, "basic_solve");
-            auto intervals = Solver(data);
-            double time = timer.get();
 
+            Timer timer;
+            vector<Interval> best_intervals;
+
+            METRIC_TYPE = 0;
+            auto zero_intervals = Solver(data);
+            cout << get_solution_score(data, zero_intervals) << ' ';
+            best_intervals = zero_intervals;
+            best_diff.emplace_back(0, get_solution_score(data, zero_intervals), K, test, 0);
+            for (int m = 1; m < METRIC_CNT; m++) {
+                METRIC_TYPE = m;
+                auto intervals = Solver(data);
+                cout << get_solution_score(data, intervals) << ' ';
+                if (get_solution_score(data, intervals) > get_solution_score(data, best_intervals)) {
+                    best_intervals = intervals;
+                    best_diff.back() = {get_solution_score(data, intervals) - get_solution_score(data, zero_intervals), get_solution_score(data, intervals), K, test, m};
+                }
+            }
+            cout << endl;
+            double time = timer.get();
 
             infos[K].total_time += time;
             infos[K].max_test_time = max(infos[K].max_test_time, time);
 
-            int score = get_solution_score(data, intervals);
+            int score = get_solution_score(data, best_intervals);
             score_per_test[K][test] = score;
 
             //scores_output << K << ' ' << test << ' ' << score << endl;
@@ -64,6 +83,18 @@ int main() {
             cout << tests_and_scores[i].first << " " << tests_and_scores[i].second << endl;
         }
     }
+
+    vector<int> metric_add_score(METRIC_CNT);
+    sort(best_diff.begin(), best_diff.end());
+    for (auto [diff, score, K, test, m]: best_diff) {
+        cout << diff << ' ' << score << ' ' << K << ' ' << test << ' ' << m << endl;
+        metric_add_score[m] += diff;
+    }
+    cout << "add score: ";
+    for (int m = 0; m < METRIC_CNT; m++) {
+        cout << metric_add_score[m] << ' ';
+    }
+    cout << endl;
 
     test_case_info total_info;
     for (int K = 0; K <= 4; K++) {
