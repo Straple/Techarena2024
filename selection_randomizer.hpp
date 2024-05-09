@@ -54,7 +54,8 @@ public:
     }
 
     int select() {
-        double p = rnd.get_d() * power_sum();
+        //double p = rnd.get_d() * power_sum();
+        int p = rnd.get(0, power_sum());
         int sum = 0;
         for (auto [id, power]: kit) {
             sum += power;

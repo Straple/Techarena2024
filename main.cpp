@@ -4,6 +4,17 @@
 
 extern Snapshoter snapshoter;
 int main() {
+    /*SelectionRandomizer ss = vector<int>{3, 3, 3, 3, 3};
+    map<int, int> S;
+    for (int i = 0; i < 1000; i++) {
+        int x = ss.select();
+        S[x]++;
+        cout << x << '\n';
+    }
+    for (auto [x, cnt]: S) {
+        cout << x << ": " << cnt << endl;
+    }
+    return 0;*/
     //train_egor_task_solver();
     //return 0;
     test_case_info infos[5];
