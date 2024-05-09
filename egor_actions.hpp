@@ -52,7 +52,7 @@ void EgorTaskSolver::IMPL_change_interval_len(int b, int i, int c) {
 }
 
 void EgorTaskSolver::change_interval_len(int b, int i, int c) {
-    CNT_CALL_CHANGE_INTERVAL_LEN++;
+    //CNT_CALL_CHANGE_INTERVAL_LEN++;
     actions.push_back({Action::Type::CHANGE_INTERVAL_LEN, b, i, -1, c});
     IMPL_change_interval_len(b, i, c);
 }
@@ -79,7 +79,7 @@ void EgorTaskSolver::IMPL_add_user_in_interval(int u, int b, int i) {
 }
 
 void EgorTaskSolver::add_user_in_interval(int u, int b, int i) {
-    CNT_CALL_ADD_USER_IN_INTERVAL++;
+    //CNT_CALL_ADD_USER_IN_INTERVAL++;
     actions.push_back({Action::Type::ADD_USER_IN_INTERVAL, b, i, u, 0});
     IMPL_add_user_in_interval(u, b, i);
 }
@@ -105,7 +105,7 @@ void EgorTaskSolver::IMPL_remove_user_in_interval(int u, int b, int i) {
 }
 
 void EgorTaskSolver::remove_user_in_interval(int u, int b, int i) {
-    CNT_CALL_REMOVE_USER_IN_INTERVAL++;
+    //CNT_CALL_REMOVE_USER_IN_INTERVAL++;
     actions.push_back({Action::Type::REMOVE_USER_IN_INTERVAL, b, i, u, 0});
     IMPL_remove_user_in_interval(u, b, i);
 }

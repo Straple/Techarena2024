@@ -1,5 +1,10 @@
 constexpr int test_case_K_sizes[] = {666, 215, 80, 39, 0};
 
+#include <atomic>
+#include <thread>
+
+randomizer rnd;
+
 struct test_case_info {
     int tests = 0;
     int total_score = 0;
@@ -19,49 +24,58 @@ ostream &operator<<(ostream &output, const test_case_info &info) {
 
 vector<vector<pair<TestData, vector<Interval>>>> train_dataset;
 
-// (score, theor_max)
-vector<pair<int, int>> calc_train_score() {
+// score
+int calc_train_score(const vector<int> &powers) {
     auto do_test = [&]() {
-        //for (int i = 0; i < SELECTION_ACTION.size(); i++) {
-        //    SELECTION_ACTION[i].reset_rnd();
-        //}
         int total_score = 0;
         int total_theor_max = 0;
         for (int K = 0; K <= 3; K++) {
             for (auto &[data, start_intervals]: train_dataset[K]) {
-                THEORY_MAX_SCORE = get_theory_max_score(data.N, data.M, data.K, data.J, data.L, data.reservedRBs, data.userInfos);
+                //THEORY_MAX_SCORE = get_theory_max_score(data.N, data.M, data.K, data.J, data.L, data.reservedRBs, data.userInfos);
                 int score1 = 0;
                 {
-                    SELECTION_ACTION.reset_rnd();
-                    auto intervals = Solver_egor(data.N, data.M, data.K, data.J, data.L, data.reservedRBs, data.userInfos, start_intervals, 42);
-
+                    //SELECTION_ACTION = powers;
+                    auto intervals = Solver_egor(data.N, data.M, data.K, data.J, data.L, data.reservedRBs, data.userInfos, start_intervals, 42, powers);
                     score1 = get_solution_score(data, intervals);
                 }
                 int score2 = 0;
                 {
-                    SELECTION_ACTION.reset_rnd();
-                    auto intervals = Solver_egor(data.N, data.M, data.K, data.J, data.L, data.reservedRBs, data.userInfos, start_intervals, 4128635);
-
+                    //SELECTION_ACTION = powers;
+                    auto intervals = Solver_egor(data.N, data.M, data.K, data.J, data.L, data.reservedRBs, data.userInfos, start_intervals, 4128635, powers);
                     score2 = get_solution_score(data, intervals);
                 }
                 total_score += (score1 + score2) / 2;
-
-                int theor_max = get_theory_max_score(data);
-                total_theor_max += theor_max;
             }
         }
-        return make_pair(total_score, total_theor_max);
+        return total_score;
     };
 
-    vector<pair<int, int>> ans;
+    return do_test();
+}
 
-    //STEPS = 400;
-    //ans.push_back(do_test());
-    //STEPS = 600;
-    //ans.push_back(do_test());
-    STEPS = 800;
-    ans.push_back(do_test());
-    return ans;
+struct TrainItem {
+    vector<int> powers;
+    int score = -1;
+
+    friend bool operator<(const TrainItem &lhs, const TrainItem &rhs) {
+        return lhs.score > rhs.score;
+    }
+};
+
+TrainItem merge_gens(TrainItem lhs, const TrainItem &rhs) {
+    uint32_t msk = rnd.get(0, (1ULL << SELECTION_SIZE) - 1);
+    for (int i = 0; i < SELECTION_SIZE; i++) {
+        if ((msk >> i) & 1) {
+            lhs.powers[i] = rhs.powers[i];
+        }
+    }
+
+    if (rnd.get_d() < 0.3) {
+        int i = rnd.get(0, SELECTION_SIZE - 1);
+        lhs.powers[i] = max(0, lhs.powers[i] + (int) rnd.get(-10, 10));
+    }
+
+    return lhs;
 }
 
 void train_egor_task_solver() {
@@ -75,8 +89,6 @@ void train_egor_task_solver() {
             train_dataset[K].push_back({data, Solver_Artem_grad(data.N, data.M, data.K, data.J, data.L, data.reservedRBs, data.userInfos)});
         }
     }
-
-    randomizer rnd;
 
     auto merge_score = [&](const vector<pair<int, int>> &ans) {
         double score = 0;
@@ -92,13 +104,13 @@ void train_egor_task_solver() {
         return score;
     };
 
-    auto print_ans = [&](std::ostream &output, const vector<pair<int, int>> &ans) {
+    /*auto print_ans = [&](std::ostream &output, const vector<pair<int, int>> &ans) {
         output << "score: " << merge_score(ans) << '\n';
         for (auto [score, max]: ans) {
             output << (score * 100.0 / max) << "% " << score << '/' << max << '\n';
         }
         output << endl;
-    };
+    };*/
 
     auto compare = [&](const vector<pair<int, int>> &old_ans, const vector<pair<int, int>> &new_ans) {
         return merge_score(old_ans) < merge_score(new_ans);
@@ -108,31 +120,115 @@ void train_egor_task_solver() {
 
     ofstream logger("train_log.txt");
 
-    auto super_ans = calc_train_score();
+    auto ans = 0;
 
-    auto log = [&]() {
+    auto log = [&](const vector<int> &powers) {
         cout << "NICE!!! " << global_time << endl;
-        print_ans(cout, super_ans);
+        cout << "score: " << ans << '\n';
 
         logger << "=========================\n";
         logger << "=========================\n";
         logger << "TIME: " << global_time << '\n';
-        print_ans(logger, super_ans);
-        logger << "SELECTION_ACTION: ";
-        logger << SELECTION_ACTION << '\n';
-        //for (int i = 0; i < 12; i++) {
-        //    logger << i << ": " << SELECTION_ACTION[i] << '\n';
-        //}
-        logger << endl;
+        logger << "score: " << ans << '\n';
+        logger << "POWERS: ";
+        for (int p: powers) {
+            logger << p << ' ';
+        }
+        logger << '\n'
+               << endl;
         logger.flush();
     };
 
-    auto ans = super_ans;
-
-    //auto super_puper_ans = ans;
-    log();
+    vector<TrainItem> Q;
+    cout << "BUILDING..." << endl;
+    for (int i = 0; i < 20; i++) {
+        vector<int> powers(SELECTION_SIZE);
+        for (int j = 0; j < SELECTION_SIZE; j++) {
+            powers[j] = rnd.get(0, 100);
+        }
+        Q.push_back({powers, calc_train_score(powers)});
+    }
+    sort(Q.begin(), Q.end());
+    cout << "OK" << endl;
 
     for (int step = 0;; step++) {
+        cout << "step: " << step << ' ' << global_time << ' ' << Q[0].score << ' ' << Q.back().score << endl;
+
+        vector<TrainItem> newQ;
+        for (int k = 0; k < 100; k++) {
+            int i = rnd.get(0, Q.size() - 1);
+            int j = rnd.get(0, Q.size() - 1);
+            auto new_item = merge_gens(Q[i], Q[j]);
+            newQ.push_back(new_item);
+        }
+
+        for (int k = 0; k < 100; k++) {
+            auto new_item = Q[rnd.get(0, min((int) Q.size() - 1, 5))];
+            uint32_t msk = rnd.get(0, (1ULL << SELECTION_SIZE) - 1);
+            for (int i = 0; i < SELECTION_SIZE; i++) {
+                if ((msk >> i) & 1) {
+                    new_item.powers[i]++;
+                } else {
+                    new_item.powers[i]--;
+                    new_item.powers[i] = max(0, new_item.powers[i]);
+                }
+            }
+            newQ.push_back(new_item);
+        }
+
+        /*for (int k = 0; k < 2; k++) {
+            int i = rnd.get(0, Q.size() - 1);
+            for (int j = 0; j < SELECTION_SIZE; j++) {
+                auto new_item = Q[i];
+                new_item.powers[j] = max(0, new_item.powers[j] + (int) rnd.get(-5, 5));
+                new_item.score = calc_train_score(new_item.powers);
+                newQ.push_back(new_item);
+            }
+        }*/
+
+        vector<atomic<bool>> vis(newQ.size());
+        auto do_work = [&]() {
+            for (int i = 0; i < newQ.size(); i++) {
+                bool expected = false;
+                if (vis[i].compare_exchange_strong(expected, true)) {
+                    newQ[i].score = calc_train_score(newQ[i].powers);
+                }
+            }
+        };
+
+        // TODO: multithread
+        constexpr int threads_count = 10;
+        vector<thread> threads(threads_count);
+        for (int i = 0; i < threads_count; i++) {
+            threads[i] = thread(do_work);
+        }
+        for (int i = 0; i < threads_count; i++) {
+            threads[i].join();
+        }
+        /*for (auto [powers, score]: newQ) {
+            ASSERT(score != -1, "invalid score");
+        }
+        for (int i = 0; i < newQ.size(); i++) {
+            ASSERT(vis[i] == true, "invalid vis");
+        }*/
+
+        for (auto &i: Q) {
+            newQ.push_back(move(i));
+        }
+        sort(newQ.begin(), newQ.end());
+        Q = move(newQ);
+
+        while (Q.size() > 300) {
+            Q.pop_back();
+        }
+
+        if (Q[0].score > ans) {
+            ans = Q[0].score;
+            log(Q[0].powers);
+        }
+    }
+
+    /*for (int step = 0;; step++) {
         cout << step << ' ' << global_time << endl;
 
         bool ok = false;
@@ -181,28 +277,5 @@ void train_egor_task_solver() {
                 SELECTION_ACTION.kit[i].second++;
             }
         }
-
-        /*for (int j = 0; j < 11; j++) {
-            for (int change = max(-SELECTION_ACTION.kit[j].second, -2); change <= 2; change++) {
-                if (change != 0) {
-                    SELECTION_ACTION.kit[j].second += change;
-
-                    auto new_ans = calc_train_score();
-                    if (compare(ans, new_ans)) {
-                        ok = true;
-                        ans = new_ans;
-                        log();
-                    } else {
-                        SELECTION_ACTION.kit[j].second -= change;
-                    }
-                }
-            }
-        }
-
-        if (!ok) {
-            cout << "OH NO, IT'S BAD" << endl;
-            int j = rnd.get(0, 10);
-            SELECTION_ACTION.kit[j].second++;
-        }*/
-    }
+    }*/
 }

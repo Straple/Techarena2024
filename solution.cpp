@@ -32,7 +32,8 @@ vector<Interval> Solver(int N, int M, int K, int J, int L,
         return artem_answer;
     }*/
 
-    auto egor_answer = Solver_egor(N, M, K, J, L, reservedRBs, userInfos, artem_answer, 42);
+    //ASSERT(false, "TODO");
+    auto egor_answer = Solver_egor(N, M, K, J, L, reservedRBs, userInfos, artem_answer, 42, vector<int>(SELECTION_SIZE, 10));
     return egor_answer;
 
     /*auto get_egor_blocked = ans_to_blocked_ans(M, K, reservedRBs, egor_answer);

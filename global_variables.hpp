@@ -1,6 +1,6 @@
 #pragma once
 
-int CNT_CALL_GET_LEFT_USER = 0;
+/*int CNT_CALL_GET_LEFT_USER = 0;
 int CNT_CALL_GET_RIGHT_USER = 0;
 
 int CNT_CALL_CHANGE_INTERVAL_LEN = 0;
@@ -38,8 +38,5 @@ int CNT_CALL_USER_CROP = 0;
 int CNT_ACCEPTED_USER_CROP = 0;
 int CNT_CALL_USER_SWAP = 0;
 int CNT_ACCEPTED_USER_SWAP = 0;
-
+*/
 int THEORY_MAX_SCORE = 1e9;
-
-int cnt_edges[12][12];
-int cnt_good_edges[12][12];

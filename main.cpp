@@ -4,9 +4,9 @@
 
 extern Snapshoter snapshoter;
 int main() {
-    /*SelectionRandomizer ss = vector<int>{3, 3, 3, 3, 3};
+    /*SelectionRandomizer ss(10);
     map<int, int> S;
-    for (int i = 0; i < 1000; i++) {
+    for (int i = 0; i < 100000; i++) {
         int x = ss.select();
         S[x]++;
         cout << x << '\n';
@@ -15,8 +15,10 @@ int main() {
         cout << x << ": " << cnt << endl;
     }
     return 0;*/
-    //train_egor_task_solver();
-    //return 0;
+
+    train_egor_task_solver();
+    return 0;
+
     test_case_info infos[5];
     map<int, map<int, int>> score_per_test;
     //ofstream scores_output("scores2.txt");
@@ -123,7 +125,7 @@ int main() {
     }
     cout << "}" << endl;*/
 
-    {
+    /*{
         cout << "EGOR TASK SOLVER STATISTIC:\n";
 
 #define CAT_IMPL(string1, string2) string1##string2
@@ -170,7 +172,7 @@ int main() {
 #undef CAT
 #undef f
 #undef g
-    }
+    }*/
 
     /*cout << "============================================================\n";
     cout << "{\n";

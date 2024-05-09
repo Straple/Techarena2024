@@ -24,7 +24,7 @@
     }
 
 void EgorTaskSolver::interval_flow_over() {
-    CNT_CALL_INTERVAL_FLOW_OVER++;
+    //CNT_CALL_INTERVAL_FLOW_OVER++;
 
     CHOOSE_INTERVAL(i + 1 < intervals[b].size());
 
@@ -41,7 +41,7 @@ void EgorTaskSolver::interval_flow_over() {
     }
 
     if (is_good(old_metric)) {
-        CNT_ACCEPTED_INTERVAL_FLOW_OVER++;
+        //CNT_ACCEPTED_INTERVAL_FLOW_OVER++;
     } else {
         rollback();
         rollback();
@@ -50,7 +50,7 @@ void EgorTaskSolver::interval_flow_over() {
 }
 
 void EgorTaskSolver::interval_increase_len() {
-    CNT_CALL_INTERVAL_INCREASE_LEN++;
+    //CNT_CALL_INTERVAL_INCREASE_LEN++;
 
     CHOOSE_INTERVAL(get_block_len(b) < free_intervals[b].len());
 
@@ -61,7 +61,7 @@ void EgorTaskSolver::interval_increase_len() {
     change_interval_len(b, i, change);
 
     if (is_good(old_metric)) {
-        CNT_ACCEPTED_INTERVAL_INCREASE_LEN++;
+        //CNT_ACCEPTED_INTERVAL_INCREASE_LEN++;
     } else {
         rollback();
         ASSERT(old_metric == metric, "failed back score");
@@ -69,7 +69,7 @@ void EgorTaskSolver::interval_increase_len() {
 }
 
 void EgorTaskSolver::interval_decrease_len() {
-    CNT_CALL_INTERVAL_DECREASE_LEN++;
+    //CNT_CALL_INTERVAL_DECREASE_LEN++;
 
     CHOOSE_INTERVAL(intervals[b][i].len > 0);
 
@@ -80,7 +80,7 @@ void EgorTaskSolver::interval_decrease_len() {
     change_interval_len(b, i, change);
 
     if (is_good(old_metric)) {
-        CNT_ACCEPTED_INTERVAL_DECREASE_LEN++;
+        //CNT_ACCEPTED_INTERVAL_DECREASE_LEN++;
     } else {
         rollback();
         ASSERT(old_metric == metric, "failed back score");
@@ -92,7 +92,7 @@ void EgorTaskSolver::interval_decrease_len() {
 }*/
 
 void EgorTaskSolver::interval_do_merge(int b, int i) {
-    CNT_CALL_INTERVAL_DO_MERGE_EQUAL++;
+    //CNT_CALL_INTERVAL_DO_MERGE_EQUAL++;
 
     ASSERT(i + 1 < intervals[b].size(), "invalid merge");
 
@@ -139,7 +139,7 @@ void EgorTaskSolver::interval_do_merge(int b, int i) {
 }
 
 void EgorTaskSolver::interval_do_split(int b, int i, int right_len) {
-    CNT_CALL_INTERVAL_DO_SPLIT++;
+    //CNT_CALL_INTERVAL_DO_SPLIT++;
 
     insert_interval(b, i + 1);
     change_interval_len(b, i, -right_len);
@@ -150,7 +150,7 @@ void EgorTaskSolver::interval_do_split(int b, int i, int right_len) {
 }
 
 void EgorTaskSolver::interval_merge() {
-    CNT_CALL_INTERVAL_MERGE_EQUAL++;
+    //CNT_CALL_INTERVAL_MERGE_EQUAL++;
 
     CHOOSE_INTERVAL(i + 1 < intervals[b].size());
 
@@ -163,7 +163,7 @@ void EgorTaskSolver::interval_merge() {
     interval_do_merge(b, i);
 
     if (is_good(old_metric)) {
-        CNT_ACCEPTED_INTERVAL_MERGE_EQUAL++;
+        //CNT_ACCEPTED_INTERVAL_MERGE_EQUAL++;
     } else {
         rollback(old_actions_size);
         ASSERT(old_metric == metric, "failed back score");
@@ -171,7 +171,7 @@ void EgorTaskSolver::interval_merge() {
 }
 
 void EgorTaskSolver::interval_split() {
-    CNT_CALL_INTERVAL_SPLIT++;
+    //CNT_CALL_INTERVAL_SPLIT++;
 
     ASSERT(get_intervals_size() <= J, "failed intervals size");
     if (get_intervals_size() >= J) {
@@ -220,7 +220,7 @@ void EgorTaskSolver::interval_split() {
     }*/
 
     if (is_good(old_metric)) {
-        CNT_ACCEPTED_INTERVAL_SPLIT++;
+        //CNT_ACCEPTED_INTERVAL_SPLIT++;
     } else {
         rollback(old_actions_size);
         ASSERT(old_metric == metric, "failed back score");

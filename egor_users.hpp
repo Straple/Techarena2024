@@ -63,7 +63,7 @@
 }*/
 
 void EgorTaskSolver::user_do_new_interval(int u) {
-    CNT_CALL_USER_NEW_INTERVAL++;
+    //CNT_CALL_USER_NEW_INTERVAL++;
 
     //auto [old_b, old_l, old_r] = get_user_position(u);
 
@@ -84,11 +84,12 @@ void EgorTaskSolver::user_do_new_interval(int u) {
     }*/
 
     auto f = [&](int len) {
-        if (len > users_info[u].rbNeed) {
+        return abs(len - users_info[u].rbNeed);
+        /*if (len > users_info[u].rbNeed) {
             return (len - users_info[u].rbNeed);
         } else {
             return users_info[u].rbNeed - len;
-        }
+        }*/
     };
 
     int best_b = -1, best_l = -1, best_r = -1, best_f = 1e9;
@@ -110,6 +111,10 @@ void EgorTaskSolver::user_do_new_interval(int u) {
                     best_l = l;
                     best_r = r;
                 }
+
+                if(users_info[u].rbNeed <= sum_len){
+                    break;
+                }
             }
         }
     }
@@ -124,7 +129,7 @@ void EgorTaskSolver::user_do_new_interval(int u) {
 }
 
 void EgorTaskSolver::user_new_interval() {
-    CNT_CALL_USER_NEW_INTERVAL++;
+    //CNT_CALL_USER_NEW_INTERVAL++;
 
     int u = rnd.get(0, N - 1);
 
@@ -134,7 +139,7 @@ void EgorTaskSolver::user_new_interval() {
     user_do_new_interval(u);
 
     if (is_good(old_metric)) {
-        CNT_ACCEPTED_USER_NEW_INTERVAL++;
+        //CNT_ACCEPTED_USER_NEW_INTERVAL++;
     } else {
         rollback(old_actions_size);
         ASSERT(old_metric == metric, "failed back score");
@@ -142,7 +147,7 @@ void EgorTaskSolver::user_new_interval() {
 }
 
 void EgorTaskSolver::user_add_left() {
-    CNT_CALL_USER_ADD_LEFT++;
+    //CNT_CALL_USER_ADD_LEFT++;
 
     USER_FOR_BEGIN(l > 0 &&
                    intervals[b][l - 1].users.size() < L &&
@@ -155,7 +160,7 @@ void EgorTaskSolver::user_add_left() {
     add_user_in_interval(u, b, l);
 
     if (is_good(old_metric)) {
-        CNT_ACCEPTED_USER_ADD_LEFT++;
+        //CNT_ACCEPTED_USER_ADD_LEFT++;
     } else {
         rollback();
         ASSERT(old_metric == metric, "failed back score");
@@ -164,7 +169,7 @@ void EgorTaskSolver::user_add_left() {
 }
 
 void EgorTaskSolver::user_add_right() {
-    CNT_CALL_USER_ADD_RIGHT++;
+    //CNT_CALL_USER_ADD_RIGHT++;
 
     USER_FOR_BEGIN(r != -1 && r + 1 < intervals[b].size() &&
                    intervals[b][r + 1].users.size() < L &&
@@ -177,7 +182,7 @@ void EgorTaskSolver::user_add_right() {
     add_user_in_interval(u, b, r);
 
     if (is_good(old_metric)) {
-        CNT_ACCEPTED_USER_ADD_RIGHT++;
+        //CNT_ACCEPTED_USER_ADD_RIGHT++;
     } else {
         rollback();
         ASSERT(old_metric == metric, "failed back score");
@@ -186,7 +191,7 @@ void EgorTaskSolver::user_add_right() {
 }
 
 void EgorTaskSolver::user_remove_left() {
-    CNT_CALL_USER_REMOVE_LEFT++;
+    //CNT_CALL_USER_REMOVE_LEFT++;
 
     USER_FOR_BEGIN(l != -1)
 
@@ -195,7 +200,7 @@ void EgorTaskSolver::user_remove_left() {
     remove_user_in_interval(u, b, l);
 
     if (is_good(old_metric)) {
-        CNT_ACCEPTED_USER_REMOVE_LEFT++;
+        //CNT_ACCEPTED_USER_REMOVE_LEFT++;
     } else {
         rollback();
         ASSERT(old_metric == metric, "failed back score");
@@ -205,7 +210,7 @@ void EgorTaskSolver::user_remove_left() {
 }
 
 void EgorTaskSolver::user_remove_right() {
-    CNT_CALL_USER_REMOVE_RIGHT++;
+    //CNT_CALL_USER_REMOVE_RIGHT++;
 
     USER_FOR_BEGIN(r != -1)
 
@@ -214,7 +219,7 @@ void EgorTaskSolver::user_remove_right() {
     remove_user_in_interval(u, b, r);
 
     if (is_good(old_metric)) {
-        CNT_ACCEPTED_USER_REMOVE_RIGHT++;
+        //CNT_ACCEPTED_USER_REMOVE_RIGHT++;
     } else {
         rollback();
         ASSERT(old_metric == metric, "failed back score");
@@ -255,7 +260,7 @@ void EgorTaskSolver::user_swap_eq_beam() {
         shuffle(ups.begin(), ups.end(), rnd.generator);// 981748
         //sort(ups.begin(), ups.end()); // 981683
         for (int i = 0; i + 1 < ups.size(); i++) {
-            CNT_CALL_USER_SWAP++;
+            //CNT_CALL_USER_SWAP++;
 
             int u = ups[i].second;
             int u2 = ups[i + 1].second;
@@ -265,7 +270,7 @@ void EgorTaskSolver::user_swap_eq_beam() {
             user_do_swap_eq_beam(u, u2);
 
             if (is_good(old_metric)) {
-                CNT_ACCEPTED_USER_SWAP++;
+                //CNT_ACCEPTED_USER_SWAP++;
             } else {
                 user_do_swap_eq_beam(u, u2);
                 ASSERT(old_metric == metric, "failed back score");
@@ -307,7 +312,7 @@ void EgorTaskSolver::user_remove_and_add() {
     for (int step = 0; step < 3; step++) {
         int u = rnd.get(0, N - 1);
         int u2 = rnd.get(0, N - 1);
-        CNT_CALL_USER_SWAP++;
+        //CNT_CALL_USER_SWAP++;
 
         int old_actions_size = actions.size();
         auto old_metric = metric;
@@ -325,7 +330,7 @@ void EgorTaskSolver::user_remove_and_add() {
 
 void EgorTaskSolver::user_do_crop(int u) {
     ASSERT(false, "hello");
-    CNT_CALL_USER_DO_CROP++;
+    //CNT_CALL_USER_DO_CROP++;
 
     int best_b = -1, best_l = -1, best_r = -1, best_len = -1e9;
     for (int b = 0; b < B; b++) {
@@ -360,7 +365,7 @@ void EgorTaskSolver::user_do_crop(int u) {
 
 void EgorTaskSolver::user_crop() {
     ASSERT(false, "hello");
-    CNT_CALL_USER_CROP++;
+    //CNT_CALL_USER_CROP++;
 
     for (int i = 0; i < 20; i++) {
         user_do_crop(rnd.get(0, N - 1));

@@ -27,9 +27,10 @@
 //TEST CASE: K=4 | tests: 0 | score: -nan% | 0/0 | time: 0ms | max_time: 0ms | mean_time: 0ms
 //TOTAL: tests: 1000 | score: 98.8324% | 981383/992977 | time: 56449.8ms | max_time: 93.13ms | mean_time: 56.4498ms
 
-SelectionRandomizer SELECTION_ACTION(12);
+const int SELECTION_SIZE = 12;
+//SelectionRandomizer SELECTION_ACTION(SELECTION_SIZE);
 // = std::vector<int>{10, 1, 1, 1, 1, 16, 9, 6, 22, 12, 11, 30};
-int STEPS = 10'000;
+int STEPS = 600;
 
 const int METRIC_CNT = 3;
 int METRIC_TYPE = 0;
@@ -38,6 +39,8 @@ struct EgorTaskSolver {
     ///============================
     /// task data
     ///============================
+
+    SelectionRandomizer SELECTION_ACTION;
 
     int N;
     int M;
@@ -145,7 +148,7 @@ struct EgorTaskSolver {
     EgorTaskSolver(int NN, int MM, int KK, int JJ, int LL,
                    const vector<Interval> &reservedRBs,
                    const vector<UserInfo> &userInfos,
-                   vector<Interval> start_intervals, int random_seed);
+                   vector<Interval> start_intervals, int random_seed, vector<int> powers);
 
     ///===========================
     ///===========ACTIONS=========
@@ -401,4 +404,4 @@ struct EgorTaskSolver {
 
 vector<Interval> Solver_egor(int N, int M, int K, int J, int L,
                              const vector<Interval> &reservedRBs,
-                             const vector<UserInfo> &userInfos, const std::vector<Interval> &solution, int random_seed);
+                             const vector<UserInfo> &userInfos, const std::vector<Interval> &solution, int random_seed, vector<int> powers);
