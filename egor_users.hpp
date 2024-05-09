@@ -149,6 +149,7 @@ void EgorTaskSolver::user_add_left() {
                    ((intervals[b][l - 1].beam_msk >> users_info[u].beam) & 1) == 0)
 
     l--;
+
     auto old_metric = metric;
 
     add_user_in_interval(u, b, l);
@@ -170,6 +171,7 @@ void EgorTaskSolver::user_add_right() {
                    ((intervals[b][r + 1].beam_msk >> users_info[u].beam) & 1) == 0)
 
     r++;
+
     auto old_metric = metric;
 
     add_user_in_interval(u, b, r);
@@ -220,7 +222,7 @@ void EgorTaskSolver::user_remove_right() {
     USER_FOR_END
 }
 
-void EgorTaskSolver::user_do_swap(int u, int u2) {
+void EgorTaskSolver::user_do_swap_eq_beam(int u, int u2) {
     ASSERT(users_info[u].beam == users_info[u].beam, "no equals beams");
 
     metric.accepted -= min(users_info[u].rbNeed, users_info[u].sum_len);
@@ -241,7 +243,7 @@ void EgorTaskSolver::user_do_swap(int u, int u2) {
     metric.overflow += max(0, users_info[u2].sum_len - users_info[u2].rbNeed);
 }
 
-void EgorTaskSolver::user_swap() {
+void EgorTaskSolver::user_swap_eq_beam() {
     for (int beam = 0; beam < 32; beam++) {
         // (sum_len, u)
         vector<pair<int, int>> ups;
@@ -260,15 +262,63 @@ void EgorTaskSolver::user_swap() {
 
             auto old_metric = metric;
 
-            user_do_swap(u, u2);
+            user_do_swap_eq_beam(u, u2);
 
             if (is_good(old_metric)) {
                 CNT_ACCEPTED_USER_SWAP++;
             } else {
-                user_do_swap(u, u2);
+                user_do_swap_eq_beam(u, u2);
                 ASSERT(old_metric == metric, "failed back score");
             }
         }
+    }
+}
+
+void EgorTaskSolver::user_do_remove_and_add(int u, int u2) {
+    auto remove_user = [&](int u) {
+        auto [b, l, r] = get_user_position(u);
+        if (b != -1) {
+            for (int i = l; i <= r; i++) {
+                remove_user_in_interval(u, b, i);
+            }
+        }
+    };
+
+    //981383
+    remove_user(u);
+    remove_user(u2);
+    user_do_new_interval(u);
+    user_do_new_interval(u2);
+
+    /// TODO: прям свапать интервалы
+    /*auto [b, l, r] = get_user_position(u);
+    auto [b2, l2, r2] = get_user_position(u2);
+
+    for(int i = l; i <= r; i++){
+
+    }*/
+}
+
+void EgorTaskSolver::user_remove_and_add() {
+    for (int step = 0; step < 3; step++) {
+        int u = rnd.get(0, N - 1);
+        int u2 = rnd.get(0, N - 1);
+        //for (int u = 0; u < N; u++) {
+        //for (int u2 = 0; u2 < N; u2++) {
+        CNT_CALL_USER_SWAP++;
+
+        int old_actions_size = actions.size();
+        auto old_metric = metric;
+
+        user_do_remove_and_add(u, u2);
+
+        if (is_good(old_metric)) {
+            CNT_ACCEPTED_USER_SWAP++;
+        } else {
+            rollback(old_actions_size);
+            ASSERT(old_metric == metric, "failed back score");
+        }
+        //}
     }
 }
 

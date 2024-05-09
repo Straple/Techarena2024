@@ -87,14 +87,44 @@ void EgorTaskSolver::interval_decrease_len() {
     }
 }
 
-bool EgorTaskSolver::merge_verify(int b, int i) {
+/*bool EgorTaskSolver::merge_verify(int b, int i) {
     return i + 1 < intervals[b].size();
-}
+}*/
 
 void EgorTaskSolver::interval_do_merge(int b, int i) {
     CNT_CALL_INTERVAL_DO_MERGE_EQUAL++;
 
-    ASSERT(merge_verify(b, i), "invalid merge");
+    ASSERT(i + 1 < intervals[b].size(), "invalid merge");
+
+    // TODO: ничего не дало
+    /*auto and_msk = intervals[b][i].users & intervals[b][i + 1].users;
+    auto xor_msk = intervals[b][i].users ^ intervals[b][i + 1].users;
+
+    int right_len = intervals[b][i + 1].len;
+    remove_interval(b, i + 1);
+    change_interval_len(b, i, right_len);
+    for (int u: intervals[b][i].users) {
+        if(!and_msk.contains(u)){
+            remove_user_in_interval(u, b, i);
+        }
+    }
+
+    vector<int> ps;
+    for (int u: xor_msk) {
+        ps.push_back(u);
+    }
+    sort(ps.begin(), ps.end(), [&](int lhs, int rhs) {
+        return users_info[lhs].rbNeed -  users_info[lhs].sum_len  < users_info[rhs].rbNeed - users_info[rhs].sum_len;
+    });
+
+    for (int u: ps) {
+        if (intervals[b][i].users.size() + 1 <= L &&
+            ((intervals[b][i].beam_msk >> users_info[u].beam) & 1) == 0
+            && users_info[u].sum_len < users_info[u].rbNeed
+        ) {
+            add_user_in_interval(u, b, i);
+        }
+    }*/
 
     for (int u: intervals[b][i + 1].users) {
         if (intervals[b][i].users.size() + 1 <= L &&
@@ -122,7 +152,7 @@ void EgorTaskSolver::interval_do_split(int b, int i, int right_len) {
 void EgorTaskSolver::interval_merge() {
     CNT_CALL_INTERVAL_MERGE_EQUAL++;
 
-    CHOOSE_INTERVAL(merge_verify(b, i));
+    CHOOSE_INTERVAL(i + 1 < intervals[b].size());
 
     auto old_metric = metric;
 
@@ -161,13 +191,13 @@ void EgorTaskSolver::interval_split() {
     // TODO: попробовать удалить тех, которые и так выполнены
     // они будут в intervals[b][i], intervals[b][i+1]
     // 980385 -> 980478
-    for(int u : intervals[b][i].users){
+    for (int u: intervals[b][i].users) {
         auto [_, l, r] = get_user_position(u);
-        if(l == i && users_info[u].sum_len - intervals[b][i].len >= users_info[u].rbNeed){
+        if (l == i && users_info[u].sum_len - intervals[b][i].len >= users_info[u].rbNeed) {
             remove_user_in_interval(u, b, i);
         }
         // TODO: это как будто не работает
-        else if(r == i && users_info[u].sum_len - intervals[b][i + 1].len >= users_info[u].rbNeed){
+        else if (r == i && users_info[u].sum_len - intervals[b][i + 1].len >= users_info[u].rbNeed) {
             remove_user_in_interval(u, b, i + 1);
         }
     }
@@ -188,7 +218,6 @@ void EgorTaskSolver::interval_split() {
     for (int u: p) {
         user_do_new_interval(u);
     }*/
-
 
     if (is_good(old_metric)) {
         CNT_ACCEPTED_INTERVAL_SPLIT++;

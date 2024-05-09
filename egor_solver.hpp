@@ -13,6 +13,20 @@
 //TEST CASE: K=4 | tests: 0 | score: -nan% | 0/0 | time: 0ms | max_time: 0ms | mean_time: 0ms
 //TOTAL: tests: 1000 | score: 98.6364% | 979437/992977 | time: 17134.1ms | max_time: 29.784ms | mean_time: 17.1341ms
 
+//TEST CASE: K=0 | tests: 666 | score: 99.3019% | 647788/652342 | time: 32750.2ms | max_time: 54.266ms | mean_time: 49.1745ms
+//TEST CASE: K=1 | tests: 215 | score: 97.8757% | 211527/216118 | time: 9768.15ms | max_time: 41.15ms | mean_time: 45.4333ms
+//TEST CASE: K=2 | tests: 80 | score: 97.8181% | 77559/79289 | time: 4195.06ms | max_time: 41.157ms | mean_time: 52.4383ms
+//TEST CASE: K=3 | tests: 39 | score: 96.4226% | 43610/45228 | time: 2137.59ms | max_time: 40.539ms | mean_time: 54.81ms
+//TEST CASE: K=4 | tests: 0 | score: -nan% | 0/0 | time: 0ms | max_time: 0ms | mean_time: 0ms
+//TOTAL: tests: 1000 | score: 98.7419% | 980484/992977 | time: 48851ms | max_time: 54.266ms | mean_time: 48.851ms
+
+//TEST CASE: K=0 | tests: 666 | score: 99.3477% | 648087/652342 | time: 38397.7ms | max_time: 81.211ms | mean_time: 57.6542ms
+//TEST CASE: K=1 | tests: 215 | score: 98.0307% | 211862/216118 | time: 11075.9ms | max_time: 46.232ms | mean_time: 51.5159ms
+//TEST CASE: K=2 | tests: 80 | score: 98.0426% | 77737/79289 | time: 4805.1ms | max_time: 93.13ms | mean_time: 60.0637ms
+//TEST CASE: K=3 | tests: 39 | score: 96.6149% | 43697/45228 | time: 2171.13ms | max_time: 41.476ms | mean_time: 55.6699ms
+//TEST CASE: K=4 | tests: 0 | score: -nan% | 0/0 | time: 0ms | max_time: 0ms | mean_time: 0ms
+//TOTAL: tests: 1000 | score: 98.8324% | 981383/992977 | time: 56449.8ms | max_time: 93.13ms | mean_time: 56.4498ms
+
 SelectionRandomizer SELECTION_ACTION(12);
 // = std::vector<int>{10, 1, 1, 1, 1, 16, 9, 6, 22, 12, 11, 30};
 int STEPS = 10'000;
@@ -183,7 +197,7 @@ struct EgorTaskSolver {
     //TEST CASE: K=4 | tests: 0 | score: -nan% | 0/0 | time: 0ms | max_time: 0ms | mean_time: 0ms
     //TOTAL: tests: 1000 | score: 98.7319% | 980385/992977 | time: 42951.8ms | max_time: 77.561ms | mean_time: 42.9518ms
     bool is_good(Metric old_metric) {
-        //ASSERT(get_metric() == metric, "invalid metric");
+        ASSERT(get_metric() == metric, "invalid metric");
 
         // 979437 -> 980155 -> 980332 -> 980459
         auto calc_f = [&](Metric m) {
@@ -355,13 +369,21 @@ struct EgorTaskSolver {
 
     void user_new_interval();
 
-    void user_do_swap(int u, int u2);
+    void user_do_swap_eq_beam(int u, int u2);
 
-    void user_swap();
+    void user_swap_eq_beam();
+
+    void user_do_remove_and_add(int u, int u2);
+
+    void user_remove_and_add();
 
     void user_do_crop(int u);
 
     void user_crop();
+
+    ///======================
+    ///======ANNEALING=======
+    ///======================
 
     vector<Interval> annealing(vector<Interval> reservedRBs,
                                vector<UserInfo> userInfos);

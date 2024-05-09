@@ -135,7 +135,7 @@ vector<Interval> EgorTaskSolver::annealing(vector<Interval> reservedRBs,
         } else if (s == 4) {
             ACTION_WRAPPER(user_remove_right, 4);
         } else if (s == 5) {
-            ACTION_WRAPPER(user_swap, 5);
+            ACTION_WRAPPER(user_swap_eq_beam, 5);
         } else if (s == 6) {
             ACTION_WRAPPER(interval_increase_len, 6);
         } else if (s == 7) {
@@ -147,7 +147,7 @@ vector<Interval> EgorTaskSolver::annealing(vector<Interval> reservedRBs,
         } else if (s == 10) {
             ACTION_WRAPPER(interval_split, 10);
         } else if (s == 11) {
-
+            ACTION_WRAPPER(user_remove_and_add, 11);
         } else {
             ASSERT(false, "kek");
         }
