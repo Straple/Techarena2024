@@ -33,7 +33,12 @@ vector<Interval> Solver(int N, int M, int K, int J, int L,
     }
 
     auto egor_answer = Solver_egor(N, M, K, J, L, reservedRBs, userInfos, artem_answer, 42,
-                                   vector<int>{0, 3, 1, 7, 0, 89, 0, 0, 90, 40, 23});
+                                   //vector<int>{0, 3, 1, 7, 0, 89, 0, 0, 90, 40, 23} // OK
+                                   //          0  1  2  3  4   5  6  7   8   9  10
+                                   vector<int>{5, 5, 5, 5, 5,  5, 5, 5,  5,  5,  5}
+ );
+
+    //auto egor_score = get_solution_score(N, M, K, J, L, reservedRBs, userInfos, egor_answer);
     //return egor_answer;
 
     auto get_egor_blocked = ans_to_blocked_ans(M, K, reservedRBs, egor_answer);
@@ -47,6 +52,7 @@ vector<Interval> Solver(int N, int M, int K, int J, int L,
             }
         }
     }
+    // here ASSERTION FAILED!!
     auto egor_score = get_solution_score(N, M, K, J, L, reservedRBs, userInfos, egor_answer);
 
     if (egor_score > artem_score) {
