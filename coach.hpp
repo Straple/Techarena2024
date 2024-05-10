@@ -187,7 +187,7 @@ void train_egor_task_solver() {
         }
 
         for (int k = 0; k < 100; k++) {
-            auto new_item = Q[rnd.get(0, min((int) Q.size() - 1, 5))];
+            auto new_item = Q[rnd.get(0, min((int) Q.size() - 1, 10))];
             uint32_t msk = rnd.get(0, (1ULL << SELECTION_SIZE) - 1);
             for (int i = 0; i < SELECTION_SIZE; i++) {
                 if ((msk >> i) & 1) {
@@ -199,6 +199,7 @@ void train_egor_task_solver() {
             }
             newQ.push_back(new_item);
         }
+
         vector<atomic<bool>> vis(newQ.size());
         auto do_work = [&]() {
             for (int i = 0; i < newQ.size(); i++) {

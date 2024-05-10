@@ -116,7 +116,6 @@ void EgorTaskSolver::change_user_len(int u, int c) {
                 }
             }
 #endif
-
             return;
         }
     }
