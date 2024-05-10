@@ -24,30 +24,40 @@ ostream &operator<<(ostream &output, const test_case_info &info) {
 
 vector<vector<pair<TestData, vector<Interval>>>> train_dataset;
 
-// score
-int calc_train_score(const vector<int> &powers) {
+// (train_score, score)
+pair<long long, int> calc_train_score(const vector<int> &powers) {
     auto do_test = [&]() {
         int total_score = 0;
-        int total_theor_max = 0;
+        long long train_score = 0;
         for (int K = 0; K <= 3; K++) {
             for (auto &[data, start_intervals]: train_dataset[K]) {
                 //THEORY_MAX_SCORE = get_theory_max_score(data.N, data.M, data.K, data.J, data.L, data.reservedRBs, data.userInfos);
                 int score1 = 0;
                 {
                     //SELECTION_ACTION = powers;
-                    auto intervals = Solver_egor(data.N, data.M, data.K, data.J, data.L, data.reservedRBs, data.userInfos, start_intervals, 42, powers);
-                    score1 = get_solution_score(data, intervals);
+                    //auto intervals = Solver_egor(data.N, data.M, data.K, data.J, data.L, data.reservedRBs, data.userInfos, start_intervals, 42, powers);
+                    //score1 = get_solution_score(data, intervals);
+                    EgorTaskSolver solver(data.N, data.M, data.K, data.J, data.L, data.reservedRBs, data.userInfos, start_intervals, 42, powers);
+                    auto answer = solver.annealing(data.reservedRBs, data.userInfos);
+                    score1 = get_solution_score(data, answer);
+                    train_score += solver.TRAIN_SCORE;
                 }
                 int score2 = 0;
                 {
                     //SELECTION_ACTION = powers;
-                    auto intervals = Solver_egor(data.N, data.M, data.K, data.J, data.L, data.reservedRBs, data.userInfos, start_intervals, 4128635, powers);
-                    score2 = get_solution_score(data, intervals);
+                    //auto intervals = Solver_egor(data.N, data.M, data.K, data.J, data.L, data.reservedRBs, data.userInfos, start_intervals, 4128635, powers);
+                    //score2 = get_solution_score(data, intervals);
+
+                    EgorTaskSolver solver(data.N, data.M, data.K, data.J, data.L, data.reservedRBs, data.userInfos, start_intervals, 4128635, powers);
+                    auto answer = solver.annealing(data.reservedRBs, data.userInfos);
+                    score2 = get_solution_score(data, answer);
+                    train_score += solver.TRAIN_SCORE;
                 }
                 total_score += (score1 + score2) / 2;
             }
         }
-        return total_score;
+        train_score /= 2;
+        return pair<long long, int>(train_score, total_score);
     };
 
     return do_test();
@@ -55,10 +65,11 @@ int calc_train_score(const vector<int> &powers) {
 
 struct TrainItem {
     vector<int> powers;
-    int score = -1;
+    long long train_score = -1;
+    long long score = -1;
 
     friend bool operator<(const TrainItem &lhs, const TrainItem &rhs) {
-        return lhs.score > rhs.score;
+        return lhs.train_score > rhs.train_score;
     }
 };
 
@@ -90,7 +101,7 @@ void train_egor_task_solver() {
         }
     }
 
-    auto merge_score = [&](const vector<pair<int, int>> &ans) {
+    /*auto merge_score = [&](const vector<pair<int, int>> &ans) {
         double score = 0;
         long long k = 0;
         for (int i = 1; i <= ans.size(); i++) {
@@ -102,7 +113,7 @@ void train_egor_task_solver() {
         score /= ans[0].second;
         score *= 100;
         return score;
-    };
+    };*/
 
     /*auto print_ans = [&](std::ostream &output, const vector<pair<int, int>> &ans) {
         output << "score: " << merge_score(ans) << '\n';
@@ -112,24 +123,27 @@ void train_egor_task_solver() {
         output << endl;
     };*/
 
-    auto compare = [&](const vector<pair<int, int>> &old_ans, const vector<pair<int, int>> &new_ans) {
+    /*auto compare = [&](const vector<pair<int, int>> &old_ans, const vector<pair<int, int>> &new_ans) {
         return merge_score(old_ans) < merge_score(new_ans);
-    };
+    };*/
 
     Timer global_time;
 
     ofstream logger("train_log.txt");
 
-    auto ans = 0;
+    long long ans_train_score = 0;
+    long long ans_score = 0;
 
     auto log = [&](const vector<int> &powers) {
         cout << "NICE!!! " << global_time << endl;
-        cout << "score: " << ans << '\n';
+        cout << "SCORE: " << ans_score << '\n';
+        cout << "TRAIN_SCORE: " << ans_train_score << " | " << (long long) (ans_train_score * 1.0 / STEPS) << '\n';
 
         logger << "=========================\n";
         logger << "=========================\n";
         logger << "TIME: " << global_time << '\n';
-        logger << "score: " << ans << '\n';
+        logger << "SCORE: " << ans_score << '\n';
+        logger << "TRAIN_SCORE: " << ans_train_score << " | " << (long long) (ans_train_score * 1.0 / STEPS) << '\n';
         logger << "POWERS: ";
         for (int p: powers) {
             logger << p << ' ';
@@ -146,7 +160,8 @@ void train_egor_task_solver() {
         for (int j = 0; j < SELECTION_SIZE; j++) {
             powers[j] = rnd.get(0, 100);
         }
-        Q.push_back({powers, calc_train_score(powers)});
+        auto [train_score, score] = calc_train_score(powers);
+        Q.push_back({powers, train_score, score});
     }
     sort(Q.begin(), Q.end());
     cout << "OK" << endl;
@@ -155,7 +170,16 @@ void train_egor_task_solver() {
         cout << "step: " << step << ' ' << global_time << ' ' << Q[0].score << ' ' << Q.back().score << endl;
 
         vector<TrainItem> newQ;
-        for (int k = 0; k < 100; k++) {
+
+        for (int k = 0; k < 50; k++) {
+            vector<int> powers(SELECTION_SIZE);
+            for (int j = 0; j < SELECTION_SIZE; j++) {
+                powers[j] = rnd.get(0, 100);
+            }
+            newQ.push_back({powers, -1, -1});
+        }
+
+        for (int k = 0; k < 200; k++) {
             int i = rnd.get(0, Q.size() - 1);
             int j = rnd.get(0, Q.size() - 1);
             auto new_item = merge_gens(Q[i], Q[j]);
@@ -175,29 +199,20 @@ void train_egor_task_solver() {
             }
             newQ.push_back(new_item);
         }
-
-        /*for (int k = 0; k < 2; k++) {
-            int i = rnd.get(0, Q.size() - 1);
-            for (int j = 0; j < SELECTION_SIZE; j++) {
-                auto new_item = Q[i];
-                new_item.powers[j] = max(0, new_item.powers[j] + (int) rnd.get(-5, 5));
-                new_item.score = calc_train_score(new_item.powers);
-                newQ.push_back(new_item);
-            }
-        }*/
-
         vector<atomic<bool>> vis(newQ.size());
         auto do_work = [&]() {
             for (int i = 0; i < newQ.size(); i++) {
                 bool expected = false;
                 if (vis[i].compare_exchange_strong(expected, true)) {
-                    newQ[i].score = calc_train_score(newQ[i].powers);
+                    auto [train_score, score] = calc_train_score(newQ[i].powers);
+                    newQ[i].train_score = train_score;
+                    newQ[i].score = score;
                 }
             }
         };
 
         // TODO: multithread
-        constexpr int threads_count = 10;
+        constexpr int threads_count = 16;
         vector<thread> threads(threads_count);
         for (int i = 0; i < threads_count; i++) {
             threads[i] = thread(do_work);
@@ -205,12 +220,6 @@ void train_egor_task_solver() {
         for (int i = 0; i < threads_count; i++) {
             threads[i].join();
         }
-        /*for (auto [powers, score]: newQ) {
-            ASSERT(score != -1, "invalid score");
-        }
-        for (int i = 0; i < newQ.size(); i++) {
-            ASSERT(vis[i] == true, "invalid vis");
-        }*/
 
         for (auto &i: Q) {
             newQ.push_back(move(i));
@@ -218,12 +227,13 @@ void train_egor_task_solver() {
         sort(newQ.begin(), newQ.end());
         Q = move(newQ);
 
-        while (Q.size() > 300) {
+        while (Q.size() > 400) {
             Q.pop_back();
         }
 
-        if (Q[0].score > ans) {
-            ans = Q[0].score;
+        if (Q[0].train_score > ans_train_score) {
+            ans_train_score = Q[0].train_score;
+            ans_score = Q[0].score;
             log(Q[0].powers);
         }
     }

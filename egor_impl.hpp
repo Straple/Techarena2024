@@ -104,95 +104,27 @@ vector<Interval> EgorTaskSolver::annealing(vector<Interval> reservedRBs,
     temperature = 1;
     prev_action = 0;
 
-    int best_score = metric.accepted;
-    auto best_ans = get_total_answer();
+    //int best_score = metric.accepted;
+    //auto best_ans = get_total_answer();
 
     for (int step = 0; step < STEPS; step++) {
         temperature = ((STEPS - step) * 1.0 / STEPS);
         //temperature *= 0.9999;
 
-        //ASSERT(get_solution_score(N, M, K, J, L, reservedRBs, userInfos, get_total_answer()) == total_score, "invalid total_score");
-        //if (THEORY_MAX_SCORE <= total_score) {
-        //    break;
-        //}
+        //977151
 
-        /*Metric best_metric = metric;
-
-        int best_s = -1;
-        for (int s = 0; s < 12; s++) {
-            auto old_metric = metric;
-            int old_actions_size = actions.size();
-            if (s == 0) {
-                ACTION_WRAPPER(user_new_interval, 0);
-            } else if (s == 1) {
-                ACTION_WRAPPER(user_add_left, 1);
-            } else if (s == 2) {
-                ACTION_WRAPPER(user_remove_left, 2);
-            } else if (s == 3) {
-                ACTION_WRAPPER(user_add_right, 3);
-            } else if (s == 4) {
-                ACTION_WRAPPER(user_remove_right, 4);
-            } else if (s == 5) {
-                //ACTION_WRAPPER(user_swap_eq_beam, 5);
-            } else if (s == 6) {
-                ACTION_WRAPPER(interval_increase_len, 6);
-            } else if (s == 7) {
-                ACTION_WRAPPER(interval_decrease_len, 7);
-            } else if (s == 8) {
-                ACTION_WRAPPER(interval_flow_over, 8);
-            } else if (s == 9) {
-                ACTION_WRAPPER(interval_merge, 9);
-            } else if (s == 10) {
-                ACTION_WRAPPER(interval_split, 10);
-            } else if (s == 11) {
-                ACTION_WRAPPER(user_remove_and_add, 11);
-            } else {
-                ASSERT(false, "kek");
-            }
-
-            if (best_metric.accepted < metric.accepted) {
-                best_metric = metric;
-                best_s = s;
-            }
-            rollback(old_actions_size);
-            ASSERT(old_metric == metric, "failed back score");
-        }
-
-        if (best_s == -1) {
-            best_s = rnd.get(0, 11);
+        if (step < STEPS / 2) {
+            METRIC_TYPE = 1;
         } else {
-            cnt_acc[best_s]++;
+            METRIC_TYPE = 0;
         }
-        {
-            int s = best_s;
-            if (s == 0) {
-                user_new_interval();
-            } else if (s == 1) {
-                user_add_left();
-            } else if (s == 2) {
-                user_remove_left();
-            } else if (s == 3) {
-                user_add_right();
-            } else if (s == 4) {
-                user_remove_right();
-            } else if (s == 5) {
-                user_swap_eq_beam();
-            } else if (s == 6) {
-                interval_increase_len();
-            } else if (s == 7) {
-                interval_decrease_len();
-            } else if (s == 8) {
-                interval_flow_over();
-            } else if (s == 9) {
-                interval_merge();
-            } else if (s == 10) {
-                interval_split();
-            } else if (s == 11) {
-                user_remove_and_add();
-            } else {
-                ASSERT(false, "kek");
-            }
-        }*/
+
+        //TRAIN_SCORE += best_score;
+
+        //ASSERT(get_solution_score(N, M, K, J, L, reservedRBs, userInfos, get_total_answer()) == total_score, "invalid total_score");
+        if (THEORY_MAX_SCORE <= metric.accepted) {
+            break;
+        }
 
         int s = SELECTION_ACTION.select();
         if (s == 0) {
@@ -223,10 +155,10 @@ vector<Interval> EgorTaskSolver::annealing(vector<Interval> reservedRBs,
             ASSERT(false, "kek");
         }
 
-        if (best_score < metric.accepted) {
+        /*if (best_score < metric.accepted) {
             best_score = metric.accepted;
             best_ans = get_total_answer();
-        }
+        }*/
 
         actions.clear();
 
@@ -236,8 +168,8 @@ vector<Interval> EgorTaskSolver::annealing(vector<Interval> reservedRBs,
     //for (int u = 0; u < N; u++) {
     //user_do_crop(u);
     //}
-    //return get_total_answer();
-    return best_ans;
+    return get_total_answer();
+    //return best_ans;
 }
 
 vector<Interval> Solver_egor(int N, int M, int K, int J, int L,

@@ -26,17 +26,17 @@ vector<Interval> Solver(int N, int M, int K, int J, int L,
     THEORY_MAX_SCORE = get_theory_max_score(N, M, K, J, L, reservedRBs, userInfos);
 
     auto artem_answer = Solver_Artem_grad(N, M, K, J, L, reservedRBs, userInfos);
-    /*auto artem_score = get_solution_score(N, M, K, J, L, reservedRBs, userInfos, artem_answer);
+    auto artem_score = get_solution_score(N, M, K, J, L, reservedRBs, userInfos, artem_answer);
     ASSERT(THEORY_MAX_SCORE >= artem_score, "WA THEORMAX");
     if (THEORY_MAX_SCORE <= artem_score) {
         return artem_answer;
-    }*/
+    }
 
-    //ASSERT(false, "TODO");
-    auto egor_answer = Solver_egor(N, M, K, J, L, reservedRBs, userInfos, artem_answer, 42, vector<int>(SELECTION_SIZE, 10));
-    return egor_answer;
+    auto egor_answer = Solver_egor(N, M, K, J, L, reservedRBs, userInfos, artem_answer, 42,
+                                   vector<int>{0, 3, 1, 7, 0, 47, 0, 0, 90, 40, 23, 89});
+    //return egor_answer;
 
-    /*auto get_egor_blocked = ans_to_blocked_ans(M, K, reservedRBs, egor_answer);
+    auto get_egor_blocked = ans_to_blocked_ans(M, K, reservedRBs, egor_answer);
     optimize(N, M, K, J, L, reservedRBs, userInfos, get_egor_blocked);
     egor_answer.clear();
     vector<Interval> answer;
@@ -53,5 +53,5 @@ vector<Interval> Solver(int N, int M, int K, int J, int L,
         return egor_answer;
     } else {
         return artem_answer;
-    }*/
+    }
 }

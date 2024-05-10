@@ -1,7 +1,8 @@
 #pragma once
 
-#include "tools.hpp"
+#include "assert.hpp"
 #include "snapshoter.hpp"
+#include "tools.hpp"
 
 int BEAM_MAX_AMOUNT = 32;
 
@@ -431,10 +432,10 @@ void optimize_one_gap(int N, int M, int K, int J, int L,
 
 
     for (int iter = 0; iter < 1; iter++) {
-        // Обрезаем хвост, отдаём голове
+        // ÃƒÂ Ãƒâ€˜Ã¢â‚¬ÂºÃƒÂ Ãƒâ€šÃ‚Â±ÃƒÂÃ‚Â¡ÃƒÂÃ¢â‚¬Å¡ÃƒÂ Ãƒâ€šÃ‚ÂµÃƒÂ Ãƒâ€šÃ‚Â·ÃƒÂ Ãƒâ€šÃ‚Â°ÃƒÂ Ãƒâ€šÃ‚ÂµÃƒÂ Ãƒâ€˜Ã‹Å“ ÃƒÂÃ‚Â¡ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ÃƒÂ ÃƒÂÃ¢â‚¬ ÃƒÂ Ãƒâ€˜Ã¢â‚¬Â¢ÃƒÂÃ‚Â¡ÃƒÂÃ†â€™ÃƒÂÃ‚Â¡ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡, ÃƒÂ Ãƒâ€˜Ã¢â‚¬Â¢ÃƒÂÃ‚Â¡ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÂ Ãƒâ€™Ã¢â‚¬ËœÃƒÂ Ãƒâ€šÃ‚Â°ÃƒÂÃ‚Â¡ÃƒÂ¢Ã¢â€šÂ¬Ã‹Å“ÃƒÂ Ãƒâ€˜Ã‹Å“ ÃƒÂ Ãƒâ€˜Ã¢â‚¬â€œÃƒÂ Ãƒâ€˜Ã¢â‚¬Â¢ÃƒÂ Ãƒâ€šÃ‚Â»ÃƒÂ Ãƒâ€˜Ã¢â‚¬Â¢ÃƒÂ ÃƒÂÃ¢â‚¬ ÃƒÂ Ãƒâ€šÃ‚Âµ
         for (int i = 0; i < N; i++) {
 
-            if (mi[i] != 10000) {// можно сделать так что бь mi == 0
+            if (mi[i] != 10000) {// ÃƒÂ Ãƒâ€˜Ã‹Å“ÃƒÂ Ãƒâ€˜Ã¢â‚¬Â¢ÃƒÂ Ãƒâ€šÃ‚Â¶ÃƒÂ ÃƒÂÃ¢â‚¬Â¦ÃƒÂ Ãƒâ€˜Ã¢â‚¬Â¢ ÃƒÂÃ‚Â¡ÃƒÂÃ†â€™ÃƒÂ Ãƒâ€™Ã¢â‚¬ËœÃƒÂ Ãƒâ€šÃ‚ÂµÃƒÂ Ãƒâ€šÃ‚Â»ÃƒÂ Ãƒâ€šÃ‚Â°ÃƒÂÃ‚Â¡ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÂÃ‚Â¡ÃƒÂÃ…  ÃƒÂÃ‚Â¡ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÂ Ãƒâ€šÃ‚Â°ÃƒÂ Ãƒâ€˜Ã¢â‚¬Â ÃƒÂÃ‚Â¡ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¡ÃƒÂÃ‚Â¡ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÂ Ãƒâ€˜Ã¢â‚¬Â¢ ÃƒÂ Ãƒâ€šÃ‚Â±ÃƒÂÃ‚Â¡ÃƒÂÃ…  mi == 0
                 bool is_start = (mi[i] == 0);
                 int best_score_gain = -1;
                 int best_receiver = -1;
@@ -445,7 +446,7 @@ void optimize_one_gap(int N, int M, int K, int J, int L,
                     for (auto &give_to: ma_set[mi[i] - 1]) {
                         if (userInfos[i].beam == userInfos[give_to].beam ||
                             beamOwnedBy[mi[i]][userInfos[give_to].beam] == -1) {
-                            // Только одинаковые beam. Потом любые
+                            // ÃƒÂ Ãƒâ€˜Ã…Â¾ÃƒÂ Ãƒâ€˜Ã¢â‚¬Â¢ÃƒÂ Ãƒâ€šÃ‚Â»ÃƒÂÃ‚Â¡ÃƒÂÃ… ÃƒÂ Ãƒâ€˜Ã¢â‚¬ÂÃƒÂ Ãƒâ€˜Ã¢â‚¬Â¢ ÃƒÂ Ãƒâ€˜Ã¢â‚¬Â¢ÃƒÂ Ãƒâ€™Ã¢â‚¬ËœÃƒÂ Ãƒâ€˜Ã¢â‚¬ËœÃƒÂ ÃƒÂÃ¢â‚¬Â¦ÃƒÂ Ãƒâ€šÃ‚Â°ÃƒÂ Ãƒâ€˜Ã¢â‚¬ÂÃƒÂ Ãƒâ€˜Ã¢â‚¬Â¢ÃƒÂ ÃƒÂÃ¢â‚¬ ÃƒÂÃ‚Â¡ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¹ÃƒÂ Ãƒâ€šÃ‚Âµ beam. ÃƒÂ Ãƒâ€˜Ã…Â¸ÃƒÂ Ãƒâ€˜Ã¢â‚¬Â¢ÃƒÂÃ‚Â¡ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÂ Ãƒâ€˜Ã¢â‚¬Â¢ÃƒÂ Ãƒâ€˜Ã‹Å“ ÃƒÂ Ãƒâ€šÃ‚Â»ÃƒÂÃ‚Â¡ÃƒÂÃ¢â‚¬Â¹ÃƒÂ Ãƒâ€šÃ‚Â±ÃƒÂÃ‚Â¡ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¹ÃƒÂ Ãƒâ€šÃ‚Âµ
                             int plus = min(suplied[give_to] + current_len, userInfos[give_to].rbNeed) -
                                        min(suplied[give_to], userInfos[give_to].rbNeed);
                             //cout << suplied[give_to] << " " << current_len << " " << userInfos[give_to].rbNeed << endl;
@@ -460,7 +461,7 @@ void optimize_one_gap(int N, int M, int K, int J, int L,
                 for (auto &give_to: empty) {
                     if (userInfos[i].beam == userInfos[give_to].beam ||
                         beamOwnedBy[mi[i]][userInfos[give_to].beam] == -1) {
-                        // Только одинаковые beam. Потом любые
+                        // ÃƒÂ Ãƒâ€˜Ã…Â¾ÃƒÂ Ãƒâ€˜Ã¢â‚¬Â¢ÃƒÂ Ãƒâ€šÃ‚Â»ÃƒÂÃ‚Â¡ÃƒÂÃ… ÃƒÂ Ãƒâ€˜Ã¢â‚¬ÂÃƒÂ Ãƒâ€˜Ã¢â‚¬Â¢ ÃƒÂ Ãƒâ€˜Ã¢â‚¬Â¢ÃƒÂ Ãƒâ€™Ã¢â‚¬ËœÃƒÂ Ãƒâ€˜Ã¢â‚¬ËœÃƒÂ ÃƒÂÃ¢â‚¬Â¦ÃƒÂ Ãƒâ€šÃ‚Â°ÃƒÂ Ãƒâ€˜Ã¢â‚¬ÂÃƒÂ Ãƒâ€˜Ã¢â‚¬Â¢ÃƒÂ ÃƒÂÃ¢â‚¬ ÃƒÂÃ‚Â¡ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¹ÃƒÂ Ãƒâ€šÃ‚Âµ beam. ÃƒÂ Ãƒâ€˜Ã…Â¸ÃƒÂ Ãƒâ€˜Ã¢â‚¬Â¢ÃƒÂÃ‚Â¡ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÂ Ãƒâ€˜Ã¢â‚¬Â¢ÃƒÂ Ãƒâ€˜Ã‹Å“ ÃƒÂ Ãƒâ€šÃ‚Â»ÃƒÂÃ‚Â¡ÃƒÂÃ¢â‚¬Â¹ÃƒÂ Ãƒâ€šÃ‚Â±ÃƒÂÃ‚Â¡ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¹ÃƒÂ Ãƒâ€šÃ‚Âµ
                         int plus = min(suplied[give_to] + current_len, userInfos[give_to].rbNeed) -
                                    min(suplied[give_to], userInfos[give_to].rbNeed);
                         //cout << suplied[give_to] << " " << current_len << " " << userInfos[give_to].rbNeed << endl;
@@ -517,9 +518,9 @@ void optimize_one_gap(int N, int M, int K, int J, int L,
             }
         }
 
-        // Обрезаем голову, отдаём хвосту
+        // ÃƒÂ Ãƒâ€˜Ã¢â‚¬ÂºÃƒÂ Ãƒâ€šÃ‚Â±ÃƒÂÃ‚Â¡ÃƒÂÃ¢â‚¬Å¡ÃƒÂ Ãƒâ€šÃ‚ÂµÃƒÂ Ãƒâ€šÃ‚Â·ÃƒÂ Ãƒâ€šÃ‚Â°ÃƒÂ Ãƒâ€šÃ‚ÂµÃƒÂ Ãƒâ€˜Ã‹Å“ ÃƒÂ Ãƒâ€˜Ã¢â‚¬â€œÃƒÂ Ãƒâ€˜Ã¢â‚¬Â¢ÃƒÂ Ãƒâ€šÃ‚Â»ÃƒÂ Ãƒâ€˜Ã¢â‚¬Â¢ÃƒÂ ÃƒÂÃ¢â‚¬ ÃƒÂÃ‚Â¡Ãƒâ€˜Ã¢â‚¬Å“, ÃƒÂ Ãƒâ€˜Ã¢â‚¬Â¢ÃƒÂÃ‚Â¡ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÂ Ãƒâ€™Ã¢â‚¬ËœÃƒÂ Ãƒâ€šÃ‚Â°ÃƒÂÃ‚Â¡ÃƒÂ¢Ã¢â€šÂ¬Ã‹Å“ÃƒÂ Ãƒâ€˜Ã‹Å“ ÃƒÂÃ‚Â¡ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ÃƒÂ ÃƒÂÃ¢â‚¬ ÃƒÂ Ãƒâ€˜Ã¢â‚¬Â¢ÃƒÂÃ‚Â¡ÃƒÂÃ†â€™ÃƒÂÃ‚Â¡ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÂÃ‚Â¡Ãƒâ€˜Ã¢â‚¬Å“
         for (int i = 0; i < N; i++) {
-            if (ma[i] != -10000) {// можно сделать так что бь mi == 0
+            if (ma[i] != -10000) {// ÃƒÂ Ãƒâ€˜Ã‹Å“ÃƒÂ Ãƒâ€˜Ã¢â‚¬Â¢ÃƒÂ Ãƒâ€šÃ‚Â¶ÃƒÂ ÃƒÂÃ¢â‚¬Â¦ÃƒÂ Ãƒâ€˜Ã¢â‚¬Â¢ ÃƒÂÃ‚Â¡ÃƒÂÃ†â€™ÃƒÂ Ãƒâ€™Ã¢â‚¬ËœÃƒÂ Ãƒâ€šÃ‚ÂµÃƒÂ Ãƒâ€šÃ‚Â»ÃƒÂ Ãƒâ€šÃ‚Â°ÃƒÂÃ‚Â¡ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÂÃ‚Â¡ÃƒÂÃ…  ÃƒÂÃ‚Â¡ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÂ Ãƒâ€šÃ‚Â°ÃƒÂ Ãƒâ€˜Ã¢â‚¬Â ÃƒÂÃ‚Â¡ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¡ÃƒÂÃ‚Â¡ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÂ Ãƒâ€˜Ã¢â‚¬Â¢ ÃƒÂ Ãƒâ€šÃ‚Â±ÃƒÂÃ‚Â¡ÃƒÂÃ…  mi == 0
                 bool is_last = ma[i] + 1 == solution.size();
                 int best_score_gain = -1;
                 int best_receiver = -1;
@@ -530,7 +531,7 @@ void optimize_one_gap(int N, int M, int K, int J, int L,
                     for (auto &give_to: mi_set[ma[i] + 1]) {
                         if (userInfos[i].beam == userInfos[give_to].beam ||
                             beamOwnedBy[ma[i]][userInfos[give_to].beam] == -1) {
-                            // Только одинаковые beam. Потом любые
+                            // ÃƒÂ Ãƒâ€˜Ã…Â¾ÃƒÂ Ãƒâ€˜Ã¢â‚¬Â¢ÃƒÂ Ãƒâ€šÃ‚Â»ÃƒÂÃ‚Â¡ÃƒÂÃ… ÃƒÂ Ãƒâ€˜Ã¢â‚¬ÂÃƒÂ Ãƒâ€˜Ã¢â‚¬Â¢ ÃƒÂ Ãƒâ€˜Ã¢â‚¬Â¢ÃƒÂ Ãƒâ€™Ã¢â‚¬ËœÃƒÂ Ãƒâ€˜Ã¢â‚¬ËœÃƒÂ ÃƒÂÃ¢â‚¬Â¦ÃƒÂ Ãƒâ€šÃ‚Â°ÃƒÂ Ãƒâ€˜Ã¢â‚¬ÂÃƒÂ Ãƒâ€˜Ã¢â‚¬Â¢ÃƒÂ ÃƒÂÃ¢â‚¬ ÃƒÂÃ‚Â¡ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¹ÃƒÂ Ãƒâ€šÃ‚Âµ beam. ÃƒÂ Ãƒâ€˜Ã…Â¸ÃƒÂ Ãƒâ€˜Ã¢â‚¬Â¢ÃƒÂÃ‚Â¡ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÂ Ãƒâ€˜Ã¢â‚¬Â¢ÃƒÂ Ãƒâ€˜Ã‹Å“ ÃƒÂ Ãƒâ€šÃ‚Â»ÃƒÂÃ‚Â¡ÃƒÂÃ¢â‚¬Â¹ÃƒÂ Ãƒâ€šÃ‚Â±ÃƒÂÃ‚Â¡ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¹ÃƒÂ Ãƒâ€šÃ‚Âµ
                             int plus = min(suplied[give_to] + current_len, userInfos[give_to].rbNeed) -
                                        min(suplied[give_to], userInfos[give_to].rbNeed);
                             if (suplied[give_to] != userInfos[give_to].rbNeed) {
@@ -549,7 +550,7 @@ void optimize_one_gap(int N, int M, int K, int J, int L,
                 for (auto &give_to: empty) {
                     if (userInfos[i].beam == userInfos[give_to].beam ||
                         beamOwnedBy[ma[i]][userInfos[give_to].beam] == -1) {
-                        // Только одинаковые beam. Потом любые
+                        // ÃƒÂ Ãƒâ€˜Ã…Â¾ÃƒÂ Ãƒâ€˜Ã¢â‚¬Â¢ÃƒÂ Ãƒâ€šÃ‚Â»ÃƒÂÃ‚Â¡ÃƒÂÃ… ÃƒÂ Ãƒâ€˜Ã¢â‚¬ÂÃƒÂ Ãƒâ€˜Ã¢â‚¬Â¢ ÃƒÂ Ãƒâ€˜Ã¢â‚¬Â¢ÃƒÂ Ãƒâ€™Ã¢â‚¬ËœÃƒÂ Ãƒâ€˜Ã¢â‚¬ËœÃƒÂ ÃƒÂÃ¢â‚¬Â¦ÃƒÂ Ãƒâ€šÃ‚Â°ÃƒÂ Ãƒâ€˜Ã¢â‚¬ÂÃƒÂ Ãƒâ€˜Ã¢â‚¬Â¢ÃƒÂ ÃƒÂÃ¢â‚¬ ÃƒÂÃ‚Â¡ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¹ÃƒÂ Ãƒâ€šÃ‚Âµ beam. ÃƒÂ Ãƒâ€˜Ã…Â¸ÃƒÂ Ãƒâ€˜Ã¢â‚¬Â¢ÃƒÂÃ‚Â¡ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÂ Ãƒâ€˜Ã¢â‚¬Â¢ÃƒÂ Ãƒâ€˜Ã‹Å“ ÃƒÂ Ãƒâ€šÃ‚Â»ÃƒÂÃ‚Â¡ÃƒÂÃ¢â‚¬Â¹ÃƒÂ Ãƒâ€šÃ‚Â±ÃƒÂÃ‚Â¡ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¹ÃƒÂ Ãƒâ€šÃ‚Âµ
                         int plus = min(suplied[give_to] + current_len, userInfos[give_to].rbNeed) -
                                    min(suplied[give_to], userInfos[give_to].rbNeed);
                         //cout << suplied[give_to] << " " << current_len << " " << userInfos[give_to].rbNeed << endl;
@@ -609,30 +610,369 @@ void optimize_one_gap(int N, int M, int K, int J, int L,
 
 void optimize(int N, int M, int K, int J, int L,
               const vector<Interval> &reservedRBs,
-              const vector<UserInfo> &userInfos, vector<vector<Interval>> &solution) {
-
-    std::vector<int> suplied(N, 0);
-    get_solution_score_light(N, solution, userInfos, suplied);
-    set<int> empty;
+              const vector<UserInfo> &userInfos, vector<vector<Interval>> &solution, bool do_it = true) {
+    //    std::vector<int> suplied(N, 0);
+    //    get_solution_score_light(N, solution, userInfos, suplied);
     std::vector<bool> was(N, false);
+
+    std::vector<int> mi_ind(N, 10000);
+    std::vector<int> ma_ind(N, -10000);
+
     for (int i = 0; i < solution.size(); i++) {
         for (int g = 0; g < solution[i].size(); g++) {
             for (auto user_id: solution[i][g].users) {
+                mi_ind[user_id] = min(mi_ind[user_id], g);
+                ma_ind[user_id] = max(ma_ind[user_id], g);
                 was[user_id] = true;
             }
         }
     }
+    set<pair<int, int>, greater<>> empty;
     for (int i = 0; i < N; i++) {
         if (!was[i]) {
-            empty.insert(i);
+            empty.insert({userInfos[i].rbNeed, i});
         }
     }
-    for (int i = 0; i < solution.size(); i++) {
-        optimize_one_gap(N, M, K, J, L, reservedRBs, userInfos, solution[i], suplied, empty);
+
+    if (K <= 1 && do_it) {
+
+        auto pre_reserved = reservedRBs;
+        sort(pre_reserved.begin(), pre_reserved.end(), [&](auto const &lhs, auto const &rhs) {
+            return lhs.start < rhs.start;
+        });
+        set<int> uniq_beams;
+        for (int i = 0; i < N; i++) {
+            uniq_beams.insert(userInfos[i].beam);
+        }
+
+        set<pair<int, int>, greater<>>
+                free_spaces;
+
+        vector<pair<int, int>> space_sizes;
+        {
+            if (!pre_reserved.empty()) {
+                if (pre_reserved[0].start != 0) {
+                    space_sizes.push_back({pre_reserved[0].start, 0});
+                }
+                for (int i = 1; i < pre_reserved.size(); i++) {
+                    space_sizes.push_back({pre_reserved[i].start - pre_reserved[i - 1].end, pre_reserved[i].start});
+                }
+                if (pre_reserved.back().end != M) {
+                    space_sizes.push_back({M - pre_reserved.back().end, pre_reserved.back().end});
+                }
+            } else {
+                space_sizes.push_back({M, 0});
+            }
+
+            stable_sort(solution.begin(), solution.end(), [&](const auto &lhs, const auto &rhs) {
+                if (lhs.empty() && rhs.empty()) {
+                    return false;
+                }
+                if (lhs.empty()) {
+                    return false;
+                }
+                if (rhs.empty()) {
+                    return true;
+                }
+                if (lhs.back().end - lhs[0].start == rhs.back().end - rhs[0].start) {
+                    return lhs[0].start < rhs[0].start;
+                }
+                return lhs.back().end - lhs[0].start > rhs.back().end - rhs[0].start;
+            });
+
+            sort(space_sizes.begin(), space_sizes.end(), [&](const auto &lhs, const auto &rhs) {
+                if (lhs.first == rhs.first) {
+                    return lhs.second < rhs.second;
+                }
+                return lhs.first > rhs.first;
+            });
+            vector<int> pre_supplied(N, 0);
+            for (int i = 0; i < solution.size(); i++) {
+                int ma = 0;
+                for (int g = 0; g < solution[i].size(); g++) {
+                    int cur_len = solution[i][g].end - solution[i][g].start;
+                    for (auto user_id: solution[i][g].users) {
+                        if (g + 1 == solution[i].size()) {
+                            //ma = max(ma, userInfos[user_id].rbNeed - pre_supplied[user_id]);
+                            //                            if (pre_supplied[user_id] + cur_len >= userInfos[user_id].rbNeed) { // ÃÅ“ÃÅ¾Ãâ€“Ãâ€¢ÃÅ“ ÃÂ£Ãâ€ºÃÂ£ÃÂ§ÃÂ¨ÃËœÃÂ¢ÃÂ¬
+                            ma = max(ma, userInfos[user_id].rbNeed - pre_supplied[user_id]);
+                            ma = min(ma, cur_len);
+                            //                            }
+                        } else {
+                            pre_supplied[user_id] += cur_len;
+                        }
+                    }
+                }
+                //ma = max(0,ma);
+
+                if (solution[i].size() != 0) {
+                    if (ma > 0) {
+                        solution[i].back().end = solution[i].back().start + ma;
+                        free_spaces.insert({space_sizes[i].first - solution[i].back().start - ma, i});
+                    }
+                } else {
+                    ASSERT(space_sizes[i].first > 0, "kek");
+                    free_spaces.insert({space_sizes[i].first, i});
+                }
+            }
+        }
+
+        map<int, set<pair<int, int>>> possible_pre_free_spaces;
+        for (int i = 0; i < solution.size(); i++) {
+            int ma = 0;
+            for (int g = 0; g < solution[i].size(); g++) {
+                std::set<int> beam_was;
+                if (solution[i][g].users.size() == L) continue;
+                for (auto user_id: solution[i][g].users) {
+                    beam_was.insert(userInfos[user_id].beam);
+                }
+            }
+        }
+        std::set<pair<int, int>, greater<>>
+                space_left_q;
+        for (int i = 0; i < solution.size(); i++) {
+            if (solution[i].size()) {
+                space_left_q.insert({space_sizes[i].first, i});
+            }
+        }
+        std::vector<std::set<int>> activeUsers(solution.size());
+        std::vector<int> current_sub_interval(solution.size(), 0);
+        std::vector<std::set<int>> activeBeams(solution.size());
+        //    cout << "-------------------" << endl;
+        std::vector<std::vector<bool>> keep_or_not(solution.size());
+        std::vector<int> start_sizes(solution.size());
+        for (int i = 0; i < solution.size(); i++) {
+            start_sizes[i] = solution[i].size();
+            keep_or_not[i] = std::vector<bool>(solution[i].size(), true);
+        }
+        int itttter = 0;
+        while (!space_left_q.empty()) {
+            itttter++;
+            //            cout << "ITTER:" << itttter << endl;
+            int space_left = space_left_q.begin()->first;
+            int pick_i = space_left_q.begin()->second;
+            space_left_q.erase(space_left_q.begin());
+            int curr = current_sub_interval[pick_i];
+
+            //            cout << curr << " _ " << start_sizes[pick_i] << " | " << pick_i << " " << solution[pick_i].size() << endl;
+            if (curr >= start_sizes[pick_i]) {
+
+                continue;
+            }
+            int curr_len = solution[pick_i][curr].end - solution[pick_i][curr].start;
+            std::vector<int> need_to_find_new;
+            std::set<int> need_to_find_new_set;
+            bool force_hold = false;
+            int already = 0;
+            if (curr != 0) {
+                already = solution[pick_i][curr - 1].users.size();
+            }
+            for (auto user_id: solution[pick_i][curr].users) {
+                //            if (!activeUsers[pick_i].count(user_id) && ma_ind[user_id]-mi_ind[user_id] > 0) {
+                //                force_hold = true;
+                //                break;
+                //            }
+                if (!activeUsers[pick_i].count(user_id)) {
+                    if (activeBeams[pick_i].count(userInfos[user_id].beam) ||
+                        already >= L) {// BETTER SOLUTION POSSIBLE
+                        if (ma_ind[user_id] - mi_ind[user_id] > 0) {
+                            force_hold = true;
+                            break;
+                        }
+                        need_to_find_new.push_back(user_id);
+                        need_to_find_new_set.insert(user_id);
+                    } else {
+                        already++;
+                    }
+                }
+            }
+            sort(need_to_find_new.begin(), need_to_find_new.end(), [&](const auto &lhs, const auto &rhs) {
+                if (userInfos[lhs].rbNeed == userInfos[rhs].rbNeed) {
+                    return lhs < rhs;
+                }
+                return userInfos[lhs].rbNeed > userInfos[rhs].rbNeed;
+            });
+
+            map<pair<int, int>, int> place_get_amount;
+            bool can_place_all = true;
+            for (int user_id: need_to_find_new) {
+                bool placed = false;
+                for (auto &place_to_get: possible_pre_free_spaces[userInfos[user_id].beam]) {
+                    int place_to_get_len = solution[place_to_get.first][place_to_get.second].end - solution[place_to_get.first][place_to_get.second].start;
+                    if (solution[place_to_get.first][place_to_get.second].users.size() +
+                                        place_get_amount[place_to_get] <
+                                L &&
+                        place_to_get_len >= userInfos[user_id].rbNeed) {
+                        place_get_amount[place_to_get]++;
+                        placed = true;
+                        break;
+                    }
+                }
+                if (!placed) {
+                    if (free_spaces.empty()) {
+                        can_place_all = false;
+                    } else {
+                        int sz = free_spaces.begin()->first;
+                        if (sz < userInfos[user_id].rbNeed) {
+                            can_place_all = false;
+                        } else {
+                            can_place_all = true;
+                        }
+                        break;
+                    }
+                }
+            }
+            //            cout << ((can_place_all && !force_hold) ? "CAN" : "CANT") << endl;
+            if (can_place_all && !force_hold) {
+                //                cout << "EVICTING AND MERGING" << endl;
+                for (int user_id: need_to_find_new) {
+                    bool placed = false;
+                    for (auto place_to_get: possible_pre_free_spaces[userInfos[user_id].beam]) {
+                        int place_to_get_len = solution[place_to_get.first][place_to_get.second].end - solution[place_to_get.first][place_to_get.second].start;
+                        if (solution[place_to_get.first][place_to_get.second].users.size() < L && place_to_get_len >= userInfos[user_id].rbNeed) {
+                            solution[place_to_get.first][place_to_get.second].users.push_back(user_id);
+                            possible_pre_free_spaces[userInfos[user_id].beam].erase(place_to_get);
+                            if (solution[place_to_get.first][place_to_get.second].users.size() == L) {
+                                for (auto beam: uniq_beams) {
+                                    possible_pre_free_spaces[beam].erase(place_to_get);
+                                }
+                            }
+                            placed = true;
+                            break;
+                        }
+                    }
+                    if (!placed) {
+                        if (free_spaces.empty()) {
+                            ASSERT(false, "false");
+                        } else {
+                            int sz = free_spaces.begin()->first;
+                            if (sz < userInfos[user_id].rbNeed) {
+                                ASSERT(false, "false");
+                            } else {
+                                int user_need = userInfos[user_id].rbNeed;
+                                int picked_free_place_donor = free_spaces.begin()->second;
+                                if (solution[picked_free_place_donor].empty()) {
+                                    solution[picked_free_place_donor].push_back({space_sizes[picked_free_place_donor].second, space_sizes[picked_free_place_donor].second + user_need, {}});
+                                } else {
+                                    solution[picked_free_place_donor].push_back(
+                                            {solution[picked_free_place_donor].back().end,
+                                             solution[picked_free_place_donor].back().end + user_need,
+                                             {}});
+                                }
+                                free_spaces.erase(free_spaces.begin());
+                                free_spaces.insert({sz - user_need, picked_free_place_donor});
+                                ASSERT(sz - user_need >= 0, "kek");
+                                solution[picked_free_place_donor].back().users.push_back(user_id);
+                                for (int beam: uniq_beams) {// if L != 1
+                                    if (beam != userInfos[user_id].beam) {
+
+                                        possible_pre_free_spaces[beam].insert({picked_free_place_donor,
+                                                                               solution[picked_free_place_donor].size() -
+                                                                                       1});
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                // mering two intervals;
+                //for (auto user_id: activeUsers[pick_i]){
+                //   solution[pick_i][curr].users.push_back(user_id);
+                // }
+                std::set<int> okay_users;
+                for (auto user_id: solution[pick_i][curr].users) {
+                    if (need_to_find_new_set.count(user_id) == 0) {
+                        activeUsers[pick_i].insert(user_id);
+                        activeBeams[pick_i].insert(userInfos[user_id].beam);
+                        okay_users.insert(user_id);
+                    }
+                }
+                if (curr != 0) {
+                    for (auto user_id: solution[pick_i][curr - 1].users) {
+                        okay_users.insert(user_id);
+                    }
+                    solution[pick_i][curr].start = solution[pick_i][curr - 1].start;
+                    keep_or_not[pick_i][curr - 1] = false;
+                }
+                solution[pick_i][curr].users.clear();
+                for (auto user_id: okay_users) {
+                    solution[pick_i][curr].users.push_back(user_id);
+                    //                    cout << "1.PUSHING TO " << pick_i << " " << curr << "|" << solution[pick_i][curr].users.size()
+                    //                         << "|BEAM: " << userInfos[user_id].beam << endl;
+
+                    if (solution[pick_i][curr].users.size() == L) {
+                        for (auto beam: uniq_beams) {
+                            possible_pre_free_spaces[beam].erase({pick_i, curr});
+                        }
+                    }
+                    ASSERT(solution[pick_i][curr].users.size() <= L, "kek");
+                }
+            } else {
+                activeUsers[pick_i].clear();
+                activeBeams[pick_i].clear();
+                for (auto user_id: solution[pick_i][curr].users) {
+                    activeUsers[pick_i].insert(user_id);
+                    activeBeams[pick_i].insert(userInfos[user_id].beam);
+                }
+            }
+
+            current_sub_interval[pick_i]++;
+            space_left_q.insert({space_left - curr_len, pick_i});
+        }
+        std::set<pair<int, int>, greater<>> new_empty;
+        for (auto [rbNeed, user_id]: empty) {
+            if (!possible_pre_free_spaces[userInfos[user_id].beam].empty()) {
+                auto place_to_get = *possible_pre_free_spaces[userInfos[user_id].beam].begin();
+                for (auto [ii, gg]: possible_pre_free_spaces[userInfos[user_id].beam]) {
+                    if (solution[ii][gg].end - solution[ii][gg].start > solution[place_to_get.first][place_to_get.second].end - solution[place_to_get.first][place_to_get.second].start) {
+                        place_to_get = {ii, gg};
+                    }
+                }
+                solution[place_to_get.first][place_to_get.second].users.push_back(user_id);
+                ASSERT(solution[place_to_get.first][place_to_get.second].users.size() <= L, "kek");
+                possible_pre_free_spaces[userInfos[user_id].beam].erase(place_to_get);
+                if (solution[place_to_get.first][place_to_get.second].users.size() == L) {
+                    for (auto beam: uniq_beams) {
+                        possible_pre_free_spaces[beam].erase(place_to_get);
+                    }
+                }
+            } else {
+                new_empty.insert({userInfos[user_id].rbNeed, user_id});
+            }
+        }
+        empty = new_empty;
+
+        std::vector<std::vector<Interval>> new_intervals(solution.size());
+        for (int i = 0; i < solution.size(); i++) {
+            for (int g = 0; g < start_sizes[i]; g++) {
+                if (keep_or_not[i][g]) {
+                    new_intervals[i].push_back(solution[i][g]);
+                }
+            }
+            for (int g = start_sizes[i]; g < solution[i].size(); g++) {
+                new_intervals[i].push_back(solution[i][g]);
+            }
+        }
+        //        new_intervals[0].back().end = M;
+        solution = new_intervals;
     }
+
+    //    std::vector<int>supplied(N,0);
+    //    int f_score = get_solution_score_light(N, solution, userInfos,supplied);
+    std::vector<int> suplied(N, 0);
+    get_solution_score_light(N, solution, userInfos, suplied);
+    std::set<int> new_empty;
+    for (auto [rbNeed, user_id]: empty) {
+        new_empty.insert(user_id);
+    }
+    for (int i = 0; i < solution.size(); i++) {
+        optimize_one_gap(N, M, K, J, L, reservedRBs, userInfos, solution[i], suplied, new_empty);
+    }
+    //    int s_score = get_solution_score_light(N, solution, userInfos,supplied);
+    //    if (f_score > s_score){
+    //        cout << f_score-s_score << " "  <<  f_score << " " << s_score << " " << N << endl;
+    //    }
 }
-
-
 vector<Interval> Solver_Artem_grad(int N, int M, int K, int J, int L,
                                    vector<Interval> reservedRBs,
                                    vector<UserInfo> userInfos) {

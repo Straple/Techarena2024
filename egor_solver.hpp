@@ -30,9 +30,9 @@
 const int SELECTION_SIZE = 12;
 //SelectionRandomizer SELECTION_ACTION(SELECTION_SIZE);
 // = std::vector<int>{10, 1, 1, 1, 1, 16, 9, 6, 22, 12, 11, 30};
-int STEPS = 600;
+int STEPS = 300;
 
-const int METRIC_CNT = 3;
+const int METRIC_CNT = 1;
 int METRIC_TYPE = 0;
 
 struct EgorTaskSolver {
@@ -40,7 +40,9 @@ struct EgorTaskSolver {
     /// task data
     ///============================
 
-    SelectionRandomizer SELECTION_ACTION;
+    SelectionRandomizer SELECTION_ACTION;// = vector<int>{0, 3, 1, 7, 0, 47, 0, 0, 90, 40, 23, 89};
+
+    long long TRAIN_SCORE = 0;
 
     int N;
     int M;
