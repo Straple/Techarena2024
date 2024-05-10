@@ -634,7 +634,7 @@ void optimize(int N, int M, int K, int J, int L,
         }
     }
 
-    if (K <= 1 && do_it) {
+    if (do_it) {
 
         auto pre_reserved = reservedRBs;
         sort(pre_reserved.begin(), pre_reserved.end(), [&](auto const &lhs, auto const &rhs) {
@@ -650,42 +650,65 @@ void optimize(int N, int M, int K, int J, int L,
 
         vector<pair<int, int>> space_sizes;
         {
+
+            std::vector<pair<int,int>>start_ends;
             if (!pre_reserved.empty()) {
                 if (pre_reserved[0].start != 0) {
+                    start_ends.push_back({0,pre_reserved[0].start});
                     space_sizes.push_back({pre_reserved[0].start, 0});
                 }
                 for (int i = 1; i < pre_reserved.size(); i++) {
-                    space_sizes.push_back({pre_reserved[i].start - pre_reserved[i - 1].end, pre_reserved[i].start});
+                    start_ends.push_back({pre_reserved[i-1].end, pre_reserved[i].start});
+                    space_sizes.push_back({pre_reserved[i].start - pre_reserved[i - 1].end, pre_reserved[i-1].end});
                 }
                 if (pre_reserved.back().end != M) {
+                    start_ends.push_back({pre_reserved.back().end, M});
                     space_sizes.push_back({M - pre_reserved.back().end, pre_reserved.back().end});
                 }
             } else {
+                start_ends.push_back({0,M});
                 space_sizes.push_back({M, 0});
             }
 
-            stable_sort(solution.begin(), solution.end(), [&](const auto &lhs, const auto &rhs) {
-                if (lhs.empty() && rhs.empty()) {
-                    return false;
+            vector<vector<Interval>>new_solution(solution.size());
+            for (int i = 0; i < solution.size(); i++){
+                if (solution[i].empty()) continue ;
+                int picked_ind_to_place = -1;
+                for (int j = 0; j < space_sizes.size(); j++){
+                    //                    if (solution[i][0].start >= start_ends[j].first && solution[i].back().end <= start_ends[j].second)// this should be enough, but just to be sure
+                    bool ok = true;
+                    for (int g = 0; g < solution[i].size(); g++){
+                        if (solution[i][g].start < start_ends[j].first || solution[i][g].end > start_ends[j].second){
+                            ok = false;
+                            break;
+                        }
+                    }
+                    if (ok){
+                        picked_ind_to_place = j;
+                        break;
+                    }
                 }
-                if (lhs.empty()) {
-                    return false;
-                }
-                if (rhs.empty()) {
-                    return true;
-                }
-                if (lhs.back().end - lhs[0].start == rhs.back().end - rhs[0].start) {
-                    return lhs[0].start < rhs[0].start;
-                }
-                return lhs.back().end - lhs[0].start > rhs.back().end - rhs[0].start;
-            });
+                if (picked_ind_to_place == -1){
 
-            sort(space_sizes.begin(), space_sizes.end(), [&](const auto &lhs, const auto &rhs) {
-                if (lhs.first == rhs.first) {
-                    return lhs.second < rhs.second;
                 }
-                return lhs.first > rhs.first;
-            });
+                ASSERT(picked_ind_to_place != -1, "index wasnt selected");
+                new_solution[picked_ind_to_place] = solution[i];
+            }
+            solution = new_solution;
+            //            stable_sort(solution.begin(), solution.end(), [&](const auto &lhs, const auto &rhs) {
+            //                if (lhs.empty() && rhs.empty()) {
+            //                    return false;
+            //                }
+            //                if (lhs.empty()) {
+            //                    return false;
+            //                }
+            //                if (rhs.empty()) {
+            //                    return true;
+            //                }
+            //                return lhs[0].start < rhs[0].start;
+            //            });
+
+
             vector<int> pre_supplied(N, 0);
             for (int i = 0; i < solution.size(); i++) {
                 int ma = 0;
@@ -738,23 +761,19 @@ void optimize(int N, int M, int K, int J, int L,
         std::vector<std::set<int>> activeUsers(solution.size());
         std::vector<int> current_sub_interval(solution.size(), 0);
         std::vector<std::set<int>> activeBeams(solution.size());
-        //    cout << "-------------------" << endl;
         std::vector<std::vector<bool>> keep_or_not(solution.size());
         std::vector<int> start_sizes(solution.size());
         for (int i = 0; i < solution.size(); i++) {
             start_sizes[i] = solution[i].size();
             keep_or_not[i] = std::vector<bool>(solution[i].size(), true);
         }
-        int itttter = 0;
+
         while (!space_left_q.empty()) {
-            itttter++;
-            //            cout << "ITTER:" << itttter << endl;
             int space_left = space_left_q.begin()->first;
             int pick_i = space_left_q.begin()->second;
             space_left_q.erase(space_left_q.begin());
             int curr = current_sub_interval[pick_i];
 
-            //            cout << curr << " _ " << start_sizes[pick_i] << " | " << pick_i << " " << solution[pick_i].size() << endl;
             if (curr >= start_sizes[pick_i]) {
 
                 continue;
@@ -972,6 +991,7 @@ void optimize(int N, int M, int K, int J, int L,
     //    if (f_score > s_score){
     //        cout << f_score-s_score << " "  <<  f_score << " " << s_score << " " << N << endl;
     //    }
+
 }
 vector<Interval> Solver_Artem_grad(int N, int M, int K, int J, int L,
                                    vector<Interval> reservedRBs,

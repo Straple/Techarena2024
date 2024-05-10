@@ -36,28 +36,20 @@ vector<Interval> Solver(int N, int M, int K, int J, int L,
                                    //vector<int>{0, 3, 1, 7, 0, 89, 0, 0, 90, 40, 23} // OK
                                    //          0  1  2  3  4   5  6  7   8   9  10
                                    vector<int>{5, 5, 5, 5, 5,  5, 5, 5,  5,  5,  5}
- );
+    );
 
-    auto egor_score = get_solution_score(N, M, K, J, L, reservedRBs, userInfos, egor_answer);
-    return egor_answer;
+    //auto egor_score = get_solution_score(N, M, K, J, L, reservedRBs, userInfos, egor_answer);
+    //return egor_answer;
 
-    /*auto get_egor_blocked = ans_to_blocked_ans(M, K, reservedRBs, egor_answer);
+    auto get_egor_blocked = ans_to_blocked_ans(M, K, reservedRBs, egor_answer);
     optimize(N, M, K, J, L, reservedRBs, userInfos, get_egor_blocked);
-    egor_answer.clear();
-    vector<Interval> answer;
-    for (int i = 0; i < get_egor_blocked.size(); i++) {
-        for (int g = 0; g < get_egor_blocked[i].size(); g++) {
-            if (get_egor_blocked[i][g].users.size()) {
-                egor_answer.push_back(get_egor_blocked[i][g]);
-            }
-        }
-    }
-    // here ASSERTION FAILED!!
+    egor_answer = unblock_ans(get_egor_blocked);
+
     auto egor_score = get_solution_score(N, M, K, J, L, reservedRBs, userInfos, egor_answer);
 
     if (egor_score > artem_score) {
         return egor_answer;
     } else {
         return artem_answer;
-    }*/
+    }
 }
