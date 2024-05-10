@@ -114,8 +114,8 @@ vector<Interval> EgorTaskSolver::annealing(vector<Interval> reservedRBs,
     temperature = 1;
     prev_action = 0;
 
-    int best_score = metric.accepted;
-    auto best_ans = get_total_answer();
+    //int best_score = metric.accepted;
+    //auto best_ans = get_total_answer();
 
     for (int step = 0; step < STEPS; step++) {
         temperature = ((STEPS - step) * 1.0 / STEPS);
@@ -129,7 +129,7 @@ vector<Interval> EgorTaskSolver::annealing(vector<Interval> reservedRBs,
             METRIC_TYPE = 0;
         }*/
 
-        TRAIN_SCORE += best_score;
+        //TRAIN_SCORE += best_score;
 
         //ASSERT(get_solution_score(N, M, K, J, L, reservedRBs, userInfos, get_total_answer()) == total_score, "invalid total_score");
         if (THEORY_MAX_SCORE <= metric.accepted) {
@@ -168,10 +168,10 @@ vector<Interval> EgorTaskSolver::annealing(vector<Interval> reservedRBs,
             ASSERT(false, "kek");
         }
 
-        if (best_score < metric.accepted) {
+        /*if (best_score < metric.accepted) {
             best_score = metric.accepted;
             best_ans = get_total_answer();
-        }
+        }*/
 
         actions.clear();
 
@@ -181,8 +181,8 @@ vector<Interval> EgorTaskSolver::annealing(vector<Interval> reservedRBs,
     //for (int u = 0; u < N; u++) {
     //user_do_crop(u);
     //}
-    //return get_total_answer();
-    return best_ans;
+    return get_total_answer();
+    //return best_ans;
     //982103
 }
 

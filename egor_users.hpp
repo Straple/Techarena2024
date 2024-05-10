@@ -21,7 +21,7 @@
     }
 
 #define USER_FOR_BEGIN(condition)              \
-    for (int index = 0; index < 30; index++) { \
+    for (int index = 0; index < 1; index++) { \
         int u = rnd.get(0, N - 1);             \
         auto [b, l, r] = get_user_position(u); \
         if (condition) {
@@ -294,7 +294,7 @@ void EgorTaskSolver::user_do_swap_eq_beam(int u, int u2) {
 }*/
 
 void EgorTaskSolver::user_remove_and_add() {
-    for (int step = 0; step < 1; step++) {
+    for (int step = 0; step < 3; step++) {
         int u = rnd.get(0, N - 1);
         int u2 = rnd.get(0, N - 1);
 

@@ -30,7 +30,7 @@
 const int SELECTION_SIZE = 11;
 //SelectionRandomizer SELECTION_ACTION(SELECTION_SIZE);
 // = std::vector<int>{10, 1, 1, 1, 1, 16, 9, 6, 22, 12, 11, 30};
-int STEPS = 600;
+int STEPS = 1000;
 
 const int METRIC_CNT = 1;
 int METRIC_TYPE = 0;
@@ -211,6 +211,8 @@ struct EgorTaskSolver {
 
         // 979437 -> 980155 -> 980332 -> 980459
         auto calc_f = [&](Metric m) {
+            return 100 * m.accepted - 10 * m.unused_space - m.overflow - m.free_space;
+
             //add score: 0 897 417
             if (METRIC_TYPE == 0) {
                 return m.accepted;

@@ -16,8 +16,8 @@ int main() {
     }
     return 0;*/
 
-    train_egor_task_solver();
-    return 0;
+    //train_egor_task_solver();
+    //return 0;
 
     test_case_info infos[5];
     map<int, map<int, int>> score_per_test;

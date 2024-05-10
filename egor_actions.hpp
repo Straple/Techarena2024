@@ -61,9 +61,6 @@ void EgorTaskSolver::change_user_len(int u, int c) {
         metric.overflow += max(0, users_info[u].sum_len - users_info[u].rbNeed);
     }
 
-    // TODO: пройтись по users_beam
-    // просвапать нужным образом
-
     /*cout << "lol=======================================\n";
     for (int i = 0; i < users.size(); i++) {
         cout << users_info[users[i]].sum_len << ' ';
