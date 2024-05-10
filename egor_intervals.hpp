@@ -24,14 +24,64 @@
     }
 
 void EgorTaskSolver::interval_flow_over() {
-    //CNT_CALL_INTERVAL_FLOW_OVER++;
-
     CHOOSE_INTERVAL(i + 1 < intervals[b].size());
+
+    auto flow_over = [&](int change){
+        auto xor_users = intervals[b][i].users ^ intervals[b][i+1].users;
+        for(int u : xor_users){
+            if(intervals[b][i].users.contains(u)){
+                // left
+
+                metric.accepted -= min(users_info[u].rbNeed, users_info[u].sum_len);
+                metric.overflow -= max(0, users_info[u].sum_len - users_info[u].rbNeed);
+
+                users_info[u].sum_len += change;
+
+                metric.accepted += min(users_info[u].rbNeed, users_info[u].sum_len);
+                metric.overflow += max(0, users_info[u].sum_len - users_info[u].rbNeed);
+            }
+            else{
+                // right
+                metric.accepted -= min(users_info[u].rbNeed, users_info[u].sum_len);
+                metric.overflow -= max(0, users_info[u].sum_len - users_info[u].rbNeed);
+
+                users_info[u].sum_len -= change;
+
+                metric.accepted += min(users_info[u].rbNeed, users_info[u].sum_len);
+                metric.overflow += max(0, users_info[u].sum_len - users_info[u].rbNeed);
+            }
+        }
+        intervals[b][i].len += change;
+        metric.free_space += change * (L - intervals[b][i].users.size());
+        metric.unused_space -= change;
+
+        intervals[b][i+1].len -= change;
+        metric.free_space -= change * (L - intervals[b][i+1].users.size());
+        metric.unused_space += change;
+    };
 
     int change = rnd.get(-intervals[b][i].len, intervals[b][i + 1].len);
 
     auto old_metric = metric;
 
+#define V3
+
+
+#ifdef V3
+    // те юзеры, что есть в i и в i+1 одновременно
+    // никак не поменяются
+    // таких довольно много
+
+    flow_over(change);
+
+#endif
+
+#ifdef V2
+    IMPL_change_interval_len(b, i + 1, -change);
+    IMPL_change_interval_len(b, i, change);
+#endif
+
+#ifdef V1
     if (change > 0) {
         change_interval_len(b, i + 1, -change);
         change_interval_len(b, i, change);
@@ -39,12 +89,24 @@ void EgorTaskSolver::interval_flow_over() {
         change_interval_len(b, i, change);
         change_interval_len(b, i + 1, -change);
     }
+#endif
 
     if (is_good(old_metric)) {
-        //CNT_ACCEPTED_INTERVAL_FLOW_OVER++;
+
     } else {
+#ifdef V3
+        flow_over(-change);
+#endif
+
+#ifdef V2
+        IMPL_change_interval_len(b, i + 1, change);
+        IMPL_change_interval_len(b, i, -change);
+#endif
+
+#ifdef V1
         rollback();
         rollback();
+#endif
         ASSERT(old_metric == metric, "failed back score");
     }
 }

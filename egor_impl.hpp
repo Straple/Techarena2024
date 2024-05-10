@@ -113,11 +113,11 @@ vector<Interval> EgorTaskSolver::annealing(vector<Interval> reservedRBs,
 
         //977151
 
-        if (step < STEPS / 2) {
+        /*if (step < STEPS / 2) {
             METRIC_TYPE = 1;
         } else {
             METRIC_TYPE = 0;
-        }
+        }*/
 
         //TRAIN_SCORE += best_score;
 

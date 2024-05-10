@@ -30,7 +30,7 @@
 const int SELECTION_SIZE = 12;
 //SelectionRandomizer SELECTION_ACTION(SELECTION_SIZE);
 // = std::vector<int>{10, 1, 1, 1, 1, 16, 9, 6, 22, 12, 11, 30};
-int STEPS = 300;
+int STEPS = 440;
 
 const int METRIC_CNT = 1;
 int METRIC_TYPE = 0;
@@ -40,6 +40,7 @@ struct EgorTaskSolver {
     /// task data
     ///============================
 
+    //                                                    0  1  2  3  4   5  6  7   8   9  10  11
     SelectionRandomizer SELECTION_ACTION;// = vector<int>{0, 3, 1, 7, 0, 47, 0, 0, 90, 40, 23, 89};
 
     long long TRAIN_SCORE = 0;
@@ -378,7 +379,7 @@ struct EgorTaskSolver {
 
     void user_swap_eq_beam();
 
-    void user_do_remove_and_add(int u, int u2);
+    //void user_do_remove_and_add(int u, int u2);
 
     void user_remove_and_add();
 
