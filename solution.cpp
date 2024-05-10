@@ -33,7 +33,7 @@ vector<Interval> Solver(int N, int M, int K, int J, int L,
     }
 
     auto egor_answer = Solver_egor(N, M, K, J, L, reservedRBs, userInfos, artem_answer, 42,
-                                   vector<int>{0, 3, 1, 7, 0, 47, 0, 0, 90, 40, 23, 89});
+                                   vector<int>{0, 3, 1, 7, 0, 89, 0, 0, 90, 40, 23});
     //return egor_answer;
 
     auto get_egor_blocked = ans_to_blocked_ans(M, K, reservedRBs, egor_answer);

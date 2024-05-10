@@ -26,6 +26,7 @@
 void EgorTaskSolver::interval_flow_over() {
     CHOOSE_INTERVAL(i + 1 < intervals[b].size());
 
+    // TODO: доделать V3
     auto flow_over = [&](int change){
         auto xor_users = intervals[b][i].users ^ intervals[b][i+1].users;
         for(int u : xor_users){
@@ -64,7 +65,9 @@ void EgorTaskSolver::interval_flow_over() {
 
     auto old_metric = metric;
 
-#define V3
+//#define V3
+
+#define V1
 
 
 #ifdef V3

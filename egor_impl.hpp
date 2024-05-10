@@ -26,7 +26,17 @@ EgorTaskSolver::EgorTaskSolver(int NN, int MM, int KK, int JJ, int LL,
 
             //users_with_equal_beam_size[userInfos[u].beam]++;
             user_id_to_u[users_info[u].id] = u;
-            users_with_equal_beam[userInfos[u].beam].push_back(userInfos[u].id);
+            users_beam[userInfos[u].beam].push_back(u);
+        }
+
+        // TODO: можно еще для каждого beam оставить только J первых
+        for (int beam = 0; beam < 32; beam++) {
+            sort(users_beam[beam].begin(), users_beam[beam].end(), [&](int lhs, int rhs) {
+                return users_info[lhs].rbNeed > users_info[rhs].rbNeed;
+            });
+            for (int i = 0; i < users_beam[beam].size(); i++) {
+                users_info[users_beam[beam][i]].pos = i;
+            }
         }
     }
 
@@ -126,6 +136,11 @@ vector<Interval> EgorTaskSolver::annealing(vector<Interval> reservedRBs,
             break;
         }
 
+        /*cout << "STEP: "<< step << endl;
+        if(step == 61){
+            cout << "here" << endl;
+        }*/
+
         int s = SELECTION_ACTION.select();
         if (s == 0) {
             ACTION_WRAPPER(user_new_interval, 0);
@@ -138,7 +153,7 @@ vector<Interval> EgorTaskSolver::annealing(vector<Interval> reservedRBs,
         } else if (s == 4) {
             ACTION_WRAPPER(user_remove_right, 4);
         } else if (s == 5) {
-            ACTION_WRAPPER(user_swap_eq_beam, 5);
+            ACTION_WRAPPER(user_remove_and_add, 11);
         } else if (s == 6) {
             ACTION_WRAPPER(interval_increase_len, 6);
         } else if (s == 7) {
@@ -149,8 +164,6 @@ vector<Interval> EgorTaskSolver::annealing(vector<Interval> reservedRBs,
             ACTION_WRAPPER(interval_merge, 9);
         } else if (s == 10) {
             ACTION_WRAPPER(interval_split, 10);
-        } else if (s == 11) {
-            ACTION_WRAPPER(user_remove_and_add, 11);
         } else {
             ASSERT(false, "kek");
         }

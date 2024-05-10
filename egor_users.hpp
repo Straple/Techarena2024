@@ -245,6 +245,7 @@ void EgorTaskSolver::user_do_swap_eq_beam(int u, int u2) {
     swap(user_id_to_u[users_info[u].id], user_id_to_u[users_info[u2].id]);
     swap(urbNeed, u2rbNeed);
     swap(users_info[u].id, users_info[u2].id);
+    swap(users_info[u].pos, users_info[u2].pos);
 
     /*metric.accepted -= min(users_info[u].rbNeed, users_info[u].sum_len);
     metric.accepted -= min(users_info[u2].rbNeed, users_info[u2].sum_len);
@@ -262,35 +263,6 @@ void EgorTaskSolver::user_do_swap_eq_beam(int u, int u2) {
 
     metric.overflow += max(0, users_info[u].sum_len - users_info[u].rbNeed);
     metric.overflow += max(0, users_info[u2].sum_len - users_info[u2].rbNeed);*/
-}
-
-void EgorTaskSolver::user_swap_eq_beam() {
-    for (int beam = 0; beam < 32; beam++) {
-        // (sum_len, u)
-        vector<pair<int, int>> ups;
-        for (int u_id: users_with_equal_beam[beam]) {
-            int u = user_id_to_u[u_id];
-            ups.push_back({users_info[u].sum_len, u});
-        }
-        // без 981236
-        shuffle(ups.begin(), ups.end(), rnd.generator);// 981748
-        //sort(ups.begin(), ups.end()); // 981683
-        for (int i = 0; i + 1 < ups.size(); i++) {
-            int u = ups[i].second;
-            int u2 = ups[i + 1].second;
-
-            auto old_metric = metric;
-
-            user_do_swap_eq_beam(u, u2);
-
-            if (is_good(old_metric)) {
-
-            } else {
-                user_do_swap_eq_beam(u, u2);
-                ASSERT(old_metric == metric, "failed back score");
-            }
-        }
-    }
 }
 
 /*void EgorTaskSolver::user_do_remove_and_add(int u, int u2) {

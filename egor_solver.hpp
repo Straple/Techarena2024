@@ -27,10 +27,10 @@
 //TEST CASE: K=4 | tests: 0 | score: -nan% | 0/0 | time: 0ms | max_time: 0ms | mean_time: 0ms
 //TOTAL: tests: 1000 | score: 98.8324% | 981383/992977 | time: 56449.8ms | max_time: 93.13ms | mean_time: 56.4498ms
 
-const int SELECTION_SIZE = 12;
+const int SELECTION_SIZE = 11;
 //SelectionRandomizer SELECTION_ACTION(SELECTION_SIZE);
 // = std::vector<int>{10, 1, 1, 1, 1, 16, 9, 6, 22, 12, 11, 30};
-int STEPS = 440;
+int STEPS = 660;
 
 const int METRIC_CNT = 1;
 int METRIC_TYPE = 0;
@@ -40,8 +40,8 @@ struct EgorTaskSolver {
     /// task data
     ///============================
 
-    //                                                    0  1  2  3  4   5  6  7   8   9  10  11
-    SelectionRandomizer SELECTION_ACTION;// = vector<int>{0, 3, 1, 7, 0, 47, 0, 0, 90, 40, 23, 89};
+    //                                                    0  1  2  3  4   5  6  7   8   9  10
+    SelectionRandomizer SELECTION_ACTION;// = vector<int>{0, 3, 1, 7, 0, 89, 0, 0, 90, 40, 23};
 
     long long TRAIN_SCORE = 0;
 
@@ -85,13 +85,15 @@ struct EgorTaskSolver {
         int rbNeed = -1;
         int beam = -1;
 
+        int pos = -1;
+
         // score
         int sum_len = 0;
     };
 
     vector<MyUserInfo> users_info;
 
-    vector<int> users_with_equal_beam[32];
+    vector<int> users_beam[32];
 
     vector<int> user_id_to_u;
 
@@ -156,6 +158,8 @@ struct EgorTaskSolver {
     ///===========================
     ///===========ACTIONS=========
     ///===========================
+
+    void change_user_len(int u, int c);
 
     void IMPL_change_interval_len(int b, int i, int c);
 
@@ -376,8 +380,6 @@ struct EgorTaskSolver {
     void user_new_interval();
 
     void user_do_swap_eq_beam(int u, int u2);
-
-    void user_swap_eq_beam();
 
     //void user_do_remove_and_add(int u, int u2);
 
