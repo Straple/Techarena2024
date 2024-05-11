@@ -634,7 +634,7 @@ void optimize(int N, int M, int K, int J, int L,
         }
     }
 
-    if (do_it) {
+    if (true) {
 
         auto pre_reserved = reservedRBs;
         sort(pre_reserved.begin(), pre_reserved.end(), [&](auto const &lhs, auto const &rhs) {
@@ -649,6 +649,13 @@ void optimize(int N, int M, int K, int J, int L,
                 free_spaces;
 
         vector<pair<int, int>> space_sizes;
+        std::vector<std::vector<int>>pre_placed(solution.size());
+        std::vector<set<int>>pre_placed_beams(solution.size());
+        std::vector<int>pre_start_sizes(solution.size());
+        bool new_version = do_it;
+        std::vector<bool>was_empty_space(solution.size(), false);
+        std::vector<bool>was_full_interval(solution.size(), false); // we took whole interval to free space
+        set<int>ignore_those;
         {
 
             std::vector<pair<int,int>>start_ends;
@@ -708,18 +715,37 @@ void optimize(int N, int M, int K, int J, int L,
             //                return lhs[0].start < rhs[0].start;
             //            });
 
+            if (new_version){
 
+            }
             vector<int> pre_supplied(N, 0);
             for (int i = 0; i < solution.size(); i++) {
+                pre_start_sizes[i] = solution[i].size();
+            }
+            for (int i = 0; i < solution.size(); i++) {
                 int ma = 0;
+
                 for (int g = 0; g < solution[i].size(); g++) {
                     int cur_len = solution[i][g].end - solution[i][g].start;
                     for (auto user_id: solution[i][g].users) {
                         if (g + 1 == solution[i].size()) {
+
                             //ma = max(ma, userInfos[user_id].rbNeed - pre_supplied[user_id]);
                             //                            if (pre_supplied[user_id] + cur_len >= userInfos[user_id].rbNeed) { // ÃÅ“ÃÅ¾Ãâ€“Ãâ€¢ÃÅ“ ÃÂ£Ãâ€ºÃÂ£ÃÂ§ÃÂ¨ÃËœÃÂ¢ÃÂ¬
-                            ma = max(ma, userInfos[user_id].rbNeed - pre_supplied[user_id]);
-                            ma = min(ma, cur_len);
+                            if (new_version){
+
+                                if (userInfos[user_id].rbNeed - pre_supplied[user_id] >= cur_len){
+                                    pre_placed_beams[i].insert(userInfos[user_id].beam);
+                                    ignore_those.insert(user_id);
+                                    pre_placed[i].push_back(user_id);
+                                } else {
+                                    ma = max(ma, userInfos[user_id].rbNeed - pre_supplied[user_id]);
+                                    ma = min(ma, cur_len); // shouldn't be possible
+                                }
+                            } else {
+                                ma = max(ma, userInfos[user_id].rbNeed - pre_supplied[user_id]);
+                                ma = min(ma, cur_len);
+                            }
                             //                            }
                         } else {
                             pre_supplied[user_id] += cur_len;
@@ -729,12 +755,23 @@ void optimize(int N, int M, int K, int J, int L,
                 //ma = max(0,ma);
 
                 if (solution[i].size() != 0) {
-                    if (ma > 0) {
+
+                    if (ma > 0) { // can turn off?
+                        ASSERT(start_ends[i].second - solution[i].back().start - ma >= 0, "W");
                         solution[i].back().end = solution[i].back().start + ma;
-                        free_spaces.insert({space_sizes[i].first - solution[i].back().start - ma, i});
+                        free_spaces.insert({start_ends[i].second - solution[i].back().start - ma, i});
+                    } else {
+                        // doesnt change score. Strange
+//                        cout << "HERE" << endl;
+                        ASSERT(start_ends[i].second - solution[i].back().start - ma >= 0, "STRANGE");
+                        free_spaces.insert({start_ends[i].second - solution[i].back().start - ma, i});
+                        was_full_interval[i] = true;
+                        solution[i].pop_back();
                     }
                 } else {
                     ASSERT(space_sizes[i].first > 0, "kek");
+                    was_empty_space[i] = true;
+                    was_full_interval[i] = true;
                     free_spaces.insert({space_sizes[i].first, i});
                 }
             }
@@ -767,14 +804,19 @@ void optimize(int N, int M, int K, int J, int L,
             start_sizes[i] = solution[i].size();
             keep_or_not[i] = std::vector<bool>(solution[i].size(), true);
         }
-
+        int iter = 0;
+        std::vector<bool>ever_picked(solution.size(), false);
         while (!space_left_q.empty()) {
+            iter++;
             int space_left = space_left_q.begin()->first;
             int pick_i = space_left_q.begin()->second;
             space_left_q.erase(space_left_q.begin());
             int curr = current_sub_interval[pick_i];
+            if (iter == 2){
 
-            if (curr >= start_sizes[pick_i]) {
+            }
+
+            if (curr >= start_sizes[pick_i]) { // +1
 
                 continue;
             }
@@ -792,8 +834,7 @@ void optimize(int N, int M, int K, int J, int L,
                 //                break;
                 //            }
                 if (!activeUsers[pick_i].count(user_id)) {
-                    if (activeBeams[pick_i].count(userInfos[user_id].beam) ||
-                        already >= L) {// BETTER SOLUTION POSSIBLE
+                    if (activeBeams[pick_i].count(userInfos[user_id].beam) || already >= L) {// BETTER SOLUTION POSSIBLE
                         if (ma_ind[user_id] - mi_ind[user_id] > 0) {
                             force_hold = true;
                             break;
@@ -814,7 +855,12 @@ void optimize(int N, int M, int K, int J, int L,
 
             map<pair<int, int>, int> place_get_amount;
             bool can_place_all = true;
+            int picked = -1;
+            std::vector<int>candidates_placed_in_theor_interval(solution.size(), 0);
             for (int user_id: need_to_find_new) {
+                if (ignore_those.count(user_id)){
+                    can_place_all = false;
+                }
                 bool placed = false;
                 for (auto &place_to_get: possible_pre_free_spaces[userInfos[user_id].beam]) {
                     int place_to_get_len = solution[place_to_get.first][place_to_get.second].end - solution[place_to_get.first][place_to_get.second].start;
@@ -831,13 +877,34 @@ void optimize(int N, int M, int K, int J, int L,
                     if (free_spaces.empty()) {
                         can_place_all = false;
                     } else {
-                        int sz = free_spaces.begin()->first;
-                        if (sz < userInfos[user_id].rbNeed) {
-                            can_place_all = false;
+                        if (new_version){
+                            int can_place_this = false;
+                            for (auto& free_space: free_spaces){
+                                if (picked != -1 and free_space.second != picked) continue;
+                                if (userInfos[user_id].rbNeed <= free_space.first) {
+                                    if (pre_placed_beams[free_space.second].count(userInfos[user_id].beam) == 0 && pre_placed[free_space.second].size() + candidates_placed_in_theor_interval[free_space.second] < L) {
+                                        can_place_this = true;
+                                        candidates_placed_in_theor_interval[free_space.second]++;
+                                        picked = free_space.second;
+                                        break;
+                                    }
+                                } else {
+                                    break ; // CORRECT?
+                                }
+                            }
+                            if (!can_place_this){
+                                can_place_all = false;
+                            }
                         } else {
-                            can_place_all = true;
+                            int sz = free_spaces.begin()->first;
+
+                            if (sz < userInfos[user_id].rbNeed) {
+                                can_place_all = false;
+                            } else {
+                                can_place_all = true;
+                            }
+                            break;
                         }
-                        break;
                     }
                 }
             }
@@ -864,30 +931,84 @@ void optimize(int N, int M, int K, int J, int L,
                         if (free_spaces.empty()) {
                             ASSERT(false, "false");
                         } else {
-                            int sz = free_spaces.begin()->first;
-                            if (sz < userInfos[user_id].rbNeed) {
-                                ASSERT(false, "false");
-                            } else {
+                            if (new_version){
+                                {
+                                    int sz = free_spaces.begin()->first;
+                                    ASSERT(userInfos[user_id].rbNeed <= free_spaces.begin()->first, "STRANGE");
+                                }
                                 int user_need = userInfos[user_id].rbNeed;
-                                int picked_free_place_donor = free_spaces.begin()->second;
+                                int picked_free_place_donor = -1;
+                                pair<int,int>free_space_picked;
+
+                                for (auto& free_space: free_spaces){
+
+                                    if (userInfos[user_id].rbNeed <= free_space.first) {
+                                        if (pre_placed_beams[free_space.second].count(userInfos[user_id].beam) == 0 && pre_placed[free_space.second].size() < L) {
+                                            picked_free_place_donor = free_space.second;
+                                            free_space_picked = free_space;
+                                            break;
+                                        }
+                                    }
+                                }
+
+                                if (picked_free_place_donor < 0){
+
+                                }
+                                ASSERT(picked_free_place_donor >= 0, "NOT PICKED? WTF!!");
+
                                 if (solution[picked_free_place_donor].empty()) {
-                                    solution[picked_free_place_donor].push_back({space_sizes[picked_free_place_donor].second, space_sizes[picked_free_place_donor].second + user_need, {}});
+                                    solution[picked_free_place_donor].push_back({space_sizes[picked_free_place_donor].second, space_sizes[picked_free_place_donor].second + user_need, pre_placed[picked_free_place_donor]});
                                 } else {
                                     solution[picked_free_place_donor].push_back(
                                             {solution[picked_free_place_donor].back().end,
                                              solution[picked_free_place_donor].back().end + user_need,
-                                             {}});
+                                             pre_placed[picked_free_place_donor]});
                                 }
-                                free_spaces.erase(free_spaces.begin());
-                                free_spaces.insert({sz - user_need, picked_free_place_donor});
-                                ASSERT(sz - user_need >= 0, "kek");
+                                free_spaces.erase(free_space_picked);
+                                //if (free_space_picked.first - user_need > 0) {
+                                    free_spaces.insert({free_space_picked.first - user_need, picked_free_place_donor});
+                                // }
+                                ever_picked[picked_free_place_donor] = true;
                                 solution[picked_free_place_donor].back().users.push_back(user_id);
-                                for (int beam: uniq_beams) {// if L != 1
-                                    if (beam != userInfos[user_id].beam) {
 
+                                for (int beam: uniq_beams) {// if L != 1
+                                    if (beam != userInfos[user_id].beam && pre_placed_beams[picked_free_place_donor].count(beam) == 0) {
                                         possible_pre_free_spaces[beam].insert({picked_free_place_donor,
                                                                                solution[picked_free_place_donor].size() -
                                                                                        1});
+                                    }
+                                }
+                                if (solution[picked_free_place_donor].back().users.size() == L){
+                                    for (auto beam: uniq_beams) {
+                                        possible_pre_free_spaces[beam].erase({picked_free_place_donor, solution[picked_free_place_donor].size()-1});
+                                    }
+                                }
+                            } else {
+                                int sz = free_spaces.begin()->first;
+                                if (sz < userInfos[user_id].rbNeed) {
+                                    ASSERT(false, "false");
+                                } else {
+                                    int user_need = userInfos[user_id].rbNeed;
+                                    int picked_free_place_donor = free_spaces.begin()->second;
+                                    if (solution[picked_free_place_donor].empty()) {
+                                        solution[picked_free_place_donor].push_back({space_sizes[picked_free_place_donor].second, space_sizes[picked_free_place_donor].second + user_need, {}});
+                                    } else {
+                                        solution[picked_free_place_donor].push_back(
+                                                {solution[picked_free_place_donor].back().end,
+                                                 solution[picked_free_place_donor].back().end + user_need,
+                                                 {}});
+                                    }
+                                    free_spaces.erase(free_spaces.begin());
+                                    free_spaces.insert({sz - user_need, picked_free_place_donor});
+                                    ASSERT(sz - user_need >= 0, "kek");
+                                    solution[picked_free_place_donor].back().users.push_back(user_id);
+                                    for (int beam: uniq_beams) {// if L != 1
+                                        if (beam != userInfos[user_id].beam) {
+
+                                            possible_pre_free_spaces[beam].insert({picked_free_place_donor,
+                                                                                   solution[picked_free_place_donor].size() -
+                                                                                           1});
+                                        }
                                     }
                                 }
                             }
@@ -939,6 +1060,7 @@ void optimize(int N, int M, int K, int J, int L,
             space_left_q.insert({space_left - curr_len, pick_i});
         }
         std::set<pair<int, int>, greater<>> new_empty;
+
         for (auto [rbNeed, user_id]: empty) {
             if (!possible_pre_free_spaces[userInfos[user_id].beam].empty()) {
                 auto place_to_get = *possible_pre_free_spaces[userInfos[user_id].beam].begin();
@@ -948,6 +1070,9 @@ void optimize(int N, int M, int K, int J, int L,
                     }
                 }
                 solution[place_to_get.first][place_to_get.second].users.push_back(user_id);
+                if (solution[place_to_get.first][place_to_get.second].users.size() > L){
+
+                }
                 ASSERT(solution[place_to_get.first][place_to_get.second].users.size() <= L, "kek");
                 possible_pre_free_spaces[userInfos[user_id].beam].erase(place_to_get);
                 if (solution[place_to_get.first][place_to_get.second].users.size() == L) {
@@ -962,6 +1087,52 @@ void optimize(int N, int M, int K, int J, int L,
         empty = new_empty;
 
         std::vector<std::vector<Interval>> new_intervals(solution.size());
+        if (new_version) {
+
+            for (auto free_space: free_spaces) {
+                if (was_empty_space[free_space.second]) continue;
+                if (free_space.first > 0) {
+                    int picked_free_place_donor = free_space.second;
+                    int minus = 0;
+                    for (int g = 0; g < start_sizes[picked_free_place_donor]; g++) {
+                        if (!keep_or_not[picked_free_place_donor][g]) {
+                            minus++;
+                        }
+                    }
+
+                    if (!ever_picked[picked_free_place_donor] && was_full_interval[picked_free_place_donor]){
+
+                        if (solution[picked_free_place_donor].empty()) {
+                            solution[picked_free_place_donor].push_back({space_sizes[picked_free_place_donor].second, space_sizes[picked_free_place_donor].second + free_space.first, pre_placed[picked_free_place_donor]});
+                        } else {
+                            solution[picked_free_place_donor].push_back(
+                                    {solution[picked_free_place_donor].back().end,
+                                     solution[picked_free_place_donor].back().end + free_space.first,
+                                     pre_placed[picked_free_place_donor]});
+                        }
+                    } else {
+                            solution[picked_free_place_donor].back().end+=free_space.first;
+                    }
+
+//                    if (solution[picked_free_place_donor].size()-minus < pre_start_sizes[picked_free_place_donor]) {
+//
+//                        //ASSERT(solution[picked_free_place_donor].size()-minus+1 == pre_start_sizes[picked_free_place_donor], "NOT EQUAL WTF");
+//
+//                        if (solution[picked_free_place_donor].empty()) {
+//                            solution[picked_free_place_donor].push_back({space_sizes[picked_free_place_donor].second, space_sizes[picked_free_place_donor].second + free_space.first, pre_placed[picked_free_place_donor]});
+//                        } else {
+//                            solution[picked_free_place_donor].push_back(
+//                                    {solution[picked_free_place_donor].back().end,
+//                                     solution[picked_free_place_donor].back().end + free_space.first,
+//                                     pre_placed[picked_free_place_donor]});
+//                        }
+//                    } else {
+//                        solution[picked_free_place_donor].back().end+=free_space.first;
+//                    }
+                }
+            }
+
+        }
         for (int i = 0; i < solution.size(); i++) {
             for (int g = 0; g < start_sizes[i]; g++) {
                 if (keep_or_not[i][g]) {
@@ -974,6 +1145,7 @@ void optimize(int N, int M, int K, int J, int L,
         }
         //        new_intervals[0].back().end = M;
         solution = new_intervals;
+
     }
 
     //    std::vector<int>supplied(N,0);
@@ -1010,7 +1182,7 @@ vector<Interval> Solver_Artem_grad(int N, int M, int K, int J, int L,
     int biggest_score = -1;
     int biggest_index = -1;
     for (int i = 0; i < anses.size(); i++) {
-        optimize(N, M, K, J, L, reservedRBs, userInfos, anses[i]);
+        optimize(N, M, K, J, L, reservedRBs, userInfos, anses[i], false);
         int score = get_solution_score_light(N, anses[i], userInfos, suplied);
         if (score > biggest_score) {
             biggest_score = score;
