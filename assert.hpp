@@ -3,7 +3,7 @@
 #include <iostream>
 
 ///////// !!!
-//#define MY_DEBUG_MODE
+#define MY_DEBUG_MODE
 ///////// !!!
 
 #ifdef MY_DEBUG_MODE

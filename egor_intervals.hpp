@@ -328,7 +328,7 @@ void EgorTaskSolver::interval_split() {
             remove_user_in_interval(u, b, i+1);
         }
         else{
-            ASSERT(false, "kek");
+            //ASSERT(false, "kek");
         }
     }
 
@@ -398,10 +398,10 @@ void EgorTaskSolver::interval_split() {
         user_do_new_interval(u);
     }*/
 
-    //if (is_good(old_metric)) {
+    if (is_good(old_metric)) {
         //CNT_ACCEPTED_INTERVAL_SPLIT++;
-    //} else {
-    //    rollback(old_actions_size);
-    //    ASSERT(old_metric == metric, "failed back score");
-    //}
+    } else {
+        rollback(old_actions_size);
+        ASSERT(old_metric == metric, "failed back score");
+    }
 }
