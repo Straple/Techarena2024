@@ -35,6 +35,18 @@ int STEPS = 1300;
 const int METRIC_CNT = 1;
 int METRIC_TYPE = 0;
 
+static int frame_id = 0;
+
+#define SNAP_ACTION(action_foo)\
+SNAP(snapshoter.write(get_total_answer(), "annealing:" \
+"\naccepted: " + to_string(metric.accepted) +  \
+"\nfree_space: " + to_string(metric.free_space) +                    \
+"\noverflow: " + to_string(metric.overflow) +  \
+"\nunused_space: " + to_string(metric.unused_space) +                \
+"\nvertical_free_space: " + to_string(metric.vertical_free_space) +  \
+"\nframe_id: " + to_string(frame_id++) +               \
+"\n" + (action_foo)))
+
 struct EgorTaskSolver {
     ///============================
     /// task data
@@ -138,6 +150,8 @@ struct EgorTaskSolver {
         // затем выкидываем длины зарезервированных
         long long unused_space = 0;
 
+        long long vertical_free_space = 0;
+
         friend bool operator==(Metric lhs, Metric rhs) {
             return lhs.accepted == rhs.accepted &&
                    lhs.free_space == rhs.free_space &&
@@ -193,6 +207,8 @@ struct EgorTaskSolver {
 
     [[nodiscard]] Metric get_metric() const;
 
+    [[nodiscard]] long long get_vertical_free_space(int b, int i) const;
+
     ///==========================
     ///===========RANDOM=========
     ///==========================
@@ -211,7 +227,22 @@ struct EgorTaskSolver {
 
         // 979437 -> 980155 -> 980332 -> 980459
         auto calc_f = [&](Metric m) {
-            return 100 * m.accepted - 10 * m.unused_space - m.overflow - m.free_space;
+            //STEPS: 1000
+            //TEST CASE: K=0 | tests: 666 | score: 99.2499% | 647449/652342 | time: 2418.2ms | max_time: 15.081ms | mean_time: 3.63093ms
+            //TEST CASE: K=1 | tests: 215 | score: 98.0825% | 211974/216118 | time: 1502.41ms | max_time: 15.594ms | mean_time: 6.98797ms
+            //TEST CASE: K=2 | tests: 80 | score: 97.7954% | 77541/79289 | time: 803.128ms | max_time: 19.448ms | mean_time: 10.0391ms
+            //TEST CASE: K=3 | tests: 39 | score: 96.7343% | 43751/45228 | time: 375.988ms | max_time: 14.503ms | mean_time: 9.64072ms
+            //TEST CASE: K=4 | tests: 0 | score: -nan% | 0/0 | time: 0ms | max_time: 0ms | mean_time: 0ms
+            //TOTAL: tests: 1000 | score: 98.7651% | 980715/992977 | time: 5099.73ms | max_time: 19.448ms | mean_time: 5.09973ms
+            //return 100 * m.accepted;
+
+            //980680
+            //return 10'000 * m.accepted - m.unused_space;
+
+            //1682
+            return 10'000 * m.accepted + m.vertical_free_space;
+
+            return 100 * m.accepted - 10 * m.unused_space - m.overflow - m.free_space - m.vertical_free_space * 2;
 
             //add score: 0 897 417
             if (METRIC_TYPE == 0) {
@@ -526,4 +557,5 @@ struct EgorTaskSolver {
 
 vector<Interval> Solver_egor(int N, int M, int K, int J, int L,
                              const vector<Interval> &reservedRBs,
-                             const vector<UserInfo> &userInfos, const std::vector<Interval> &solution, int random_seed, vector<int> powers);
+                             const vector<UserInfo> &userInfos, const std::vector<Interval> &solution, int random_seed,
+                             vector<int> powers);

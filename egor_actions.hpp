@@ -121,12 +121,16 @@ void EgorTaskSolver::change_user_len(int u, int c) {
 
 void EgorTaskSolver::IMPL_change_interval_len(int b, int i, int c) {
     auto &interval = intervals[b][i];
+
+    metric.vertical_free_space -= get_vertical_free_space(b, i);
+
     for (int u: interval.users) {
         change_user_len(u, c);
     }
     interval.len += c;
     metric.free_space += c * (L - interval.users.size());
     metric.unused_space -= c;
+    metric.vertical_free_space += get_vertical_free_space(b, i);
     ASSERT(0 <= interval.len, "invalid interval");
 }
 
@@ -139,6 +143,8 @@ void EgorTaskSolver::change_interval_len(int b, int i, int c) {
 void EgorTaskSolver::IMPL_add_user_in_interval(int u, int b, int i) {
     auto &interval = intervals[b][i];
     auto &user = users_info[u];
+
+    metric.vertical_free_space -= get_vertical_free_space(b, i);
 
     ASSERT(interval.users.size() + 1 <= L, "failed add");
     ASSERT(!interval.users.contains(u), "user already contains");
@@ -156,6 +162,7 @@ void EgorTaskSolver::IMPL_add_user_in_interval(int u, int b, int i) {
     interval.beam_msk ^= (uint32_t(1) << user.beam);
 
     metric.free_space -= interval.len;
+    metric.vertical_free_space += get_vertical_free_space(b, i);
 }
 
 void EgorTaskSolver::add_user_in_interval(int u, int b, int i) {
@@ -171,6 +178,7 @@ void EgorTaskSolver::IMPL_remove_user_in_interval(int u, int b, int i) {
     ASSERT(interval.users.contains(u), "user no contains");
     ASSERT(((interval.beam_msk >> users_info[u].beam) & 1) == 1, "user no contains");
 
+    metric.vertical_free_space -= get_vertical_free_space(b, i);
     change_user_len(u, -interval.len);
     /*metric.accepted -= min(user.rbNeed, user.sum_len);
     metric.overflow -= max(0, user.sum_len - user.rbNeed);
@@ -184,6 +192,7 @@ void EgorTaskSolver::IMPL_remove_user_in_interval(int u, int b, int i) {
     interval.beam_msk ^= (uint32_t(1) << user.beam);
 
     metric.free_space += interval.len;
+    metric.vertical_free_space += get_vertical_free_space(b, i);
 }
 
 void EgorTaskSolver::remove_user_in_interval(int u, int b, int i) {

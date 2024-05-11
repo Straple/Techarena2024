@@ -126,6 +126,8 @@ void EgorTaskSolver::user_do_new_interval(int u) {
     for (int i = best_l; i <= best_r; i++) {
         add_user_in_interval(u, best_b, i);
     }
+
+    SNAP_ACTION("user_new_interval " + to_string(u) + " " + to_string(best_b) + " " + to_string(best_l) + " " + to_string(best_r));
 }
 
 void EgorTaskSolver::user_new_interval() {
@@ -139,7 +141,7 @@ void EgorTaskSolver::user_new_interval() {
     user_do_new_interval(u);
 
     if (is_good(old_metric)) {
-        //CNT_ACCEPTED_USER_NEW_INTERVAL++;
+        SNAP_ACTION("user_new_interval " + to_string(u) + " accepted");
     } else {
         rollback(old_actions_size);
         ASSERT(old_metric == metric, "failed back score");
@@ -151,7 +153,7 @@ void EgorTaskSolver::user_add_left() {
 
     USER_FOR_BEGIN(l > 0 &&
                    intervals[b][l - 1].users.size() < L &&
-                   ((intervals[b][l - 1].beam_msk >> users_info[u].beam) & 1) == 0)
+                   ((intervals[b][l - 1].beam_msk >> users_info[u].beam) & 1) == 0);
 
     l--;
 
@@ -159,8 +161,10 @@ void EgorTaskSolver::user_add_left() {
 
     add_user_in_interval(u, b, l);
 
+    SNAP_ACTION("user_add_left " + to_string(u) + " " + to_string(b) + " " + to_string(l));
+
     if (is_good(old_metric)) {
-        //CNT_ACCEPTED_USER_ADD_LEFT++;
+        SNAP_ACTION("user_add_left " + to_string(u) + " " + to_string(b) + " " + to_string(l) + " accepted");
     } else {
         rollback();
         ASSERT(old_metric == metric, "failed back score");
@@ -181,8 +185,10 @@ void EgorTaskSolver::user_add_right() {
 
     add_user_in_interval(u, b, r);
 
+    SNAP_ACTION("user_add_right " + to_string(u) + " " + to_string(b) + " " + to_string(r));
+
     if (is_good(old_metric)) {
-        //CNT_ACCEPTED_USER_ADD_RIGHT++;
+        SNAP_ACTION("user_add_right " + to_string(u) + " " + to_string(b) + " " + to_string(r) + " accepted");
     } else {
         rollback();
         ASSERT(old_metric == metric, "failed back score");
@@ -198,9 +204,10 @@ void EgorTaskSolver::user_remove_left() {
     auto old_metric = metric;
 
     remove_user_in_interval(u, b, l);
+    SNAP_ACTION("user_remove_left " + to_string(u) + " " + to_string(b) + " " + to_string(l));
 
     if (is_good(old_metric)) {
-        //CNT_ACCEPTED_USER_REMOVE_LEFT++;
+        SNAP_ACTION("user_remove_left " + to_string(u) + " " + to_string(b) + " " + to_string(l) + " accepted");
     } else {
         rollback();
         ASSERT(old_metric == metric, "failed back score");
@@ -217,9 +224,10 @@ void EgorTaskSolver::user_remove_right() {
     auto old_metric = metric;
 
     remove_user_in_interval(u, b, r);
+    SNAP_ACTION("user_remove_right " + to_string(u) + " " + to_string(b) + " " + to_string(r));
 
     if (is_good(old_metric)) {
-        //CNT_ACCEPTED_USER_REMOVE_RIGHT++;
+        SNAP_ACTION("user_remove_right " + to_string(u) + " " + to_string(b) + " " + to_string(r) + " accepted");
     } else {
         rollback();
         ASSERT(old_metric == metric, "failed back score");
@@ -319,8 +327,10 @@ void EgorTaskSolver::user_remove_and_add() {
         user_do_new_interval(u);
         user_do_new_interval(u2);
 
-        if (is_good(old_metric)) {
+        SNAP_ACTION("user_remove_and_add " + to_string(u) + " " + to_string(u));
 
+        if (is_good(old_metric)) {
+            SNAP_ACTION("user_remove_and_add " + to_string(u) + " " + to_string(u) + " accepted");
         } else {
 
             auto [new_b, new_l, new_r] = get_user_position(u);

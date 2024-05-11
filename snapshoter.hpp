@@ -30,8 +30,8 @@ public:
         fs::create_directory(_write_directory);
         init = true;
     }
-    void write(const std::vector<std::vector<Interval>> &intervals, const string &frame_name = "") {
-        write(unblock_ans(intervals), frame_name);
+    void write(const std::vector<std::vector<Interval>> &intervals, const string &frame_name = "", bool combine_same = true) {
+        write(unblock_ans(intervals), frame_name, combine_same);
     }
     bool same_as_last(std::vector<Interval> intervals) {
         sort(intervals.begin(), intervals.end(), [&](const auto &lhs, const auto &rhs) {
@@ -55,17 +55,12 @@ public:
         return true;
     }
 
-    void write(const std::vector<Interval> &intervals, const string &frame_name = "", int custom_score = -1) {
-        if (same_as_last(intervals)) return;
+    void write(const std::vector<Interval> &intervals, const string &frame_name = "", bool combine_same = true) {
+        if (same_as_last(intervals) && combine_same) return;
         last_intervals = intervals;
 
         frame_names.push_back(frame_name);
-        int score = 0;
-        if (custom_score != -1) {
-            score = custom_score;
-        } else {
-            score = get_solution_score(test_data, intervals);
-        }
+        int score = get_solution_score(test_data, intervals);
         scores.push_back(score);
         std::ofstream out(_write_directory + to_string(frame) + ".txt");
         out << intervals.size() << endl;
@@ -78,7 +73,7 @@ public:
             out << endl;
         }
         out.close();
-        cout << "UPDATING FRAME: " << frame << endl;
+        // cout << "UPDATING FRAME: " << frame << endl;
         frame++;
     }
     ~Snapshoter() {
@@ -110,7 +105,7 @@ public:
 };
 Snapshoter snapshoter;
 
-//#define ENABLE_SNAPSHOT
+#define ENABLE_SNAPSHOT
 
 #ifdef ENABLE_SNAPSHOT
 #define SNAP(x) x
