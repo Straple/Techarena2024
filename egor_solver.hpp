@@ -39,13 +39,13 @@ static int frame_id = 0;
 
 #define SNAP_ACTION(action_foo)\
 SNAP(snapshoter.write(get_total_answer(), "annealing:" \
-"\naccepted: " + to_string(metric.accepted) +  \
-"\nfree_space: " + to_string(metric.free_space) +                    \
-"\noverflow: " + to_string(metric.overflow) +  \
-"\nunused_space: " + to_string(metric.unused_space) +                \
-"\nvertical_free_space: " + to_string(metric.vertical_free_space) +  \
-"\nframe_id: " + to_string(frame_id++) +               \
-"\n" + (action_foo)))
+"\\naccepted: " + to_string(metric.accepted) +  \
+"\\nfree_space: " + to_string(metric.free_space) +                    \
+"\\noverflow: " + to_string(metric.overflow) +  \
+"\\nunused_space: " + to_string(metric.unused_space) +                \
+"\\nvertical_free_space: " + to_string(metric.vertical_free_space) +  \
+"\\nframe_id: " + to_string(frame_id++) +               \
+"\\n" + (action_foo)))
 
 struct EgorTaskSolver {
     ///============================

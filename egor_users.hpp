@@ -327,10 +327,10 @@ void EgorTaskSolver::user_remove_and_add() {
         user_do_new_interval(u);
         user_do_new_interval(u2);
 
-        SNAP_ACTION("user_remove_and_add " + to_string(u) + " " + to_string(u));
+        SNAP_ACTION("user_remove_and_add " + to_string(u) + " " + to_string(u2));
 
         if (is_good(old_metric)) {
-            SNAP_ACTION("user_remove_and_add " + to_string(u) + " " + to_string(u) + " accepted");
+            SNAP_ACTION("user_remove_and_add " + to_string(u) + " " + to_string(u2) + " accepted");
         } else {
 
             auto [new_b, new_l, new_r] = get_user_position(u);

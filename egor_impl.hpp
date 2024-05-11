@@ -210,7 +210,7 @@ vector<Interval> EgorTaskSolver::annealing(vector<Interval> reservedRBs,
 
         actions.clear();
 
-        SNAP(snapshoter.write(get_total_answer(), "annealing"));
+        //SNAP(snapshoter.write(get_total_answer(), "annealing"));
     }
 
 #ifdef SAVE_BEST_ANS
