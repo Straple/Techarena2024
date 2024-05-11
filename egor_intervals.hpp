@@ -61,8 +61,60 @@ void EgorTaskSolver::interval_flow_over() {
     };
 
     int change = rnd.get(-intervals[b][i].len, intervals[b][i + 1].len);
+    /*int change = 0;
+
+    auto and_users = intervals[b][i].users & intervals[b][i + 1].users;
+    auto left_end_right = intervals[b][i].users ^ and_users;
+    auto right_end_left = intervals[b][i + 1].users ^ and_users;
+
+    auto right_end_right = and_users;
+    if (i + 2 < intervals[b].size()) {
+        right_end_right = right_end_right & (right_end_right ^ intervals[b][i + 2].users);
+    }
+
+    auto left_end_left = and_users;
+    if (i > 0) {
+        left_end_left = left_end_left & (left_end_left ^ intervals[b][i - 1].users);
+    }
+
+    {
+        int best_f = -1e9;
+        for (int c = -intervals[b][i].len; c <= intervals[b][i + 1].len; c++) {
+            int left_len = intervals[b][i].len + c;
+            int right_len = intervals[b][i + 1].len - c;
+
+            int overflow = 0;
+            int free_space = 0;
+
+            for (int u: left_end_right) {
+                overflow += max(0, users_info[u].sum_len + c - users_info[u].rbNeed);
+            }
+            for (int u: right_end_left) {
+                overflow += max(0, users_info[u].sum_len - c - users_info[u].rbNeed);
+            }
+
+            for (int u: right_end_right) {
+                if (users_info[u].rbNeed <= users_info[u].sum_len - right_len) {
+                    free_space += right_len;
+                }
+            }
+            for(int u : left_end_left){
+                if (users_info[u].rbNeed <= users_info[u].sum_len - left_len) {
+                    free_space += left_len;
+                }
+            }
+
+            int cur_f = -free_space + overflow;
+
+            if (cur_f > best_f) {
+                best_f = cur_f;
+                change = c;
+            }
+        }
+    }*/
 
     auto old_metric = metric;
+    int old_actions_size = actions.size();
 
     //#define V3
 
@@ -91,6 +143,19 @@ void EgorTaskSolver::interval_flow_over() {
         change_interval_len(b, i, change);
         change_interval_len(b, i + 1, -change);
     }
+    // было 980452
+
+    /*for (int u: right_end_right) {
+        if (users_info[u].rbNeed <= users_info[u].sum_len) {
+            remove_user_in_interval(u, b, i+1);
+        }
+    }
+    for(int u : left_end_left){
+        if (users_info[u].rbNeed <= users_info[u].sum_len) {
+            remove_user_in_interval(u, b, i);
+        }
+    }*/
+
 #endif
 
     if (is_good(old_metric)) {
@@ -106,8 +171,9 @@ void EgorTaskSolver::interval_flow_over() {
 #endif
 
 #ifdef V1
-        rollback();
-        rollback();
+        rollback(old_actions_size);
+        //rollback();
+        //rollback();
 #endif
         ASSERT(old_metric == metric, "failed back score");
     }
@@ -203,8 +269,6 @@ void EgorTaskSolver::interval_do_merge(int b, int i) {
 }
 
 void EgorTaskSolver::interval_do_split(int b, int i, int right_len) {
-    //CNT_CALL_INTERVAL_DO_SPLIT++;
-
     insert_interval(b, i + 1);
     change_interval_len(b, i, -right_len);
     change_interval_len(b, i + 1, right_len);
@@ -214,20 +278,16 @@ void EgorTaskSolver::interval_do_split(int b, int i, int right_len) {
 }
 
 void EgorTaskSolver::interval_merge() {
-    //CNT_CALL_INTERVAL_MERGE_EQUAL++;
-
     CHOOSE_INTERVAL(i + 1 < intervals[b].size());
 
     auto old_metric = metric;
 
     int old_actions_size = actions.size();
 
-    int right_len = intervals[b][i + 1].len;
-
     interval_do_merge(b, i);
 
     if (is_good(old_metric)) {
-        //CNT_ACCEPTED_INTERVAL_MERGE_EQUAL++;
+
     } else {
         rollback(old_actions_size);
         ASSERT(old_metric == metric, "failed back score");

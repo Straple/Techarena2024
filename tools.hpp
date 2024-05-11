@@ -225,3 +225,55 @@ std::vector<vector<Interval>> ans_to_blocked_ans(int M, int K, const vector<Inte
     }
     return ans;
 }
+
+std::map<int, int> reduce_users(int &N, int J, vector<UserInfo> &userInfos) {
+    std::map<int, int> back_mapping;
+    std::vector<pair<int, UserInfo>> newUserInfos;
+    int last_id = 0;
+    // (rbNeed, beam, i)
+    std::vector<tuple<int, int, int>> users_arr;
+    std::vector<int> beamGot(32);
+    for (int i = 0; i < N; i++) {
+        users_arr.push_back({userInfos[i].rbNeed, userInfos[i].beam, i});
+    }
+    sort(users_arr.begin(), users_arr.end(), greater<>());
+    for (auto [rbNeed, beam, id]: users_arr) {
+        beamGot[beam]++;
+        if (beamGot[beam] <= J) {
+            newUserInfos.push_back({id, {rbNeed, beam, last_id}});
+            back_mapping[last_id] = id;
+            last_id++;
+        }
+    }
+    N = last_id;
+    sort(newUserInfos.begin(), newUserInfos.end(), [&](const auto &lhs, const auto &rhs) {
+        return lhs.first < rhs.first;
+    });
+
+    userInfos.resize(N);
+
+    std::map<int, int> back_mapping222;
+    for(int i = 0; i < N; i++){
+        back_mapping222[i] = back_mapping[userInfos[i].id];
+        userInfos[i] = newUserInfos[i].second;
+        userInfos[i].id = i;
+    }
+    return back_mapping222;
+
+    /*std::map<int, int> back_mapping222;
+    mt19937 rnd(42);
+    shuffle(userInfos.begin(), userInfos.end(), rnd);
+    for(int i = 0; i < N; i++){
+        back_mapping222[i] = back_mapping[userInfos[i].id];
+        userInfos[i].id = i;
+    }
+    return back_mapping222;*/
+}
+
+void normalize_id(std::vector<Interval> &normalize_it, std::map<int, int> &back_mapping) {
+    for (int i = 0; i < normalize_it.size(); i++) {
+        for (int g = 0; g < normalize_it[i].users.size(); g++) {
+            normalize_it[i].users[g] = back_mapping[normalize_it[i].users[g]];
+        }
+    }
+}

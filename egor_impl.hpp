@@ -14,17 +14,14 @@ EgorTaskSolver::EgorTaskSolver(int NN, int MM, int KK, int JJ, int LL,
     user_id_to_u.resize(N);
 
     {
-        /*for (int beam = 0; beam < 32; beam++) {
-            users_with_equal_beam_size[beam] = 0;
-        }*/
         for (int u = 0; u < N; u++) {
             ASSERT(u == userInfos[u].id, "are you stupid or something?");
             ASSERT(0 <= userInfos[u].beam && userInfos[u].beam < 32, "invalid beam");
             users_info[u].id = userInfos[u].id;
             users_info[u].rbNeed = userInfos[u].rbNeed;
             users_info[u].beam = userInfos[u].beam;
-
-            //users_with_equal_beam_size[userInfos[u].beam]++;
+        }
+        for (int u = 0; u < N; u++) {
             user_id_to_u[users_info[u].id] = u;
             users_beam[userInfos[u].beam].push_back(u);
         }
@@ -114,7 +111,7 @@ vector<Interval> EgorTaskSolver::annealing(vector<Interval> reservedRBs,
     temperature = 1;
     prev_action = 0;
 
-//#define SAVE_BEST_ANS
+    //#define SAVE_BEST_ANS
 
 #ifdef SAVE_BEST_ANS
     int best_score = metric.accepted;
