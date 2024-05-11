@@ -267,7 +267,7 @@ void EgorTaskSolver::interval_split() {
     for (int left_len = 0; left_len <= intervals[b][i].len; left_len++) {
         int right_len = intervals[b][i].len - left_len;
 
-        int cur_f = 0;
+        int free_space = 0;
 
         for (int u: end_users) {
             int x = 0;
@@ -277,19 +277,21 @@ void EgorTaskSolver::interval_split() {
             if (users_info[u].sum_len - left_len >= users_info[u].rbNeed) {
                 x = max(x, left_len);
             }
-            cur_f += x;
+            free_space += x;
         }
 
         for (int u: right_end_users) {
             if (users_info[u].sum_len - right_len >= users_info[u].rbNeed) {
-                cur_f += right_len;
+                free_space += right_len;
             }
         }
         for (int u: left_end_users) {
             if (users_info[u].sum_len - left_len >= users_info[u].rbNeed) {
-                cur_f += left_len;
+                free_space += left_len;
             }
         }
+
+        int cur_f = free_space;
 
         if (cur_f > best_f) {
             best_f = cur_f;
@@ -312,7 +314,7 @@ void EgorTaskSolver::interval_split() {
             remove_user_in_interval(u, b, i);
         }
     }
-    for(int u : end_users){
+    for (int u: end_users) {
         int x = 0;
         if (users_info[u].sum_len - best_left_len >= users_info[u].rbNeed) {
             x = max(x, best_left_len);
@@ -321,13 +323,11 @@ void EgorTaskSolver::interval_split() {
             x = max(x, best_right_len);
         }
 
-        if(x == best_left_len){
+        if (x == best_left_len) {
             remove_user_in_interval(u, b, i);
-        }
-        else if(x == best_right_len){
-            remove_user_in_interval(u, b, i+1);
-        }
-        else{
+        } else if (x == best_right_len) {
+            remove_user_in_interval(u, b, i + 1);
+        } else {
             //ASSERT(false, "kek");
         }
     }

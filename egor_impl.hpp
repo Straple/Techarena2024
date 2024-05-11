@@ -117,9 +117,24 @@ vector<Interval> EgorTaskSolver::annealing(vector<Interval> reservedRBs,
     //int best_score = metric.accepted;
     //auto best_ans = get_total_answer();
 
+    int best_f = 100 * metric.accepted - 10 * metric.unused_space - metric.overflow + metric.free_space;
+    int there_has_been_no_improvement_for_x_steps = 0;
+
     for (int step = 0; step < STEPS; step++) {
         temperature = ((STEPS - step) * 1.0 / STEPS);
         //temperature *= 0.9999;
+
+        if(step > STEPS / 2) {
+            if (best_f >= 100 * metric.accepted - 10 * metric.unused_space - metric.overflow + metric.free_space) {
+                there_has_been_no_improvement_for_x_steps++;
+                if (there_has_been_no_improvement_for_x_steps > 200) {
+                    break;
+                }
+            } else {
+                there_has_been_no_improvement_for_x_steps = 0;
+                best_f = 100 * metric.accepted - 10 * metric.unused_space - metric.overflow + metric.free_space;
+            }
+        }
 
         //977151
 
