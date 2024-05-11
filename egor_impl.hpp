@@ -126,7 +126,7 @@ vector<Interval> EgorTaskSolver::annealing(vector<Interval> reservedRBs,
         temperature = ((STEPS - step) * 1.0 / STEPS);
         //temperature *= 0.9999;
 
-        if (step > STEPS / 2) {
+        /*if (step > STEPS / 2) {
             if (best_f >= 100 * metric.accepted - 10 * metric.unused_space - metric.overflow + metric.free_space) {
                 there_has_been_no_improvement_for_x_steps++;
                 if (there_has_been_no_improvement_for_x_steps > 200) {
@@ -136,7 +136,7 @@ vector<Interval> EgorTaskSolver::annealing(vector<Interval> reservedRBs,
                 there_has_been_no_improvement_for_x_steps = 0;
                 best_f = 100 * metric.accepted - 10 * metric.unused_space - metric.overflow + metric.free_space;
             }
-        }
+        }*/
 
         //if(step > STEPS / 2)
         /*{
