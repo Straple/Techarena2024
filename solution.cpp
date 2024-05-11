@@ -42,7 +42,7 @@ vector<Interval> Solver(int N, int M, int K, int J, int L,
     //return egor_answer;
 
     auto get_egor_blocked = ans_to_blocked_ans(M, K, reservedRBs, egor_answer);
-    optimize(N, M, K, J, L, reservedRBs, userInfos, get_egor_blocked);
+    optimize(N, M, K, J, L, reservedRBs, userInfos, get_egor_blocked, true);
     egor_answer = unblock_ans(get_egor_blocked);
 
     auto egor_score = get_solution_score(N, M, K, J, L, reservedRBs, userInfos, egor_answer);
