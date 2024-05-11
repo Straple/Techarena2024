@@ -40,12 +40,12 @@ int main() {
 
         // (diff, score, K, test, METRIC_TYPE)
         vector<tuple<int, int, int, int, int>> best_diff;
-        for (int K = 0; K <= 3; K++) {
+        for (int K = 2; K <= 2; K++) {
             //cout << "TEST CASE: K=" << K << endl;
             string dir = "tests/case_K=" + to_string(K) + "/";
             std::vector<pair<float, int>> tests_and_scores;
             infos[K].tests = test_case_K_sizes[K];
-            for (int test = 0; test < test_case_K_sizes[K]; test++) {
+            for (int test = 14; test < 15/*test_case_K_sizes[K]*/; test++) {
                 ifstream input(dir + to_string(test) + ".txt");
                 TestData data;
                 input >> data;
