@@ -30,7 +30,7 @@
 const int SELECTION_SIZE = 11;
 //SelectionRandomizer SELECTION_ACTION(SELECTION_SIZE);
 // = std::vector<int>{10, 1, 1, 1, 1, 16, 9, 6, 22, 12, 11, 30};
-int STEPS = 1200;
+int STEPS = 1300;
 
 const int METRIC_CNT = 1;
 int METRIC_TYPE = 0;
@@ -390,6 +390,121 @@ struct EgorTaskSolver {
     void user_do_crop(int u);
 
     void user_crop();
+
+    void earthquake() {
+        // clear
+        for (int b = 0; b < B; b++) {
+            for (int i = 0; i < intervals[b].size(); i++) {
+                for (int u: intervals[b][i].users) {
+                    remove_user_in_interval(u, b, i);
+                }
+            }
+        }
+
+        // release interval
+        if (get_intervals_size() == J) {
+            vector<tuple<int, int>> ps;
+            for (int b = 0; b < B; b++) {
+                for (int i = 0; i < intervals[b].size(); i++) {
+                    ps.push_back({b, i});
+                }
+            }
+
+            ASSERT(!ps.empty(), "empty ps");
+            auto [b, i] = ps[rnd.get(0, (int) ps.size() - 1)];
+            remove_interval(b, i);
+        }
+
+        // insert new interval
+        {
+            vector<pair<int, int>> ps;
+            for (int b = 0; b < B; b++) {
+                for (int i = 0; i <= intervals[b].size(); i++) {
+                    ps.push_back({b, i});
+                }
+            }
+
+            ASSERT(!ps.empty(), "empty ps");
+            auto [b, i] = ps[rnd.get(0, ps.size() - 1)];
+            insert_interval(b, i);
+            int may_add_len = free_intervals[b].len() - get_block_len(b);
+            if (may_add_len != 0) {
+                change_interval_len(b, i, may_add_len);
+            }
+        }
+
+        // release interval
+        /*if (get_intervals_size() == J) {
+            vector<tuple<int, int, int>> ps;
+            for (int b = 0; b < B; b++) {
+                for (int i = 0; i < intervals[b].size(); i++) {
+                    int old_actions_size = actions.size();
+                    remove_interval(b, i);
+                    ps.push_back({metric.accepted // TODO: можно не просто accepted а посложнее
+                    , b, i});
+                    rollback(old_actions_size);
+                    ASSERT(old_metric == metric, "invalid back score");
+                }
+            }
+
+            ASSERT(!ps.empty(), "empty ps");
+            //sort(ps.begin(), ps.end(), greater<>());
+            auto [to_score, b, i] = ps[rnd.get(0, (int) ps.size() - 1)];
+            remove_interval(b, i);
+            //ASSERT(to_score == total_score, "invalid to score");
+        }
+
+        // insert new interval
+        {
+            vector<pair<int, int>> ps;
+            for (int b = 0; b < B; b++) {
+                for (int i = 0; i <= intervals[b].size(); i++) {
+                    if (i == 0 || i == intervals[b].size() || (intervals[b][i - 1].users & intervals[b][i].users).empty()) {
+                        ps.push_back({b, i});
+                    }
+                }
+            }
+
+            ASSERT(!ps.empty(), "empty ps");
+            auto [b, i] = ps[rnd.get(0, ps.size() - 1)];
+            insert_interval(b, i);
+            int may_add_len = free_intervals[b].len() - get_block_len(b);
+            if (may_add_len != 0) {
+                change_interval_len(b, i, may_add_len);
+            }
+        }
+
+        // clear
+        for (int b = 0; b < B; b++) {
+            for (int i = 0; i < intervals[b].size(); i++) {
+                for (int u: intervals[b][i].users) {
+                    remove_user_in_interval(u, b, i);
+                }
+            }
+        }*/
+        /*for (int b = 0; b < B; b++) {
+            for (int i = 0; i < intervals[b].size(); i++) {
+                intervals[b][i].users.clear();
+                intervals[b][i].beam_msk = 0;
+            }
+        }
+        for (int u = 0; u < N; u++) {
+            users_info[u].sum_len = 0;
+        }
+        metric = {};*/
+
+        {
+            vector<int> p(N);
+            iota(p.begin(), p.end(), 0);
+            sort(p.begin(), p.end(), [&](int lhs, int rhs) {
+                return users_info[lhs].rbNeed > users_info[rhs].rbNeed;
+            });
+
+            for (int u: p) {
+                user_do_new_interval(u);
+            }
+        }
+    }
 
     ///======================
     ///======ANNEALING=======

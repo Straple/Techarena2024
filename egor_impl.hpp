@@ -114,8 +114,13 @@ vector<Interval> EgorTaskSolver::annealing(vector<Interval> reservedRBs,
     temperature = 1;
     prev_action = 0;
 
-    //int best_score = metric.accepted;
-    //auto best_ans = get_total_answer();
+//#define SAVE_BEST_ANS
+
+#ifdef SAVE_BEST_ANS
+    int best_score = metric.accepted;
+    auto best_users_info = users_info;
+    auto best_intervals = intervals;
+#endif
 
     int best_f = 100 * metric.accepted - 10 * metric.unused_space - metric.overflow + metric.free_space;
     int there_has_been_no_improvement_for_x_steps = 0;
@@ -124,7 +129,7 @@ vector<Interval> EgorTaskSolver::annealing(vector<Interval> reservedRBs,
         temperature = ((STEPS - step) * 1.0 / STEPS);
         //temperature *= 0.9999;
 
-        if(step > STEPS / 2) {
+        if (step > STEPS / 2) {
             if (best_f >= 100 * metric.accepted - 10 * metric.unused_space - metric.overflow + metric.free_space) {
                 there_has_been_no_improvement_for_x_steps++;
                 if (there_has_been_no_improvement_for_x_steps > 200) {
@@ -136,6 +141,21 @@ vector<Interval> EgorTaskSolver::annealing(vector<Interval> reservedRBs,
             }
         }
 
+        //if(step > STEPS / 2)
+        /*{
+            if (best_f >= 100 * metric.accepted - 10 * metric.unused_space - metric.overflow + metric.free_space) {
+                there_has_been_no_improvement_for_x_steps++;
+                if (there_has_been_no_improvement_for_x_steps > 300) {
+                    there_has_been_no_improvement_for_x_steps = 0;
+                    earthquake();
+                    best_f = 100 * metric.accepted - 10 * metric.unused_space - metric.overflow + metric.free_space;
+                }
+            } else {
+                there_has_been_no_improvement_for_x_steps = 0;
+                best_f = 100 * metric.accepted - 10 * metric.unused_space - metric.overflow + metric.free_space;
+            }
+        }*/
+
         //977151
 
         /*if (step < STEPS / 2) {
@@ -146,15 +166,10 @@ vector<Interval> EgorTaskSolver::annealing(vector<Interval> reservedRBs,
 
         //TRAIN_SCORE += best_score;
 
-        //ASSERT(get_solution_score(N, M, K, J, L, reservedRBs, userInfos, get_total_answer()) == total_score, "invalid total_score");
+        ASSERT(get_solution_score(N, M, K, J, L, reservedRBs, userInfos, get_total_answer()) == metric.accepted, "invalid total_score");
         if (THEORY_MAX_SCORE <= metric.accepted) {
             break;
         }
-
-        /*cout << "STEP: "<< step << endl;
-        if(step == 61){
-            cout << "here" << endl;
-        }*/
 
         int s = SELECTION_ACTION.select();
         if (s == 0) {
@@ -183,22 +198,26 @@ vector<Interval> EgorTaskSolver::annealing(vector<Interval> reservedRBs,
             ASSERT(false, "kek");
         }
 
-        /*if (best_score < metric.accepted) {
+#ifdef SAVE_BEST_ANS
+        if (best_score < metric.accepted) {
             best_score = metric.accepted;
-            best_ans = get_total_answer();
-        }*/
+            best_users_info = users_info;
+            best_intervals = intervals;
+        }
+#endif
 
         actions.clear();
 
         SNAP(snapshoter.write(get_total_answer(), "annealing"));
     }
 
-    //for (int u = 0; u < N; u++) {
-    //user_do_crop(u);
-    //}
+#ifdef SAVE_BEST_ANS
+    users_info = best_users_info;
+    intervals = best_intervals;
     return get_total_answer();
-    //return best_ans;
-    //982103
+#else
+    return get_total_answer();
+#endif
 }
 
 vector<Interval> Solver_egor(int N, int M, int K, int J, int L,
