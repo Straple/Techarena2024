@@ -6,7 +6,7 @@
 
 int BEAM_MAX_AMOUNT = 32;
 
-int get_blocks_amount(int M, vector<Interval> reservedRBs) {
+int get_blocks_amount(int M, vector<Interval>& reservedRBs) {
     int cnt = 0;
     std::vector<bool> is_free(M + 1, true);
     is_free.back() = false;
@@ -149,7 +149,7 @@ vector<vector<Interval>> Solver_artem(int N, int M, int K, int J, int L,
         }
     }
     std::vector<int> rbSuplied(N, 0);
-    std::set<int> used_users;
+    std::vector<bool>is_user_used(N, false);
     int current_interval_iter = 0;
     std::set<pair<int, int>, std::greater<>>
             space_left_q;
@@ -178,54 +178,54 @@ vector<vector<Interval>> Solver_artem(int N, int M, int K, int J, int L,
         //-------------------------
         std::vector<std::pair<int, int>> candidates;
         std::set<int> to_delete;
-        /*if (coef != -1.0) {
-            for (auto user_id: activeUsers[pick_i]) {
-                float curr_len = pre_answer[pick_i][current_sub_interval[pick_i]].end -
-                                 pre_answer[pick_i][current_sub_interval[pick_i]].start;
-                float need_more = userInfos[user_id].rbNeed - rbSuplied[user_id];
-                if (need_more < curr_len * coef) {
-                    to_delete.insert(user_id);
-                }
-            }
-
-
-            int have_full = 0;
-            for (auto &user: userInfos) {
-                if (used_users.find(user.id) == used_users.end()) {
-                    if (beamOwnedBy[pick_i][user.beam] == -1 &&
-                        user.rbNeed - rbSuplied[user.id] > pre_answer[pick_i][current_sub_interval[pick_i]].end -
-                                                                   pre_answer[pick_i][current_sub_interval[pick_i]].start) {
-                        have_full++;
-                    }
-                    if (beamOwnedBy[pick_i][user.beam] != -1) {
-                        int owned_by_id = beamOwnedBy[pick_i][user.beam];
-                        if (user.rbNeed - rbSuplied[user.id] > userInfos[owned_by_id].rbNeed - rbSuplied[owned_by_id]) {
-                            have_full++;
-                        }
-                    }
-                }
-            }
-            std::vector<pair<int, int>>
-                    to_delete_sorted;
-            for (auto user_id: to_delete) {
-                to_delete_sorted.push_back({userInfos[user_id].rbNeed - rbSuplied[user_id], user_id});
-            }
-            sort(to_delete_sorted.begin(), to_delete_sorted.end());
-            if (have_full) {
-                for (auto [coeffi, user_id]: to_delete_sorted) {
-                    activeUsers[pick_i].erase(user_id);
-                    beamOwnedBy[pick_i][userInfos[user_id].beam] = -1;
-                    have_full--;
-                    if (have_full == 0) {
-                        break;
-                    }
-                }
-            }
-            candidates.clear();
-        }*/
+//        if (true) {
+//            for (auto user_id: activeUsers[pick_i]) {
+//                float curr_len = pre_answer[pick_i][current_sub_interval[pick_i]].end -
+//                                 pre_answer[pick_i][current_sub_interval[pick_i]].start;
+//                float need_more = userInfos[user_id].rbNeed - rbSuplied[user_id];
+//                if (need_more < curr_len * coef) {
+//                    to_delete.insert(user_id);
+//                }
+//            }
+//
+//
+//            int have_full = 0;
+//            for (auto &user: userInfos) {
+//                if (!is_user_used[user.id]) {
+//                    if (beamOwnedBy[pick_i][user.beam] == -1 &&
+//                        user.rbNeed - rbSuplied[user.id] > pre_answer[pick_i][current_sub_interval[pick_i]].end -
+//                                                                   pre_answer[pick_i][current_sub_interval[pick_i]].start) {
+//                        have_full++;
+//                    }
+//                    if (beamOwnedBy[pick_i][user.beam] != -1) {
+//                        int owned_by_id = beamOwnedBy[pick_i][user.beam];
+//                        if (user.rbNeed - rbSuplied[user.id] > userInfos[owned_by_id].rbNeed - rbSuplied[owned_by_id]) {
+//                            have_full++;
+//                        }
+//                    }
+//                }
+//            }
+//            std::vector<pair<int, int>>
+//                    to_delete_sorted;
+//            for (auto user_id: to_delete) {
+//                to_delete_sorted.push_back({userInfos[user_id].rbNeed - rbSuplied[user_id], user_id});
+//            }
+//            sort(to_delete_sorted.begin(), to_delete_sorted.end());
+//            if (have_full) {
+//                for (auto [coeffi, user_id]: to_delete_sorted) {
+//                    activeUsers[pick_i].erase(user_id);
+//                    beamOwnedBy[pick_i][userInfos[user_id].beam] = -1;
+//                    have_full--;
+//                    if (have_full == 0) {
+//                        break;
+//                    }
+//                }
+//            }
+//            candidates.clear();
+//        }
 
         for (auto &user: userInfos) {
-            if (used_users.find(user.id) == used_users.end() && beamOwnedBy[pick_i][user.beam] == -1) {
+            if (!is_user_used[user.id] && beamOwnedBy[pick_i][user.beam] == -1) {
                 ASSERT(rbSuplied[user.id] == 0, "rb suplied is zero");
                 candidates.push_back({user.rbNeed - rbSuplied[user.id], user.id});
             }
@@ -241,7 +241,7 @@ vector<vector<Interval>> Solver_artem(int N, int M, int K, int J, int L,
             if (beamOwnedBy[pick_i][userInfos[candidates[g].second].beam] == -1) {
                 activeUsers[pick_i].insert(candidates[g].second);
                 new_users.insert(candidates[g].second);
-                used_users.insert(candidates[g].second);
+                is_user_used[candidates[g].second] = true;
                 beamOwnedBy[pick_i][userInfos[candidates[g].second].beam] = candidates[g].second;
                 get_more--;
             }
@@ -318,7 +318,7 @@ vector<vector<Interval>> Solver_artem(int N, int M, int K, int J, int L,
                 }
             }
             //            cout << endl;
-            if (best_ind != 0) {// можно и убрать, просто для удобства и гарантии
+            if (best_ind != 0) {// можно и убрать, просто для удобства и гарантии // даёт + 30. Можно убрать??
                 minus = best_ind;
                 //                cout << "UPD!" << " " << best_ind << endl;
                 pre_answer[pick_i][current_sub_interval[pick_i] - 1].end += best_ind;
@@ -335,7 +335,7 @@ vector<vector<Interval>> Solver_artem(int N, int M, int K, int J, int L,
                 }
 
                 for (auto &user: userInfos) {
-                    if (used_users.find(user.id) == used_users.end() && beamOwnedBy[pick_i][user.beam] == -1) {
+                    if (!is_user_used[user.id] && beamOwnedBy[pick_i][user.beam] == -1) {
                         ASSERT(rbSuplied[user.id] == 0, "rb suplied is zero");
                         candidates.push_back({user.rbNeed - rbSuplied[user.id], user.id});
                     }
@@ -345,12 +345,11 @@ vector<vector<Interval>> Solver_artem(int N, int M, int K, int J, int L,
 
                 sort(candidates.begin(), candidates.end(), greater<>());
                 int get_more = L - activeUsers[pick_i].size();
-                std::set<int> new_users;
                 for (int g = 0; g < (int) candidates.size(); g++) {
                     if (get_more == 0) break;
                     if (beamOwnedBy[pick_i][userInfos[candidates[g].second].beam] == -1) {
                         activeUsers[pick_i].insert(candidates[g].second);
-                        used_users.insert(candidates[g].second);
+                        is_user_used[candidates[g].second] = true;
                         beamOwnedBy[pick_i][userInfos[candidates[g].second].beam] = candidates[g].second;
                         get_more--;
                     }
@@ -406,6 +405,7 @@ int get_solution_score_light(int N, vector<vector<Interval>> &ans, const vector<
 void optimize_one_gap(int N, int M, int K, int J, int L,
                       const vector<Interval> &reservedRBs,
                       const vector<UserInfo> &userInfos, vector<Interval> &solution, vector<int> &suplied, set<int> &empty) {
+//    return;
 
     std::vector<int> mi(N, 10000);
     std::vector<int> ma(N, -10000);
@@ -440,7 +440,11 @@ void optimize_one_gap(int N, int M, int K, int J, int L,
                 int best_score_gain = -1;
                 int best_receiver = -1;
                 int current_len = solution[mi[i]].end - solution[mi[i]].start;
+                if (suplied[i] == userInfos[i].rbNeed){
+                    continue;
+                }
                 int minus = min(suplied[i], userInfos[i].rbNeed) - min(suplied[i] - current_len, userInfos[i].rbNeed);
+
                 bool is_empty_winner = false;
                 if (!is_start) {
                     for (auto &give_to: ma_set[mi[i] - 1]) {
@@ -481,8 +485,9 @@ void optimize_one_gap(int N, int M, int K, int J, int L,
                     //                    cerr << "OPTIMIZING1" << endl;
                     //                    cerr << "PUTTING" << best_receiver << "(" << userInfos[best_receiver].beam << ")" << " instead of " << i << "(" << userInfos[i].beam << ")" << " " << mi[i] << endl;
                     auto iter = find(solution[mi[i]].users.begin(), solution[mi[i]].users.end(), i);
-                    solution[mi[i]].users.erase(iter);// optimize_it
-                    solution[mi[i]].users.push_back(best_receiver);
+                    solution[mi[i]].users[iter-solution[mi[i]].users.begin()] = best_receiver;
+//                    solution[mi[i]].users.erase(iter);// optimize_it
+//                    solution[mi[i]].users.push_back(best_receiver);
 
                     suplied[i] = suplied[i] - current_len;
                     suplied[best_receiver] = suplied[best_receiver] + current_len;
@@ -525,6 +530,9 @@ void optimize_one_gap(int N, int M, int K, int J, int L,
                 int best_score_gain = -1;
                 int best_receiver = -1;
                 int current_len = solution[ma[i]].end - solution[ma[i]].start;
+                if (suplied[i] == userInfos[i].rbNeed){
+                    continue;
+                }
                 int minus = min(suplied[i], userInfos[i].rbNeed) - min(suplied[i] - current_len, userInfos[i].rbNeed);
                 bool is_empty_winner = false;
                 if (!is_last) {
@@ -566,12 +574,10 @@ void optimize_one_gap(int N, int M, int K, int J, int L,
                     //                    cerr << "OPTIMIZING2" << endl;
                     if (is_empty_winner) {
                         empty.erase(best_receiver);
-                        //cerr << "EMPTY" << endl;
                     }
                     //                    cerr << "PUTTING" << best_receiver << "(" << userInfos[best_receiver].beam << ")" << " instead of " << i << "(" << userInfos[i].beam << ")" << " " << mi[i] << endl;
                     auto iter = find(solution[ma[i]].users.begin(), solution[ma[i]].users.end(), i);
-                    solution[ma[i]].users.erase(iter);// optimize_it
-                    solution[ma[i]].users.push_back(best_receiver);
+                    solution[ma[i]].users[iter-solution[ma[i]].users.begin()] = best_receiver;
                     suplied[i] = suplied[i] - current_len;
                     suplied[best_receiver] = suplied[best_receiver] + current_len;
                     ma_set[ma[i]].erase(i);
@@ -650,12 +656,11 @@ void optimize(int N, int M, int K, int J, int L,
 
         vector<pair<int, int>> space_sizes;
         std::vector<std::vector<int>>pre_placed(solution.size());
-        std::vector<set<int>>pre_placed_beams(solution.size());
-        std::vector<int>pre_start_sizes(solution.size());
+        std::vector<::uint32_t>pre_placed_beams_bits(solution.size(), 0);
         bool new_version = do_it;
         std::vector<bool>was_empty_space(solution.size(), false);
         std::vector<bool>was_full_interval(solution.size(), false); // we took whole interval to free space
-        set<int>ignore_those;
+        vector<bool>ignore_those(128, false);
         {
 
             std::vector<pair<int,int>>start_ends;
@@ -682,7 +687,6 @@ void optimize(int N, int M, int K, int J, int L,
                 if (solution[i].empty()) continue ;
                 int picked_ind_to_place = -1;
                 for (int j = 0; j < space_sizes.size(); j++){
-                    //                    if (solution[i][0].start >= start_ends[j].first && solution[i].back().end <= start_ends[j].second)// this should be enough, but just to be sure
                     bool ok = true;
                     for (int g = 0; g < solution[i].size(); g++){
                         if (solution[i][g].start < start_ends[j].first || solution[i][g].end > start_ends[j].second){
@@ -698,30 +702,16 @@ void optimize(int N, int M, int K, int J, int L,
                 if (picked_ind_to_place == -1){
 
                 }
-                ASSERT(picked_ind_to_place != -1, "index wasnt selected");
                 new_solution[picked_ind_to_place] = solution[i];
             }
             solution = new_solution;
-            //            stable_sort(solution.begin(), solution.end(), [&](const auto &lhs, const auto &rhs) {
-            //                if (lhs.empty() && rhs.empty()) {
-            //                    return false;
-            //                }
-            //                if (lhs.empty()) {
-            //                    return false;
-            //                }
-            //                if (rhs.empty()) {
-            //                    return true;
-            //                }
-            //                return lhs[0].start < rhs[0].start;
-            //            });
+
 
             if (new_version){
 
             }
             vector<int> pre_supplied(N, 0);
-            for (int i = 0; i < solution.size(); i++) {
-                pre_start_sizes[i] = solution[i].size();
-            }
+
             for (int i = 0; i < solution.size(); i++) {
                 int ma = 0;
 
@@ -735,8 +725,8 @@ void optimize(int N, int M, int K, int J, int L,
                             if (new_version){
 
                                 if (userInfos[user_id].rbNeed - pre_supplied[user_id] >= cur_len){
-                                    pre_placed_beams[i].insert(userInfos[user_id].beam);
-                                    ignore_those.insert(user_id);
+                                    pre_placed_beams_bits[i]|=(1u<<userInfos[user_id].beam);
+                                    ignore_those[user_id] = true;
                                     pre_placed[i].push_back(user_id);
                                 } else {
                                     ma = max(ma, userInfos[user_id].rbNeed - pre_supplied[user_id]);
@@ -812,17 +802,13 @@ void optimize(int N, int M, int K, int J, int L,
             int pick_i = space_left_q.begin()->second;
             space_left_q.erase(space_left_q.begin());
             int curr = current_sub_interval[pick_i];
-            if (iter == 2){
-
-            }
-
             if (curr >= start_sizes[pick_i]) { // +1
 
                 continue;
             }
             int curr_len = solution[pick_i][curr].end - solution[pick_i][curr].start;
             std::vector<int> need_to_find_new;
-            std::set<int> need_to_find_new_set;
+            MyBitSet<128> need_to_find_new_set_bits;
             bool force_hold = false;
             int already = 0;
             if (curr != 0) {
@@ -840,7 +826,7 @@ void optimize(int N, int M, int K, int J, int L,
                             break;
                         }
                         need_to_find_new.push_back(user_id);
-                        need_to_find_new_set.insert(user_id);
+                        need_to_find_new_set_bits.insert(user_id);
                     } else {
                         already++;
                     }
@@ -858,7 +844,7 @@ void optimize(int N, int M, int K, int J, int L,
             int picked = -1;
             std::vector<int>candidates_placed_in_theor_interval(solution.size(), 0);
             for (int user_id: need_to_find_new) {
-                if (ignore_those.count(user_id)){
+                if (ignore_those[user_id]){
                     can_place_all = false;
                 }
                 bool placed = false;
@@ -882,7 +868,7 @@ void optimize(int N, int M, int K, int J, int L,
                             for (auto& free_space: free_spaces){
                                 if (picked != -1 and free_space.second != picked) continue;
                                 if (userInfos[user_id].rbNeed <= free_space.first) {
-                                    if (pre_placed_beams[free_space.second].count(userInfos[user_id].beam) == 0 && pre_placed[free_space.second].size() + candidates_placed_in_theor_interval[free_space.second] < L) {
+                                    if ((pre_placed_beams_bits[free_space.second]&(1u<<userInfos[user_id].beam)) == 0 && pre_placed[free_space.second].size() + candidates_placed_in_theor_interval[free_space.second] < L) {
                                         can_place_this = true;
                                         candidates_placed_in_theor_interval[free_space.second]++;
                                         picked = free_space.second;
@@ -943,16 +929,12 @@ void optimize(int N, int M, int K, int J, int L,
                                 for (auto& free_space: free_spaces){
 
                                     if (userInfos[user_id].rbNeed <= free_space.first) {
-                                        if (pre_placed_beams[free_space.second].count(userInfos[user_id].beam) == 0 && pre_placed[free_space.second].size() < L) {
+                                        if ((pre_placed_beams_bits[free_space.second]&(1u<<userInfos[user_id].beam)) == 0 && pre_placed[free_space.second].size() < L) {
                                             picked_free_place_donor = free_space.second;
                                             free_space_picked = free_space;
                                             break;
                                         }
                                     }
-                                }
-
-                                if (picked_free_place_donor < 0){
-
                                 }
                                 ASSERT(picked_free_place_donor >= 0, "NOT PICKED? WTF!!");
 
@@ -965,14 +947,14 @@ void optimize(int N, int M, int K, int J, int L,
                                              pre_placed[picked_free_place_donor]});
                                 }
                                 free_spaces.erase(free_space_picked);
-                                //if (free_space_picked.first - user_need > 0) {
+                                if (free_space_picked.first - user_need > 0) {
                                     free_spaces.insert({free_space_picked.first - user_need, picked_free_place_donor});
-                                // }
+                                }
                                 ever_picked[picked_free_place_donor] = true;
                                 solution[picked_free_place_donor].back().users.push_back(user_id);
 
                                 for (int beam: uniq_beams) {// if L != 1
-                                    if (beam != userInfos[user_id].beam && pre_placed_beams[picked_free_place_donor].count(beam) == 0) {
+                                    if (beam != userInfos[user_id].beam && (pre_placed_beams_bits[picked_free_place_donor]&(1u<<beam)) == 0) {
                                         possible_pre_free_spaces[beam].insert({picked_free_place_donor,
                                                                                solution[picked_free_place_donor].size() -
                                                                                        1});
@@ -1021,7 +1003,7 @@ void optimize(int N, int M, int K, int J, int L,
                 // }
                 std::set<int> okay_users;
                 for (auto user_id: solution[pick_i][curr].users) {
-                    if (need_to_find_new_set.count(user_id) == 0) {
+                    if (need_to_find_new_set_bits.contains(user_id) == 0) {
                         activeUsers[pick_i].insert(user_id);
                         activeBeams[pick_i].insert(userInfos[user_id].beam);
                         okay_users.insert(user_id);
@@ -1037,8 +1019,6 @@ void optimize(int N, int M, int K, int J, int L,
                 solution[pick_i][curr].users.clear();
                 for (auto user_id: okay_users) {
                     solution[pick_i][curr].users.push_back(user_id);
-                    //                    cout << "1.PUSHING TO " << pick_i << " " << curr << "|" << solution[pick_i][curr].users.size()
-                    //                         << "|BEAM: " << userInfos[user_id].beam << endl;
 
                     if (solution[pick_i][curr].users.size() == L) {
                         for (auto beam: uniq_beams) {
@@ -1114,21 +1094,6 @@ void optimize(int N, int M, int K, int J, int L,
                             solution[picked_free_place_donor].back().end+=free_space.first;
                     }
 
-//                    if (solution[picked_free_place_donor].size()-minus < pre_start_sizes[picked_free_place_donor]) {
-//
-//                        //ASSERT(solution[picked_free_place_donor].size()-minus+1 == pre_start_sizes[picked_free_place_donor], "NOT EQUAL WTF");
-//
-//                        if (solution[picked_free_place_donor].empty()) {
-//                            solution[picked_free_place_donor].push_back({space_sizes[picked_free_place_donor].second, space_sizes[picked_free_place_donor].second + free_space.first, pre_placed[picked_free_place_donor]});
-//                        } else {
-//                            solution[picked_free_place_donor].push_back(
-//                                    {solution[picked_free_place_donor].back().end,
-//                                     solution[picked_free_place_donor].back().end + free_space.first,
-//                                     pre_placed[picked_free_place_donor]});
-//                        }
-//                    } else {
-//                        solution[picked_free_place_donor].back().end+=free_space.first;
-//                    }
                 }
             }
 
