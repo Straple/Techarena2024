@@ -21,17 +21,17 @@ int main() {
     //return 0;
 
 
-
-    for (int i = 0; i < 1; i++) {
-//        if (i == 0) {
-//            STEPS = 500;
-//        } else if (i == 1) {
-//            STEPS = 1'000;
-//        } else if (i == 2) {
-//            STEPS = 2'000;
-//        } else if (i == 3) {
-//            STEPS = 5'000;
-//        }
+    {
+    /*for (int i = 0; i < 4; i++) {
+        if (i == 0) {
+            STEPS = 500;
+        } else if (i == 1) {
+            STEPS = 1'000;
+        } else if (i == 2) {
+            STEPS = 2'000;
+        } else if (i == 3) {
+            STEPS = 5'000;
+        }*/
 
         test_case_info infos[5];
         map<int, map<int, int>> score_per_test;
@@ -44,7 +44,7 @@ int main() {
             string dir = "tests/case_K=" + to_string(K) + "/";
             std::vector<pair<float, int>> tests_and_scores;
             infos[K].tests = test_case_K_sizes[K];
-            for (int test = 14; test < 15; test++) {
+            for (int test = 14; test < 15/*test_case_K_sizes[K]*/; test++) {
                 ifstream input(dir + to_string(test) + ".txt");
                 TestData data;
                 input >> data;

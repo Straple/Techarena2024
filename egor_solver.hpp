@@ -45,9 +45,8 @@ static int frame_id = 0;
                                                       "\\nfree_space: " + to_string(metric.free_space) +                   \
                                                       "\\noverflow: " + to_string(metric.overflow) +                       \
                                                       "\\nunused_space: " + to_string(metric.unused_space) +               \
-                                                      "\\nvertical_free_space: " + to_string(metric.vertical_free_space) + \
                                                       "\\nframe_id: " + to_string(frame_id++) +                            \
-                                                      "\\n" + (action_foo)))
+                                                      "\\n" #action_foo))
 
 struct EgorTaskSolver {
     ///============================
@@ -56,6 +55,8 @@ struct EgorTaskSolver {
 
     //                                                    0  1  2  3  4   5  6  7   8   9  10
     SelectionRandomizer SELECTION_ACTION;// = vector<int>{0, 3, 1, 7, 0, 89, 0, 0, 90, 40, 23};
+
+    vector<int> METRICS_COEF;
 
     long long TRAIN_SCORE = 0;
 

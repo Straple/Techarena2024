@@ -487,7 +487,7 @@ void EgorTaskSolver::interval_merge() {
 
     interval_do_merge(b, i);
 
-    SNAP_ACTION("interval_merge " + to_string(b) + " " + to_string(i));
+    //SNAP_ACTION("interval_merge " + to_string(b) + " " + to_string(i));
 
     if (is_good(old_metric)) {
         SNAP_ACTION("interval_merge " + to_string(b) + " " + to_string(i) + " accepted");
@@ -589,7 +589,7 @@ void EgorTaskSolver::interval_split() {
 
     if (is_good(old_metric)) {
         SNAP_ACTION(
-                "interval_split " + to_string(b) + " " + to_string(i) + " " + to_string(best_left_len) + " accepted");
+                "interval_split " + to_string(b) + " " + to_string(i) + " " + " accepted");
     } else {
         rollback(old_actions_size);
         ASSERT(old_metric == metric, "failed back score");
