@@ -24,193 +24,151 @@
     }
 
 void EgorTaskSolver::interval_flow_over() {
-    auto choose_intervals = [&]() {
-        vector<tuple<int, int, int>> ps;
-        for (int b = 0; b < B; b++) {
-            if (intervals[b].size() >= 2) {
-                for (int i = 0; i < intervals[b].size(); i++) {
-                    for (int j = i + 1; j < intervals[b].size(); j++) {
-                        ps.push_back({b, i, j});
+
+    // заберу у интервала i длину change, отдам ее интервалу j
+
+    int block, i, j;
+    {
+        vector<tuple<int, int, int>> ips;
+        for (int block = 0; block < B; block++) {
+            for (int i = 0; i < intervals[block].size(); i++) {
+                for (int j = 0; j < intervals[block].size(); j++) {
+                    if (i != j) {
+                        ips.emplace_back(block, i, j);
                     }
                 }
             }
         }
-        if (ps.empty()) {
-            return tuple{-1, -1, -1};
+        if (ips.empty()) {
+            return;
         }
-        return ps[rnd.get(0, ps.size() - 1)];
-    };
-
-    auto [b, i, j] = choose_intervals();
-
-    // TODO: доделать V3
-    /*auto flow_over = [&](int change) {
-        auto xor_users = intervals[b][i].users ^ intervals[b][i + 1].users;
-        for (int u: xor_users) {
-            if (intervals[b][i].users.contains(u)) {
-                // left
-
-                metric.accepted -= min(users_info[u].rbNeed, users_info[u].sum_len);
-                metric.overflow -= max(0, users_info[u].sum_len - users_info[u].rbNeed);
-
-                users_info[u].sum_len += change;
-
-                metric.accepted += min(users_info[u].rbNeed, users_info[u].sum_len);
-                metric.overflow += max(0, users_info[u].sum_len - users_info[u].rbNeed);
-            } else {
-                // right
-                metric.accepted -= min(users_info[u].rbNeed, users_info[u].sum_len);
-                metric.overflow -= max(0, users_info[u].sum_len - users_info[u].rbNeed);
-
-                users_info[u].sum_len -= change;
-
-                metric.accepted += min(users_info[u].rbNeed, users_info[u].sum_len);
-                metric.overflow += max(0, users_info[u].sum_len - users_info[u].rbNeed);
-            }
-        }
-        intervals[b][i].len += change;
-        metric.free_space += change * (L - intervals[b][i].users.size());
-        metric.unused_space -= change;
-
-        intervals[b][i + 1].len -= change;
-        metric.free_space -= change * (L - intervals[b][i + 1].users.size());
-        metric.unused_space += change;
-    };*/
-
-    int change = rnd.get(-intervals[b][i].len, intervals[b][j].len);
-    /*auto end_users = intervals[b][i].users ^ (intervals[b][i].users & intervals[b][i + 1].users);
-
-    int overflow = 0;
-    for (int u: end_users) {
-        overflow = max(overflow, users_info[u].sum_len - users_info[u].rbNeed);
+        int p = rnd.get(0, ips.size() - 1);
+        block = get<0>(ips[p]);
+        i = get<1>(ips[p]);
+        j = get<2>(ips[p]);
     }
 
-    overflow = min(overflow, intervals[b][i].len);
+    auto and_users = intervals[block][i].users & intervals[block][j].users;
+    auto unique_i = intervals[block][i].users ^ and_users;
+    auto unique_j = intervals[block][j].users ^ and_users;
 
-    int change = rnd.get(-overflow, intervals[b][i + 1].len);*/
+    int best_f = -1e9;
+    int best_change = 0;
+    for (int change = 1; change <= intervals[block][i].len; change++) {
+        int accepted = 0;
+        int overflow = 0;
 
-    /*int change = 0;
-
-    auto and_users = intervals[b][i].users & intervals[b][i + 1].users;
-    auto left_end_right = intervals[b][i].users ^ and_users;
-    auto right_end_left = intervals[b][i + 1].users ^ and_users;
-
-    auto right_end_right = and_users;
-    if (i + 2 < intervals[b].size()) {
-        right_end_right = right_end_right & (right_end_right ^ intervals[b][i + 2].users);
-    }
-
-    auto left_end_left = and_users;
-    if (i > 0) {
-        left_end_left = left_end_left & (left_end_left ^ intervals[b][i - 1].users);
-    }
-
-    {
-        int best_f = -1e9;
-        for (int c = -intervals[b][i].len; c <= intervals[b][i + 1].len; c++) {
-            int left_len = intervals[b][i].len + c;
-            int right_len = intervals[b][i + 1].len - c;
-
-            int overflow = 0;
-            int free_space = 0;
-
-            for (int u: left_end_right) {
-                overflow += max(0, users_info[u].sum_len + c - users_info[u].rbNeed);
-            }
-            for (int u: right_end_left) {
-                overflow += max(0, users_info[u].sum_len - c - users_info[u].rbNeed);
-            }
-
-            for (int u: right_end_right) {
-                if (users_info[u].rbNeed <= users_info[u].sum_len - right_len) {
-                    free_space += right_len;
-                }
-            }
-            for(int u : left_end_left){
-                if (users_info[u].rbNeed <= users_info[u].sum_len - left_len) {
-                    free_space += left_len;
-                }
-            }
-
-            int cur_f = -free_space + overflow;
-
-            if (cur_f > best_f) {
-                best_f = cur_f;
-                change = c;
-            }
+        for (int u: unique_i) {
+            accepted += min(users_info[u].rbNeed, users_info[u].sum_len - change);
+            overflow += max(0, users_info[u].sum_len - change - users_info[u].rbNeed);
         }
-    }*/
+        for (int u: unique_j) {
+            accepted += min(users_info[u].rbNeed, users_info[u].sum_len + change);
+            overflow += max(0, users_info[u].sum_len + change - users_info[u].rbNeed);
+        }
+        for (int u: and_users) {
+            accepted += min(users_info[u].rbNeed, users_info[u].sum_len);
+            overflow += max(0, users_info[u].sum_len - users_info[u].rbNeed);
+        }
+
+        int cur_f = accepted * 100 - overflow;
+
+        if (best_f < cur_f) {
+            best_f = cur_f;
+            best_change = change;
+        }
+    }
 
     auto old_metric = metric;
     int old_actions_size = actions.size();
     CNT_CALL_FLOW_OVER++;
 
-    //#define V3
-
-#define V1
-
-
-#ifdef V3
-    // те юзеры, что есть в i и в i+1 одновременно
-    // никак не поменяются
-    // таких довольно много
-
-    flow_over(change);
-
-#endif
-
-#ifdef V2
-    IMPL_change_interval_len(b, i + 1, -change);
-    IMPL_change_interval_len(b, i, change);
-#endif
-
-#ifdef V1
-    if (change > 0) {
-        change_interval_len(b, j, -change);
-        change_interval_len(b, i, change);
-    } else {
-        change_interval_len(b, i, change);
-        change_interval_len(b, j, -change);
-    }
+    change_interval_len(block, i, -best_change);
+    change_interval_len(block, j, best_change);
 
     SNAP_ACTION(
-            "interval_flow_over " + to_string(b) + " " + to_string(i) + " " + to_string(j) + " " + to_string(change));
-    // было 980452
-
-    /*for (int u: right_end_right) {
-        if (users_info[u].rbNeed <= users_info[u].sum_len) {
-            remove_user_in_interval(u, b, i+1);
-        }
-    }
-    for(int u : left_end_left){
-        if (users_info[u].rbNeed <= users_info[u].sum_len) {
-            remove_user_in_interval(u, b, i);
-        }
-    }*/
-
-#endif
+            "interval_flow_over " + to_string(b) + " " + to_string(i) + " " + to_string(j) + " " +
+            to_string(change));
 
     if (is_good(old_metric)) {
         SNAP_ACTION("interval_flow_over " + to_string(b) + " " + to_string(i) + " " + to_string(j) + " " +
                     to_string(change) + " accepted");
         CNT_ACCEPTED_FLOW_OVER++;
     } else {
-#ifdef V3
-        flow_over(-change);
-#endif
-
-#ifdef V2
-        IMPL_change_interval_len(b, i + 1, change);
-        IMPL_change_interval_len(b, i, -change);
-#endif
-
-#ifdef V1
         rollback(old_actions_size);
-        //rollback();
-        //rollback();
-#endif
         ASSERT(old_metric == metric, "failed back score");
     }
+
+    // bad
+    // STEPS=5000
+    // 980874
+    /*for (int block = 0; block < B; block++) {
+        int best_block = -1, best_i = -1, best_j = -1, best_change = 0, best_f = -1e9;
+
+        for (int i = 0; i < intervals[block].size(); i++) {
+            for (int j = 0; j < intervals[block].size(); j++) {
+                if (i == j) {
+                    continue;
+                }
+
+                auto and_users = intervals[block][i].users & intervals[block][j].users;
+                auto unique_i = intervals[block][i].users ^ and_users;
+                auto unique_j = intervals[block][j].users ^ and_users;
+
+                for (int change = 1; change <= intervals[block][i].len; change++) {
+                    int accepted = 0;
+                    int overflow = 0;
+
+                    for (int u: unique_i) {
+                        accepted += min(users_info[u].rbNeed, users_info[u].sum_len - change);
+                        overflow += max(0, users_info[u].sum_len - change - users_info[u].rbNeed);
+                    }
+                    for (int u: unique_j) {
+                        accepted += min(users_info[u].rbNeed, users_info[u].sum_len + change);
+                        overflow += max(0, users_info[u].sum_len + change - users_info[u].rbNeed);
+                    }
+                    for(int u : and_users){
+                        accepted += min(users_info[u].rbNeed, users_info[u].sum_len);
+                        overflow += max(0, users_info[u].sum_len - users_info[u].rbNeed);
+                    }
+
+                    int cur_f = accepted - overflow;
+
+                    if (best_f < cur_f) {
+                        best_f = cur_f;
+                        best_block = block;
+                        best_i = i;
+                        best_j = j;
+                        best_change = change;
+                    }
+                }
+            }
+        }
+
+        if (best_block == -1) {
+            continue;
+        }
+
+        auto old_metric = metric;
+        int old_actions_size = actions.size();
+        CNT_CALL_FLOW_OVER++;
+
+        change_interval_len(best_block, best_i, -best_change);
+        change_interval_len(best_block, best_j, best_change);
+
+        SNAP_ACTION(
+                "interval_flow_over " + to_string(b) + " " + to_string(i) + " " + to_string(j) + " " +
+                to_string(change));
+
+        if (is_good(old_metric)) {
+            SNAP_ACTION("interval_flow_over " + to_string(b) + " " + to_string(i) + " " + to_string(j) + " " +
+                        to_string(change) + " accepted");
+            CNT_ACCEPTED_FLOW_OVER++;
+        } else {
+            rollback(old_actions_size);
+            ASSERT(old_metric == metric, "failed back score");
+        }
+    }*/
 }
 
 void EgorTaskSolver::interval_increase_len() {
