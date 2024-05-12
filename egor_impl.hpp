@@ -115,7 +115,7 @@ vector<Interval> EgorTaskSolver::annealing(vector<Interval> reservedRBs,
     temperature = 1;
     prev_action = 0;
 
-#define SAVE_BEST_ANS
+//#define SAVE_BEST_ANS
 
 #ifdef SAVE_BEST_ANS
     int best_score = metric.accepted;

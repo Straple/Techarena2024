@@ -60,7 +60,8 @@ void EgorTaskSolver::interval_flow_over() {
         metric.unused_space += change;
     };
 
-    auto end_users = intervals[b][i].users ^ (intervals[b][i].users & intervals[b][i + 1].users);
+    int change = rnd.get(-intervals[b][i].len, intervals[b][i+1].len);
+    /*auto end_users = intervals[b][i].users ^ (intervals[b][i].users & intervals[b][i + 1].users);
 
     int overflow = 0;
     for (int u: end_users) {
@@ -69,7 +70,8 @@ void EgorTaskSolver::interval_flow_over() {
 
     overflow = min(overflow, intervals[b][i].len);
 
-    int change = rnd.get(-overflow, intervals[b][i + 1].len);
+    int change = rnd.get(-overflow, intervals[b][i + 1].len);*/
+
     /*int change = 0;
 
     auto and_users = intervals[b][i].users & intervals[b][i + 1].users;
@@ -480,7 +482,8 @@ void EgorTaskSolver::interval_split() {
     SNAP_ACTION("interval_split " + to_string(b) + " " + to_string(i) + " " + to_string(best_left_len));
 
     if (is_good(old_metric)) {
-        SNAP_ACTION("interval_split " + to_string(b) + " " + to_string(i) + " " + to_string(best_left_len) + " accepted");
+        SNAP_ACTION(
+                "interval_split " + to_string(b) + " " + to_string(i) + " " + to_string(best_left_len) + " accepted");
     } else {
         rollback(old_actions_size);
         ASSERT(old_metric == metric, "failed back score");

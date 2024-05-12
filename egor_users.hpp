@@ -153,7 +153,7 @@ void EgorTaskSolver::user_add_left() {
 
     USER_FOR_BEGIN(l > 0 &&
                    intervals[b][l - 1].users.size() < L &&
-                   ((intervals[b][l - 1].beam_msk >> users_info[u].beam) & 1) == 0);
+                   ((intervals[b][l - 1].beam_msk >> users_info[u].beam) & 1) == 0)
 
     l--;
 

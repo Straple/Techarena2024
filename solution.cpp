@@ -30,8 +30,8 @@ vector<Interval> Solver_IMPL(int N, int M, int K, int J, int L,
     }
 
     auto egor_answer = Solver_egor(N, M, K, J, L, reservedRBs, userInfos, artem_answer, 42,
-                                   //vector<int>{0, 3, 1, 7, 0, 89, 0, 0, 90, 40, 23} // OK
-                                   //          0  1  2  3  4   5  6  7   8   9  10
+            //vector<int>{0, 3, 1, 7, 0, 89, 0, 0, 90, 40, 23} // OK
+            //          0  1  2  3  4   5  6  7   8   9  10
                                    vector<int>{5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5});
 
     //auto egor_score = get_solution_score(N, M, K, J, L, reservedRBs, userInfos, egor_answer);
@@ -51,8 +51,8 @@ vector<Interval> Solver_IMPL(int N, int M, int K, int J, int L,
 }
 
 vector<Interval> Solver_BUFF(int N, int M, int K, int J, int L,
-                        vector<Interval> reservedRBs,
-                        vector<UserInfo> userInfos) {
+                             vector<Interval> reservedRBs,
+                             vector<UserInfo> userInfos) {
     //auto back_mapping = reduce_users(N, J, userInfos);
     auto answer = Solver_IMPL(N, M, K, J, L, reservedRBs, userInfos);
     //normalize_id(answer, back_mapping);
@@ -64,6 +64,8 @@ vector<Interval> Solver(int N, int M, int K, int J, int L,
                         vector<UserInfo> userInfos) {
     THEORY_MAX_SCORE = get_theory_max_score(N, M, K, J, L, reservedRBs, userInfos);
     auto answer = Solver_BUFF(N, M, K, J, L, reservedRBs, userInfos);
+#ifdef MY_DEBUG_MODE
     get_solution_score(N, M, K, J, L, reservedRBs, userInfos, answer);
+#endif
     return answer;
 }

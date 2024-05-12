@@ -21,18 +21,17 @@ int main() {
     //return 0;
 
 
-    {
-        /*for (int i = 0; i < 4; i++) {
-            if (i == 0) {
-                STEPS = 500;
-            } else if (i == 1) {
-                STEPS = 1'000;
-            } else if (i == 2) {
-                STEPS = 2'000;
-            } else if (i == 3) {
-                STEPS = 5'000;
-            }*/
-        STEPS = 1000;
+
+    for (int i = 0; i < 4; i++) {
+        if (i == 0) {
+            STEPS = 500;
+        } else if (i == 1) {
+            STEPS = 1'000;
+        } else if (i == 2) {
+            STEPS = 2'000;
+        } else if (i == 3) {
+            STEPS = 5'000;
+        }
 
         test_case_info infos[5];
         map<int, map<int, int>> score_per_test;
@@ -40,17 +39,17 @@ int main() {
 
         // (diff, score, K, test, METRIC_TYPE)
         vector<tuple<int, int, int, int, int>> best_diff;
-        for (int K = 2; K <= 2; K++) {
+        for (int K = 0; K <= 3; K++) {
             //cout << "TEST CASE: K=" << K << endl;
             string dir = "tests/case_K=" + to_string(K) + "/";
             std::vector<pair<float, int>> tests_and_scores;
             infos[K].tests = test_case_K_sizes[K];
-            for (int test = 14; test < 15/*test_case_K_sizes[K]*/; test++) {
+            for (int test = 0; test < test_case_K_sizes[K]; test++) {
                 ifstream input(dir + to_string(test) + ".txt");
                 TestData data;
                 input >> data;
 
-                cout << "test: " << test << "!" << endl;
+                //cout << "test: " << test << "!" << endl;
 
                 int theor_max = get_theory_max_score(data);
                 SNAP(snapshoter = Snapshoter(K, test, theor_max, data, "basic_solve"));
@@ -114,7 +113,7 @@ int main() {
             }
         }
 
-        vector<int> metric_add_score(METRIC_CNT);
+        /*vector<int> metric_add_score(METRIC_CNT);
         sort(best_diff.begin(), best_diff.end());
         for (auto [diff, score, K, test, m]: best_diff) {
             cout << diff << ' ' << score << ' ' << K << ' ' << test << ' ' << m << endl;
@@ -124,7 +123,7 @@ int main() {
         for (int m = 0; m < METRIC_CNT; m++) {
             cout << metric_add_score[m] << ' ';
         }
-        cout << endl;
+        cout << endl;*/
 
         test_case_info total_info;
         for (int K = 0; K <= 4; K++) {

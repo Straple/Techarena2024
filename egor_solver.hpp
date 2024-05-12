@@ -227,6 +227,8 @@ struct EgorTaskSolver {
 
         // 979437 -> 980155 -> 980332 -> 980459
         auto calc_f = [&](Metric m) {
+            return 100 * m.accepted - 10 * m.unused_space - m.overflow - m.free_space;
+
             //STEPS: 1000
             //TEST CASE: K=0 | tests: 666 | score: 99.2499% | 647449/652342 | time: 2418.2ms | max_time: 15.081ms | mean_time: 3.63093ms
             //TEST CASE: K=1 | tests: 215 | score: 98.0825% | 211974/216118 | time: 1502.41ms | max_time: 15.594ms | mean_time: 6.98797ms
@@ -240,9 +242,9 @@ struct EgorTaskSolver {
             //return 10'000 * m.accepted - m.unused_space;
 
             //1682
-            return 10'000 * m.accepted + m.vertical_free_space;
+            //return 10'000 * m.accepted + m.vertical_free_space;
 
-            return 100 * m.accepted - 10 * m.unused_space - m.overflow - m.free_space - m.vertical_free_space * 2;
+            //return 100 * m.accepted - 10 * m.unused_space - m.overflow - m.free_space - m.vertical_free_space * 2;
 
             //add score: 0 897 417
             if (METRIC_TYPE == 0) {
