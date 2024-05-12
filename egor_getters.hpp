@@ -77,9 +77,6 @@ int EgorTaskSolver::get_intervals_size() const {
     }
 
     for (int b = 0; b < B; b++) {
-        for(int i = 0; i < intervals[b].size(); i++){
-            m.vertical_free_space += get_vertical_free_space(b, i);
-        }
         for (auto interval: intervals[b]) {
             m.unused_space -= interval.len;
             m.free_space += interval.len * (L - interval.users.size());
@@ -88,7 +85,7 @@ int EgorTaskSolver::get_intervals_size() const {
     return m;
 }
 
-[[nodiscard]] long long EgorTaskSolver::get_vertical_free_space(int b, int i) const {
+/*[[nodiscard]] long long EgorTaskSolver::get_vertical_free_space(int b, int i) const {
     auto end_users = intervals[b][i].users;
     if (i + 1 < intervals[b].size()) {
         end_users = end_users ^ (end_users & intervals[b][i + 1].users);
@@ -105,22 +102,4 @@ int EgorTaskSolver::get_intervals_size() const {
     }
     ASSERT(min_overflow >= 0, "failed");
     return static_cast<long long>(min_overflow) * cnt_overflow;
-}
-
-// без vertical_free_space
-//STEPS: 1000
-//TEST CASE: K=0 | tests: 666 | score: 99.2338% | 647344/652342 | time: 2447.25ms | max_time: 17.458ms | mean_time: 3.67455ms
-//TEST CASE: K=1 | tests: 215 | score: 98.0784% | 211965/216118 | time: 1407.87ms | max_time: 15.298ms | mean_time: 6.54822ms
-//TEST CASE: K=2 | tests: 80 | score: 97.8484% | 77583/79289 | time: 628.048ms | max_time: 12.173ms | mean_time: 7.8506ms
-//TEST CASE: K=3 | tests: 39 | score: 96.7343% | 43751/45228 | time: 323.268ms | max_time: 12.746ms | mean_time: 8.28892ms
-//TEST CASE: K=4 | tests: 0 | score: -nan% | 0/0 | time: 0ms | max_time: 0ms | mean_time: 0ms
-//TOTAL: tests: 1000 | score: 98.7579% | 980643/992977 | time: 4806.44ms | max_time: 17.458ms | mean_time: 4.80644ms
-
-// с vertical_free_space
-//STEPS: 1000
-//TEST CASE: K=0 | tests: 666 | score: 99.2161% | 647228/652342 | time: 2875.13ms | max_time: 32.821ms | mean_time: 4.31701ms
-//TEST CASE: K=1 | tests: 215 | score: 98.0164% | 211831/216118 | time: 1431.58ms | max_time: 14.285ms | mean_time: 6.65851ms
-//TEST CASE: K=2 | tests: 80 | score: 97.6794% | 77449/79289 | time: 621.178ms | max_time: 12.092ms | mean_time: 7.76473ms
-//TEST CASE: K=3 | tests: 39 | score: 96.7321% | 43750/45228 | time: 313.486ms | max_time: 10.988ms | mean_time: 8.0381ms
-//TEST CASE: K=4 | tests: 0 | score: -nan% | 0/0 | time: 0ms | max_time: 0ms | mean_time: 0ms
-//TOTAL: tests: 1000 | score: 98.7191% | 980258/992977 | time: 5241.37ms | max_time: 32.821ms | mean_time: 5.24137ms
+}*/

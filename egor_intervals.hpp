@@ -27,7 +27,119 @@ void EgorTaskSolver::interval_flow_over() {
 
     // заберу у интервала i длину change, отдам ее интервалу j
 
+    // было
+    // 981863
+
     int block, i, j;
+    {
+        vector<tuple<int, int, int>> ips;
+        for (int block = 0; block < B; block++) {
+            for (int i = 0; i < intervals[block].size(); i++) {
+                for (int j = 0; j < intervals[block].size(); j++) {
+                    if (i != j) {
+                        ips.emplace_back(block, i, j);
+                    }
+                }
+            }
+        }
+        if (ips.empty()) {
+            return;
+        }
+        int p = rnd.get(0, ips.size() - 1);
+        block = get<0>(ips[p]);
+        i = get<1>(ips[p]);
+        j = get<2>(ips[p]);
+    }
+
+    int change = rnd.get(-intervals[block][i].len, intervals[block][j].len);
+
+    auto old_metric = metric;
+    int old_actions_size = actions.size();
+    //CNT_CALL_FLOW_OVER++;
+
+    change_interval_len(block, i, change);
+    change_interval_len(block, j, -change);
+
+    SNAP_ACTION(
+            "interval_flow_over " + to_string(b) + " " + to_string(i) + " " + to_string(j) + " " +
+            to_string(change));
+
+    if (is_good(old_metric)) {
+        SNAP_ACTION("interval_flow_over " + to_string(b) + " " + to_string(i) + " " + to_string(j) + " " +
+                    to_string(change) + " accepted");
+        //CNT_ACCEPTED_FLOW_OVER++;
+    } else {
+        rollback(old_actions_size);
+        ASSERT(old_metric == metric, "failed back score");
+    }
+
+    /*int block, i, j;
+    {
+        vector<tuple<int, int, int, int>> ips;
+        for (int block = 0; block < B; block++) {
+            for (int i = 0; i < intervals[block].size(); i++) {
+                for (int j = 0; j < intervals[block].size(); j++) {
+                    if (i != j) {
+                        //ips.emplace_back(block, i, j);
+
+                        auto and_users = intervals[block][i].users & intervals[block][j].users;
+                        auto unique_i = intervals[block][i].users ^ and_users;
+                        auto unique_j = intervals[block][j].users ^ and_users;
+
+                        int accepted = 0;
+                        int overflow = 0;
+
+                        for (int u: unique_i) {
+                            accepted += min(users_info[u].rbNeed, users_info[u].sum_len);
+                            overflow += max(0, users_info[u].sum_len - users_info[u].rbNeed);
+                        }
+                        for (int u: unique_j) {
+                            accepted += min(users_info[u].rbNeed, users_info[u].sum_len);
+                            overflow += max(0, users_info[u].sum_len - users_info[u].rbNeed);
+                        }
+
+                        int cur_f = overflow;
+
+                        ips.emplace_back(cur_f, block, i, j);
+                    }
+                }
+            }
+        }
+        if (ips.empty()) {
+            return;
+        }
+        sort(ips.begin(), ips.end(), greater<>());
+        int p = 0;//rnd.get(0, ips.size() - 1);
+        block = get<1>(ips[p]);
+        i = get<2>(ips[p]);
+        j = get<3>(ips[p]);
+    }
+
+    int change = rnd.get(-intervals[block][i].len, intervals[block][j].len);
+
+    auto old_metric = metric;
+    int old_actions_size = actions.size();
+    CNT_CALL_FLOW_OVER++;
+
+    change_interval_len(block, i, change);
+    change_interval_len(block, j, -change);
+
+    SNAP_ACTION(
+            "interval_flow_over " + to_string(b) + " " + to_string(i) + " " + to_string(j) + " " +
+            to_string(change));
+
+    if (is_good(old_metric)) {
+        SNAP_ACTION("interval_flow_over " + to_string(b) + " " + to_string(i) + " " + to_string(j) + " " +
+                    to_string(change) + " accepted");
+        CNT_ACCEPTED_FLOW_OVER++;
+    } else {
+        rollback(old_actions_size);
+        ASSERT(old_metric == metric, "failed back score");
+    }*/
+
+    //STEPS=5000
+    //981497
+    /*int block, i, j;
     {
         vector<tuple<int, int, int>> ips;
         for (int block = 0; block < B; block++) {
@@ -97,7 +209,7 @@ void EgorTaskSolver::interval_flow_over() {
     } else {
         rollback(old_actions_size);
         ASSERT(old_metric == metric, "failed back score");
-    }
+    }*/
 
     // bad
     // STEPS=5000

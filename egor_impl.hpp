@@ -3,14 +3,17 @@
 EgorTaskSolver::EgorTaskSolver(int NN, int MM, int KK, int JJ, int LL,
                                const vector<Interval> &reservedRBs,
                                const vector<UserInfo> &userInfos,
-                               vector<Interval> start_intervals, int random_seed, vector<int> powers) : N(NN), M(MM),
-                                                                                                        K(KK), J(JJ),
-                                                                                                        L(LL),
-                                                                                                        SELECTION_ACTION(
-                                                                                                                powers) {
+                               vector<Interval> start_intervals, int random_seed, vector<int> powers,
+                               vector<int> metric_coefs) : N(NN), M(MM),
+                                                           K(KK), J(JJ),
+                                                           L(LL),
+                                                           SELECTION_ACTION(
+                                                                   powers),
+                                                           METRICS_COEF(metric_coefs) {
 
     rnd.generator = mt19937_64(random_seed);
 
+    ASSERT(METRICS_COEF.size() == METRIC_COEFFS_SIZE, "invalid size");
     ASSERT(2 <= L && L <= 16, "invalid L");
     ASSERT(0 < J && J <= 16, "invalid J");
 
@@ -115,7 +118,7 @@ vector<Interval> EgorTaskSolver::annealing(vector<Interval> reservedRBs,
     temperature = 1;
     prev_action = 0;
 
-//#define SAVE_BEST_ANS
+#define SAVE_BEST_ANS
 
 #ifdef SAVE_BEST_ANS
     int best_score = metric.accepted;
@@ -165,7 +168,7 @@ vector<Interval> EgorTaskSolver::annealing(vector<Interval> reservedRBs,
             METRIC_TYPE = 0;
         }*/
 
-        //TRAIN_SCORE += best_score;
+        TRAIN_SCORE += best_score;
 
         ASSERT(get_solution_score(N, M, K, J, L, reservedRBs, userInfos, get_total_answer()) == metric.accepted,
                "invalid total_score");
@@ -175,30 +178,26 @@ vector<Interval> EgorTaskSolver::annealing(vector<Interval> reservedRBs,
 
         int s = SELECTION_ACTION.select();
         if (s == 0) {
-            ACTION_WRAPPER(user_new_interval, 0);
+            ACTION_WRAPPER(user_new_interval, s);
         } else if (s == 1) {
-            ACTION_WRAPPER(user_add_left, 1);
+            ACTION_WRAPPER(user_add_left, s);
         } else if (s == 2) {
-            ACTION_WRAPPER(user_remove_left, 2);
+            ACTION_WRAPPER(user_remove_left, s);
         } else if (s == 3) {
-            ACTION_WRAPPER(user_add_right, 3);
+            ACTION_WRAPPER(user_add_right, s);
         } else if (s == 4) {
-            ACTION_WRAPPER(user_remove_right, 4);
+            ACTION_WRAPPER(user_remove_right, s);
         } else if (s == 5) {
-            ACTION_WRAPPER(user_remove_and_add, 11);
+            ACTION_WRAPPER(user_remove_and_add, s);
         } else if (s == 6) {
-            ACTION_WRAPPER(interval_increase_len, 6);
+            ACTION_WRAPPER(interval_increase_len, s);
         } else if (s == 7) {
-            ACTION_WRAPPER(interval_decrease_len, 7);
+            ACTION_WRAPPER(interval_flow_over, s);
         } else if (s == 8) {
-            ACTION_WRAPPER(interval_flow_over, 8);
+            ACTION_WRAPPER(interval_merge, s);
         } else if (s == 9) {
-            ACTION_WRAPPER(interval_merge, 9);
-        } else if (s == 10) {
-            ACTION_WRAPPER(interval_split, 10);
-        } /*else if (s == 11) {
-            ACTION_WRAPPER(interval_merge_and_split, 11);
-        } */else {
+            ACTION_WRAPPER(interval_split, s);
+        } else {
             ASSERT(false, "kek");
         }
 
@@ -227,8 +226,8 @@ vector<Interval> EgorTaskSolver::annealing(vector<Interval> reservedRBs,
 vector<Interval> Solver_egor(int N, int M, int K, int J, int L,
                              const vector<Interval> &reservedRBs,
                              const vector<UserInfo> &userInfos, const std::vector<Interval> &solution, int random_seed,
-                             vector<int> powers) {
-    EgorTaskSolver solver(N, M, K, J, L, reservedRBs, userInfos, solution, random_seed, powers);
+                             vector<int> powers, vector<int> metric_coefs) {
+    EgorTaskSolver solver(N, M, K, J, L, reservedRBs, userInfos, solution, random_seed, powers, metric_coefs);
     auto answer = solver.annealing(reservedRBs, userInfos);
     //ASSERT(solver.metric.accepted == get_solution_score(N, M, K, J, L, reservedRBs, userInfos, answer), "invalid total_score");
     return answer;

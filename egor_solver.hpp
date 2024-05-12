@@ -27,28 +27,30 @@
 //TEST CASE: K=4 | tests: 0 | score: -nan% | 0/0 | time: 0ms | max_time: 0ms | mean_time: 0ms
 //TOTAL: tests: 1000 | score: 98.8324% | 981383/992977 | time: 56449.8ms | max_time: 93.13ms | mean_time: 56.4498ms
 
-const int SELECTION_SIZE = 11;
+const int SELECTION_SIZE = 10;
+const int METRIC_COEFFS_SIZE = 4;
 //SelectionRandomizer SELECTION_ACTION(SELECTION_SIZE);
 // = std::vector<int>{10, 1, 1, 1, 1, 16, 9, 6, 22, 12, 11, 30};
-int STEPS = 1300;
+int STEPS = 1000;
 
 const int METRIC_CNT = 1;
 int METRIC_TYPE = 0;
 
-int CNT_CALL_FLOW_OVER = 0;
-int CNT_ACCEPTED_FLOW_OVER = 0;
+//int CNT_CALL_FLOW_OVER = 0;
+//int CNT_ACCEPTED_FLOW_OVER = 0;
 
 static int frame_id = 0;
 
-#define SNAP_ACTION(action_foo)\
-SNAP(snapshoter.write(get_total_answer(), "annealing:" \
-"\\naccepted: " + to_string(metric.accepted) +  \
-"\\nfree_space: " + to_string(metric.free_space) +                    \
-"\\noverflow: " + to_string(metric.overflow) +  \
-"\\nunused_space: " + to_string(metric.unused_space) +                \
-"\\nvertical_free_space: " + to_string(metric.vertical_free_space) +  \
-"\\nframe_id: " + to_string(frame_id++) +               \
-"\\n" + (action_foo)))
+#define SNAP_ACTION(action_foo)                                                                                            \
+    SNAP(snapshoter.write(get_total_answer(), "annealing:"                                                                 \
+                                              "\\naccepted: " +                                                            \
+                                                      to_string(metric.accepted) +                                         \
+                                                      "\\nfree_space: " + to_string(metric.free_space) +                   \
+                                                      "\\noverflow: " + to_string(metric.overflow) +                       \
+                                                      "\\nunused_space: " + to_string(metric.unused_space) +               \
+                                                      "\\nvertical_free_space: " + to_string(metric.vertical_free_space) + \
+                                                      "\\nframe_id: " + to_string(frame_id++) +                            \
+                                                      "\\n" + (action_foo)))
 
 struct EgorTaskSolver {
     ///============================
@@ -57,6 +59,8 @@ struct EgorTaskSolver {
 
     //                                                    0  1  2  3  4   5  6  7   8   9  10
     SelectionRandomizer SELECTION_ACTION;// = vector<int>{0, 3, 1, 7, 0, 89, 0, 0, 90, 40, 23};
+
+    vector<int> METRICS_COEF;
 
     long long TRAIN_SCORE = 0;
 
@@ -153,8 +157,6 @@ struct EgorTaskSolver {
         // затем выкидываем длины зарезервированных
         long long unused_space = 0;
 
-        long long vertical_free_space = 0;
-
         friend bool operator==(Metric lhs, Metric rhs) {
             return lhs.accepted == rhs.accepted &&
                    lhs.free_space == rhs.free_space &&
@@ -170,7 +172,7 @@ struct EgorTaskSolver {
     EgorTaskSolver(int NN, int MM, int KK, int JJ, int LL,
                    const vector<Interval> &reservedRBs,
                    const vector<UserInfo> &userInfos,
-                   vector<Interval> start_intervals, int random_seed, vector<int> powers);
+                   vector<Interval> start_intervals, int random_seed, vector<int> powers, vector<int> metric_coefs);
 
     ///===========================
     ///===========ACTIONS=========
@@ -226,11 +228,29 @@ struct EgorTaskSolver {
     //TEST CASE: K=4 | tests: 0 | score: -nan% | 0/0 | time: 0ms | max_time: 0ms | mean_time: 0ms
     //TOTAL: tests: 1000 | score: 98.7319% | 980385/992977 | time: 42951.8ms | max_time: 77.561ms | mean_time: 42.9518ms
     bool is_good(Metric old_metric) {
+        /*if (!(get_metric() == metric)) {
+            cout << "kek" << endl;
+            cout << metric.accepted << endl;
+            cout << metric.free_space << endl;
+            cout << metric.overflow << endl;
+            cout << metric.unused_space << endl;
+            cout << "=============\n";
+            auto ok_metric = get_metric();
+            cout << ok_metric.accepted << endl;
+            cout << ok_metric.free_space << endl;
+            cout << ok_metric.overflow << endl;
+            cout << ok_metric.unused_space << endl;
+        }*/
         ASSERT(get_metric() == metric, "invalid metric");
 
         // 979437 -> 980155 -> 980332 -> 980459
         auto calc_f = [&](Metric m) {
-            return 100 * m.accepted - 10 * m.unused_space - m.overflow - m.free_space;
+            return METRICS_COEF[0] * m.accepted +
+                   METRICS_COEF[1] * m.free_space +
+                   METRICS_COEF[2] * m.overflow +
+                   METRICS_COEF[3] * m.unused_space;
+
+            //return 100 * m.accepted - 10 * m.unused_space - m.overflow - m.free_space;
 
             //STEPS: 1000
             //TEST CASE: K=0 | tests: 666 | score: 99.2499% | 647449/652342 | time: 2418.2ms | max_time: 15.081ms | mean_time: 3.63093ms
@@ -565,4 +585,4 @@ struct EgorTaskSolver {
 vector<Interval> Solver_egor(int N, int M, int K, int J, int L,
                              const vector<Interval> &reservedRBs,
                              const vector<UserInfo> &userInfos, const std::vector<Interval> &solution, int random_seed,
-                             vector<int> powers);
+                             vector<int> powers, vector<int> metric_coefs);

@@ -21,7 +21,7 @@
     }
 
 #define USER_FOR_BEGIN(condition)              \
-    for (int index = 0; index < 1; index++) { \
+    for (int index = 0; index < 1; index++) {  \
         int u = rnd.get(0, N - 1);             \
         auto [b, l, r] = get_user_position(u); \
         if (condition) {
@@ -84,7 +84,7 @@ void EgorTaskSolver::user_do_new_interval(int u) {
     }*/
 
     auto f = [&](int len) {
-        return len; //abs(len - users_info[u].rbNeed);
+        return len;//abs(len - users_info[u].rbNeed);
         /*if (len > users_info[u].rbNeed) {
             return (len - users_info[u].rbNeed);
         } else {
@@ -158,20 +158,20 @@ void EgorTaskSolver::user_add_left() {
                    intervals[b][l - 1].users.size() < L &&
                    ((intervals[b][l - 1].beam_msk >> users_info[u].beam) & 1) == 0)
 
-            l--;
+    l--;
 
-            auto old_metric = metric;
+    auto old_metric = metric;
 
-            add_user_in_interval(u, b, l);
+    add_user_in_interval(u, b, l);
 
-            SNAP_ACTION("user_add_left " + to_string(u) + " " + to_string(b) + " " + to_string(l));
+    SNAP_ACTION("user_add_left " + to_string(u) + " " + to_string(b) + " " + to_string(l));
 
-            if (is_good(old_metric)) {
-                SNAP_ACTION("user_add_left " + to_string(u) + " " + to_string(b) + " " + to_string(l) + " accepted");
-            } else {
-                rollback();
-                ASSERT(old_metric == metric, "failed back score");
-            }
+    if (is_good(old_metric)) {
+        SNAP_ACTION("user_add_left " + to_string(u) + " " + to_string(b) + " " + to_string(l) + " accepted");
+    } else {
+        rollback();
+        ASSERT(old_metric == metric, "failed back score");
+    }
     USER_FOR_END
 }
 
@@ -182,20 +182,20 @@ void EgorTaskSolver::user_add_right() {
                    intervals[b][r + 1].users.size() < L &&
                    ((intervals[b][r + 1].beam_msk >> users_info[u].beam) & 1) == 0)
 
-            r++;
+    r++;
 
-            auto old_metric = metric;
+    auto old_metric = metric;
 
-            add_user_in_interval(u, b, r);
+    add_user_in_interval(u, b, r);
 
-            SNAP_ACTION("user_add_right " + to_string(u) + " " + to_string(b) + " " + to_string(r));
+    SNAP_ACTION("user_add_right " + to_string(u) + " " + to_string(b) + " " + to_string(r));
 
-            if (is_good(old_metric)) {
-                SNAP_ACTION("user_add_right " + to_string(u) + " " + to_string(b) + " " + to_string(r) + " accepted");
-            } else {
-                rollback();
-                ASSERT(old_metric == metric, "failed back score");
-            }
+    if (is_good(old_metric)) {
+        SNAP_ACTION("user_add_right " + to_string(u) + " " + to_string(b) + " " + to_string(r) + " accepted");
+    } else {
+        rollback();
+        ASSERT(old_metric == metric, "failed back score");
+    }
     USER_FOR_END
 }
 
@@ -204,17 +204,17 @@ void EgorTaskSolver::user_remove_left() {
 
     USER_FOR_BEGIN(l != -1)
 
-            auto old_metric = metric;
+    auto old_metric = metric;
 
-            remove_user_in_interval(u, b, l);
-            SNAP_ACTION("user_remove_left " + to_string(u) + " " + to_string(b) + " " + to_string(l));
+    remove_user_in_interval(u, b, l);
+    SNAP_ACTION("user_remove_left " + to_string(u) + " " + to_string(b) + " " + to_string(l));
 
-            if (is_good(old_metric)) {
-                SNAP_ACTION("user_remove_left " + to_string(u) + " " + to_string(b) + " " + to_string(l) + " accepted");
-            } else {
-                rollback();
-                ASSERT(old_metric == metric, "failed back score");
-            }
+    if (is_good(old_metric)) {
+        SNAP_ACTION("user_remove_left " + to_string(u) + " " + to_string(b) + " " + to_string(l) + " accepted");
+    } else {
+        rollback();
+        ASSERT(old_metric == metric, "failed back score");
+    }
 
     USER_FOR_END
 }
@@ -224,18 +224,18 @@ void EgorTaskSolver::user_remove_right() {
 
     USER_FOR_BEGIN(r != -1)
 
-            auto old_metric = metric;
+    auto old_metric = metric;
 
-            remove_user_in_interval(u, b, r);
-            SNAP_ACTION("user_remove_right " + to_string(u) + " " + to_string(b) + " " + to_string(r));
+    remove_user_in_interval(u, b, r);
+    SNAP_ACTION("user_remove_right " + to_string(u) + " " + to_string(b) + " " + to_string(r));
 
-            if (is_good(old_metric)) {
-                SNAP_ACTION(
-                        "user_remove_right " + to_string(u) + " " + to_string(b) + " " + to_string(r) + " accepted");
-            } else {
-                rollback();
-                ASSERT(old_metric == metric, "failed back score");
-            }
+    if (is_good(old_metric)) {
+        SNAP_ACTION(
+                "user_remove_right " + to_string(u) + " " + to_string(b) + " " + to_string(r) + " accepted");
+    } else {
+        rollback();
+        ASSERT(old_metric == metric, "failed back score");
+    }
     USER_FOR_END
 }
 
