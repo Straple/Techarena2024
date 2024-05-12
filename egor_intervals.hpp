@@ -143,6 +143,7 @@ void EgorTaskSolver::interval_flow_over() {
 
     auto old_metric = metric;
     int old_actions_size = actions.size();
+    CNT_CALL_FLOW_OVER++;
 
     //#define V3
 
@@ -192,6 +193,7 @@ void EgorTaskSolver::interval_flow_over() {
     if (is_good(old_metric)) {
         SNAP_ACTION("interval_flow_over " + to_string(b) + " " + to_string(i) + " " + to_string(j) + " " +
                     to_string(change) + " accepted");
+        CNT_ACCEPTED_FLOW_OVER++;
     } else {
 #ifdef V3
         flow_over(-change);

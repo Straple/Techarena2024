@@ -35,6 +35,9 @@ int STEPS = 1300;
 const int METRIC_CNT = 1;
 int METRIC_TYPE = 0;
 
+int CNT_CALL_FLOW_OVER = 0;
+int CNT_ACCEPTED_FLOW_OVER = 0;
+
 static int frame_id = 0;
 
 #define SNAP_ACTION(action_foo)\

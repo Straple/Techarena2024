@@ -33,6 +33,9 @@ int main() {
             STEPS = 5'000;
         }
 
+        CNT_CALL_FLOW_OVER = 0;
+        CNT_ACCEPTED_FLOW_OVER = 0;
+
         test_case_info infos[5];
         map<int, map<int, int>> score_per_test;
         //ofstream scores_output("scores2.txt");
@@ -219,5 +222,7 @@ int main() {
             cout << "TEST CASE: K=" << K << " | " << infos[K] << endl;
         }
         cout << "TOTAL: " << total_info << endl;
+        cout << "FLOW_OVER: " << (CNT_ACCEPTED_FLOW_OVER * 100.0 / CNT_CALL_FLOW_OVER) << "% " << CNT_ACCEPTED_FLOW_OVER
+             << "/" << CNT_CALL_FLOW_OVER << endl;
     }
 }
