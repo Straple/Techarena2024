@@ -31,13 +31,10 @@ const int SELECTION_SIZE = 10;
 const int METRIC_COEFFS_SIZE = 4;
 //SelectionRandomizer SELECTION_ACTION(SELECTION_SIZE);
 // = std::vector<int>{10, 1, 1, 1, 1, 16, 9, 6, 22, 12, 11, 30};
-int STEPS = 1000;
+int STEPS = 5000;
 
 const int METRIC_CNT = 1;
 int METRIC_TYPE = 0;
-
-//int CNT_CALL_FLOW_OVER = 0;
-//int CNT_ACCEPTED_FLOW_OVER = 0;
 
 static int frame_id = 0;
 
@@ -60,8 +57,6 @@ struct EgorTaskSolver {
     //                                                    0  1  2  3  4   5  6  7   8   9  10
     SelectionRandomizer SELECTION_ACTION;// = vector<int>{0, 3, 1, 7, 0, 89, 0, 0, 90, 40, 23};
 
-    vector<int> METRICS_COEF;
-
     long long TRAIN_SCORE = 0;
 
     int N;
@@ -69,6 +64,7 @@ struct EgorTaskSolver {
     int K;
     int J;
     int L;
+    bool was_accepted = false;
 
     int B;// колво блоков
 
@@ -227,30 +223,17 @@ struct EgorTaskSolver {
     //TEST CASE: K=3 | tests: 39 | score: 96.4336% | 43615/45228 | time: 1849.04ms | max_time: 35.504ms | mean_time: 47.4114ms
     //TEST CASE: K=4 | tests: 0 | score: -nan% | 0/0 | time: 0ms | max_time: 0ms | mean_time: 0ms
     //TOTAL: tests: 1000 | score: 98.7319% | 980385/992977 | time: 42951.8ms | max_time: 77.561ms | mean_time: 42.9518ms
-    bool is_good(Metric old_metric) {
-        /*if (!(get_metric() == metric)) {
-            cout << "kek" << endl;
-            cout << metric.accepted << endl;
-            cout << metric.free_space << endl;
-            cout << metric.overflow << endl;
-            cout << metric.unused_space << endl;
-            cout << "=============\n";
-            auto ok_metric = get_metric();
-            cout << ok_metric.accepted << endl;
-            cout << ok_metric.free_space << endl;
-            cout << ok_metric.overflow << endl;
-            cout << ok_metric.unused_space << endl;
-        }*/
+    bool is_good(Metric old_metric, bool temp = true) {
         ASSERT(get_metric() == metric, "invalid metric");
 
         // 979437 -> 980155 -> 980332 -> 980459
         auto calc_f = [&](Metric m) {
-            return METRICS_COEF[0] * m.accepted +
-                   METRICS_COEF[1] * m.free_space +
-                   METRICS_COEF[2] * m.overflow +
-                   METRICS_COEF[3] * m.unused_space;
+            return m.accepted;
 
-            //return 100 * m.accepted - 10 * m.unused_space - m.overflow - m.free_space;
+            //return METRICS_COEF[0] * m.accepted +
+            //                   METRICS_COEF[1] * m.free_space +
+            //                   METRICS_COEF[2] * m.overflow +
+            //                   METRICS_COEF[3] * m.unused_space;
 
             //STEPS: 1000
             //TEST CASE: K=0 | tests: 666 | score: 99.2499% | 647449/652342 | time: 2418.2ms | max_time: 15.081ms | mean_time: 3.63093ms
@@ -358,8 +341,28 @@ struct EgorTaskSolver {
         double old_f = calc_f(old_metric);
         //ASSERT(f > 0, "invalid f");
         //ASSERT(old_f > 0, "invalid old_f");
+        double rnd_ddd = rnd.get_d();
+        double up = (f - old_f) / (double) THEORY_MAX_SCORE;
+        double down = temperature;
+        //cout << rnd_ddd << " " << up << " " << down << " | " <<  up/down << " " << exp(up/down) << " | " << f << " " << old_f << " " << THEORY_MAX_SCORE << endl;
+        if (f > old_f) {
+            //            cout << old_metric.overflow << " " << old_metric.free_space << " " << old_metric.vertical_free_space << endl;
+            //            cout << "---------------" << endl;
+            //            cout << metric.overflow << " " << metric.free_space << " " << metric.vertical_free_space << endl;
+            //            return true;
+        } else if (f == old_f) {
+            if (metric.overflow <= old_metric.overflow) {
+                return true;
+            } else {
+                return true;
+            }
 
-        return f > old_f || rnd.get_d() < exp((f - old_f) / temperature);
+            return true;
+            return true;
+        } else {
+            return false;
+        }
+        return f > old_f || (temp && (rnd.get_d() < exp((5 * (f - old_f) / (double) THEORY_MAX_SCORE) / temperature)));
 
         /*if (metric.accepted > old_metric.accepted) {
             return true;

@@ -112,13 +112,17 @@ EgorTaskSolver::EgorTaskSolver(int NN, int MM, int KK, int JJ, int LL,
 
 //#define ACTION_WRAPPER(action_foo, action_id) \
     action_foo();
+int accepted_inc[10];
+int accepted_more[10];
 
+int itt = 0;
 vector<Interval> EgorTaskSolver::annealing(vector<Interval> reservedRBs,
                                            vector<UserInfo> userInfos) {
+    itt++;
     temperature = 1;
     prev_action = 0;
 
-#define SAVE_BEST_ANS
+//#define SAVE_BEST_ANS
 
 #ifdef SAVE_BEST_ANS
     int best_score = metric.accepted;
@@ -130,7 +134,9 @@ vector<Interval> EgorTaskSolver::annealing(vector<Interval> reservedRBs,
     int there_has_been_no_improvement_for_x_steps = 0;
 
     for (int step = 0; step < STEPS; step++) {
-        temperature = ((STEPS - step) * 1.0 / STEPS);
+        temperature = ((STEPS - step) * 0.01 / STEPS);
+        //cout << "TEMPER: " << temperature << endl;
+        was_accepted = false;
         //temperature *= 0.9999;
 
         /*if (step > STEPS / 2) {
@@ -168,13 +174,14 @@ vector<Interval> EgorTaskSolver::annealing(vector<Interval> reservedRBs,
             METRIC_TYPE = 0;
         }*/
 
-        TRAIN_SCORE += best_score;
+        //TRAIN_SCORE += best_score;
 
         ASSERT(get_solution_score(N, M, K, J, L, reservedRBs, userInfos, get_total_answer()) == metric.accepted,
                "invalid total_score");
         if (THEORY_MAX_SCORE <= metric.accepted) {
             break;
         }
+        auto old_metric = metric;
 
         int s = SELECTION_ACTION.select();
         if (s == 0) {
@@ -200,6 +207,11 @@ vector<Interval> EgorTaskSolver::annealing(vector<Interval> reservedRBs,
         } else {
             ASSERT(false, "kek");
         }
+        if (metric.accepted > old_metric.accepted){
+            accepted_inc[s]++;
+            accepted_more[s]+=metric.accepted-old_metric.accepted;
+        }
+
 
 #ifdef SAVE_BEST_ANS
         if (best_score < metric.accepted) {
@@ -212,6 +224,17 @@ vector<Interval> EgorTaskSolver::annealing(vector<Interval> reservedRBs,
         actions.clear();
 
         //SNAP(snapshoter.write(get_total_answer(), "annealing"));
+    }
+//    cout << itt << endl;
+    if (itt == 610){
+        for (int i = 0; i < 10; i++){
+            cout << accepted_inc[i] << " ";
+        }
+        cout << endl;
+        for (int i = 0; i < 10; i++){
+            cout << accepted_more[i] << " ";
+        }
+        cout << endl;
     }
 
 #ifdef SAVE_BEST_ANS

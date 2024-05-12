@@ -63,7 +63,6 @@
 }*/
 
 void EgorTaskSolver::user_do_new_interval(int u) {
-    //CNT_CALL_USER_NEW_INTERVAL++;
 
     //auto [old_b, old_l, old_r] = get_user_position(u);
 
@@ -129,12 +128,11 @@ void EgorTaskSolver::user_do_new_interval(int u) {
         add_user_in_interval(u, best_b, i);
     }
 
-    SNAP_ACTION("user_new_interval " + to_string(u) + " " + to_string(best_b) + " " + to_string(best_l) + " " +
-                to_string(best_r));
+    //SNAP_ACTION("user_new_interval " + to_string(u) + " " + to_string(best_b) + " " + to_string(best_l) + " " +
+    //       to_string(best_r));
 }
 
 void EgorTaskSolver::user_new_interval() {
-    //CNT_CALL_USER_NEW_INTERVAL++;
 
     int u = rnd.get(0, N - 1);
 
@@ -152,7 +150,6 @@ void EgorTaskSolver::user_new_interval() {
 }
 
 void EgorTaskSolver::user_add_left() {
-    //CNT_CALL_USER_ADD_LEFT++;
 
     USER_FOR_BEGIN(l > 0 &&
                    intervals[b][l - 1].users.size() < L &&
@@ -164,7 +161,7 @@ void EgorTaskSolver::user_add_left() {
 
     add_user_in_interval(u, b, l);
 
-    SNAP_ACTION("user_add_left " + to_string(u) + " " + to_string(b) + " " + to_string(l));
+    //SNAP_ACTION("user_add_left " + to_string(u) + " " + to_string(b) + " " + to_string(l));
 
     if (is_good(old_metric)) {
         SNAP_ACTION("user_add_left " + to_string(u) + " " + to_string(b) + " " + to_string(l) + " accepted");
@@ -176,7 +173,6 @@ void EgorTaskSolver::user_add_left() {
 }
 
 void EgorTaskSolver::user_add_right() {
-    //CNT_CALL_USER_ADD_RIGHT++;
 
     USER_FOR_BEGIN(r != -1 && r + 1 < intervals[b].size() &&
                    intervals[b][r + 1].users.size() < L &&
@@ -188,7 +184,7 @@ void EgorTaskSolver::user_add_right() {
 
     add_user_in_interval(u, b, r);
 
-    SNAP_ACTION("user_add_right " + to_string(u) + " " + to_string(b) + " " + to_string(r));
+    //SNAP_ACTION("user_add_right " + to_string(u) + " " + to_string(b) + " " + to_string(r));
 
     if (is_good(old_metric)) {
         SNAP_ACTION("user_add_right " + to_string(u) + " " + to_string(b) + " " + to_string(r) + " accepted");
@@ -200,14 +196,13 @@ void EgorTaskSolver::user_add_right() {
 }
 
 void EgorTaskSolver::user_remove_left() {
-    //CNT_CALL_USER_REMOVE_LEFT++;
 
     USER_FOR_BEGIN(l != -1)
 
     auto old_metric = metric;
 
     remove_user_in_interval(u, b, l);
-    SNAP_ACTION("user_remove_left " + to_string(u) + " " + to_string(b) + " " + to_string(l));
+    //SNAP_ACTION("user_remove_left " + to_string(u) + " " + to_string(b) + " " + to_string(l));
 
     if (is_good(old_metric)) {
         SNAP_ACTION("user_remove_left " + to_string(u) + " " + to_string(b) + " " + to_string(l) + " accepted");
@@ -227,7 +222,7 @@ void EgorTaskSolver::user_remove_right() {
     auto old_metric = metric;
 
     remove_user_in_interval(u, b, r);
-    SNAP_ACTION("user_remove_right " + to_string(u) + " " + to_string(b) + " " + to_string(r));
+    //SNAP_ACTION("user_remove_right " + to_string(u) + " " + to_string(b) + " " + to_string(r));
 
     if (is_good(old_metric)) {
         SNAP_ACTION(
@@ -331,7 +326,7 @@ void EgorTaskSolver::user_remove_and_add() {
         user_do_new_interval(u2);
         user_do_new_interval(u);
 
-        SNAP_ACTION("user_remove_and_add " + to_string(u) + " " + to_string(u2));
+        //SNAP_ACTION("user_remove_and_add " + to_string(u) + " " + to_string(u2));
 
         if (is_good(old_metric)) {
             SNAP_ACTION("user_remove_and_add " + to_string(u) + " " + to_string(u2) + " accepted");

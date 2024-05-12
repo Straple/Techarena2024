@@ -60,14 +60,13 @@ void EgorTaskSolver::interval_flow_over() {
     change_interval_len(block, i, change);
     change_interval_len(block, j, -change);
 
-    SNAP_ACTION(
-            "interval_flow_over " + to_string(b) + " " + to_string(i) + " " + to_string(j) + " " +
-            to_string(change));
+    //SNAP_ACTION(
+    //        "interval_flow_over " + to_string(b) + " " + to_string(i) + " " + to_string(j) + " " +
+    //        to_string(change));
 
     if (is_good(old_metric)) {
-        SNAP_ACTION("interval_flow_over " + to_string(b) + " " + to_string(i) + " " + to_string(j) + " " +
+        SNAP_ACTION("interval_flow_over " + to_string(block) + " " + to_string(i) + " " + to_string(j) + " " +
                     to_string(change) + " accepted");
-        //CNT_ACCEPTED_FLOW_OVER++;
     } else {
         rollback(old_actions_size);
         ASSERT(old_metric == metric, "failed back score");
@@ -294,7 +293,13 @@ void EgorTaskSolver::interval_increase_len() {
 
     change_interval_len(b, i, change);
 
-    SNAP_ACTION("interval_increase_len " + to_string(b) + " " + to_string(i) + " " + to_string(change));
+    //SNAP_ACTION("interval_increase_len " + to_string(b) + " " + to_string(i) + " " + to_string(change));
+    //if (is_good(old_metric, false)){
+//
+    //}
+//    if (is_good(old_metric, false)){
+//        cout << "INCREASE" << endl;
+//    };
 
     if (is_good(old_metric)) {
         SNAP_ACTION(
@@ -316,7 +321,12 @@ void EgorTaskSolver::interval_decrease_len() {
 
     change_interval_len(b, i, change);
 
-    SNAP_ACTION("interval_decrease_len " + to_string(b) + " " + to_string(i) + " " + to_string(change));
+    //SNAP_ACTION("interval_decrease_len " + to_string(b) + " " + to_string(i) + " " + to_string(change));
+
+
+    //if (is_good(old_metric, false)){
+    //    cout << "DECREASE" << endl;
+    //}
 
     if (is_good(old_metric)) {
         SNAP_ACTION(
@@ -570,7 +580,12 @@ void EgorTaskSolver::interval_split() {
         user_do_new_interval(u);
     }*/
 
-    SNAP_ACTION("interval_split " + to_string(b) + " " + to_string(i) + " " + to_string(best_left_len));
+    //SNAP_ACTION("interval_split " + to_string(b) + " " + to_string(i) + " " + to_string(best_left_len));
+
+
+    //if (is_good(old_metric, false)){
+        //cout << "SPLIT" << endl;
+    //}
 
     if (is_good(old_metric)) {
         SNAP_ACTION(

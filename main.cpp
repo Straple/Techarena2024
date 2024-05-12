@@ -17,22 +17,21 @@ int main() {
     }
     return 0;*/
 
-    train_egor_task_solver();
-    return 0;
+    //train_egor_task_solver();
+    //return 0;
 
-    for (int i = 0; i < 4; i++) {
-        if (i == 0) {
-            STEPS = 500;
-        } else if (i == 1) {
-            STEPS = 1'000;
-        } else if (i == 2) {
-            STEPS = 2'000;
-        } else if (i == 3) {
-            STEPS = 5'000;
-        }
 
-        //CNT_CALL_FLOW_OVER = 0;
-        //CNT_ACCEPTED_FLOW_OVER = 0;
+
+    for (int i = 0; i < 1; i++) {
+//        if (i == 0) {
+//            STEPS = 500;
+//        } else if (i == 1) {
+//            STEPS = 1'000;
+//        } else if (i == 2) {
+//            STEPS = 2'000;
+//        } else if (i == 3) {
+//            STEPS = 5'000;
+//        }
 
         test_case_info infos[5];
         map<int, map<int, int>> score_per_test;
@@ -40,12 +39,12 @@ int main() {
 
         // (diff, score, K, test, METRIC_TYPE)
         vector<tuple<int, int, int, int, int>> best_diff;
-        for (int K = 0; K <= 3; K++) {
+        for (int K = 2; K <= 2; K++) {
             //cout << "TEST CASE: K=" << K << endl;
             string dir = "tests/case_K=" + to_string(K) + "/";
             std::vector<pair<float, int>> tests_and_scores;
             infos[K].tests = test_case_K_sizes[K];
-            for (int test = 0; test < test_case_K_sizes[K]; test++) {
+            for (int test = 14; test < 15; test++) {
                 ifstream input(dir + to_string(test) + ".txt");
                 TestData data;
                 input >> data;
@@ -53,7 +52,7 @@ int main() {
                 //cout << "test: " << test << "!" << endl;
 
                 int theor_max = get_theory_max_score(data);
-                SNAP(snapshoter = Snapshoter(K, test, theor_max, data, "basic_solve"));
+                SNAP(snapshoter = Snapshoter(K, test, theor_max, data, "METRIC_DETECTION2"));
 
                 Timer timer;
                 vector<Interval> best_intervals;
@@ -107,6 +106,7 @@ int main() {
 
                 //cout << score <<  " _ " <<  get_theory_max_score(data) << endl;
                 //tests_and_scores.push_back({(float)score/theor_max, test});
+                //cout << "###############" << endl;
             }
             sort(tests_and_scores.begin(), tests_and_scores.end());
             for (int i = 0; i < min((int) tests_and_scores.size(), 10); i++) {

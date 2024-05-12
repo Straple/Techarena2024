@@ -56,7 +56,7 @@ public:
     }
 
     void write(const std::vector<Interval> &intervals, const string &frame_name = "", bool combine_same = true) {
-        if (same_as_last(intervals) && combine_same) return;
+        if (same_as_last(intervals) && false) return;
         last_intervals = intervals;
 
         frame_names.push_back(frame_name);
@@ -105,7 +105,7 @@ public:
 };
 Snapshoter snapshoter;
 
-//#define ENABLE_SNAPSHOT
+#define ENABLE_SNAPSHOT
 
 #ifdef ENABLE_SNAPSHOT
 #define SNAP(x) x
