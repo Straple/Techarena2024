@@ -196,7 +196,9 @@ vector<Interval> EgorTaskSolver::annealing(vector<Interval> reservedRBs,
             ACTION_WRAPPER(interval_merge, 9);
         } else if (s == 10) {
             ACTION_WRAPPER(interval_split, 10);
-        } else {
+        } /*else if (s == 11) {
+            ACTION_WRAPPER(interval_merge_and_split, 11);
+        } */else {
             ASSERT(false, "kek");
         }
 

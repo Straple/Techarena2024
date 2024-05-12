@@ -392,11 +392,13 @@ struct EgorTaskSolver {
 
     void interval_do_merge(int b, int i);
 
-    void interval_do_split(int b, int i, int right_len);
+    void interval_do_split(int b, int i);
 
     void interval_merge();
 
     void interval_split();
+
+    void interval_merge_and_split();
 
     ///======================
     ///===========USER=======
