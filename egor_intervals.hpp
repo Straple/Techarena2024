@@ -295,11 +295,11 @@ void EgorTaskSolver::interval_increase_len() {
 
     //SNAP_ACTION("interval_increase_len " + to_string(b) + " " + to_string(i) + " " + to_string(change));
     //if (is_good(old_metric, false)){
-//
+    //
     //}
-//    if (is_good(old_metric, false)){
-//        cout << "INCREASE" << endl;
-//    };
+    //    if (is_good(old_metric, false)){
+    //        cout << "INCREASE" << endl;
+    //    };
 
     if (is_good(old_metric)) {
         SNAP_ACTION(
@@ -499,96 +499,51 @@ void EgorTaskSolver::interval_merge() {
 
 void EgorTaskSolver::interval_split() {
     ASSERT(get_intervals_size() <= J, "failed intervals size");
-    if (get_intervals_size() >= J) {
-        return;
-    }
 
     auto old_metric = metric;
 
     int old_actions_size = actions.size();
 
-    CHOOSE_INTERVAL(true);
+    if (get_intervals_size() == J) {
+        // нужно добыть интервал для split
 
-    //int right_len = rnd.get(0, intervals[b][i].len);
-    // грамотно выберем длину right_len
+        // TODO: рандомно выбирать интервал почему-то дает больше баллов
+
+        // (metric, block, index)
+        vector<tuple<int, int, int>> ips;
+        for (int block = 0; block < B; block++) {
+            for (int index = 0; index < intervals[block].size(); index++) {
+                // если мы удалим этот интервал, то сколько accepted будет?
+
+                int accepted = 0;//metric.accepted;
+
+                int overflow = 0;//metric.overflow;
+
+                for (int user: intervals[block][index].users) {
+                    //accepted -= min(users_info[user].sum_len, users_info[user].rbNeed);
+                    accepted += min(users_info[user].sum_len - intervals[block][index].len, users_info[user].rbNeed);
+
+                    //overflow -= max(0, users_info[user].sum_len - users_info[user].rbNeed);
+                    overflow += max(0, users_info[user].sum_len - intervals[block][index].len - users_info[user].rbNeed);
+                }
+
+                ips.emplace_back(accepted - overflow, block, index);
+            }
+        }
+        //sort(ips.begin(), ips.end(), greater<>());
+        if (ips.empty()) {
+            return;
+        }
+        auto [_, block, index] = ips[rnd.get(0, ips.size() - 1)];
+        remove_interval(block, index);
+    }
+
+    CHOOSE_INTERVAL(true);
 
     interval_do_split(b, i);
 
-    //981959
-    // end_users = юзеры, который справа заканчиваются в i
-    /*auto end_users = intervals[b][i].users;
-    if (i + 1 < intervals[b].size()) {
-        end_users = (end_users & intervals[b][i + 1].users) ^ end_users;
-    }
-
-    int best_right_len = -1;
-    int best_f = -1;
-    for (int left_len = 0; left_len <= intervals[b][i].len; left_len++) {
-        int right_len = intervals[b][i].len - left_len;
-
-        int cur_f = 0;
-        for (int u: end_users) {
-            if (users_info[u].sum_len - right_len >= users_info[u].rbNeed) {
-                // мы можем расплитить и убрать этого юзера из правого интервала
-                cur_f += right_len;
-            }
-        }
-
-        if (cur_f > best_f) {
-            best_f = cur_f;
-            best_right_len = right_len;
-        }
-    }
-    ASSERT(best_right_len != -1, "failed");
-
-    interval_do_split(b, i, best_right_len);
-
-    for (int u: end_users) {
-        if (users_info[u].sum_len - best_right_len >= users_info[u].rbNeed) {
-            remove_user_in_interval(u, b, i + 1);
-        }
-    }*/
-
-    // TODO: попробовать удалить тех, которые и так выполнены
-    // они будут в intervals[b][i], intervals[b][i+1]
-    // 980385 -> 980478
-    /*for (int u: intervals[b][i].users) {
-        auto [_, l, r] = get_user_position(u);
-        if (l == i && users_info[u].sum_len - intervals[b][i].len >= users_info[u].rbNeed) {
-            remove_user_in_interval(u, b, i);
-        }
-        // TODO: это как будто не работает
-        else if (r == i && users_info[u].sum_len - intervals[b][i + 1].len >= users_info[u].rbNeed) {
-            remove_user_in_interval(u, b, i + 1);
-        }
-    }*/
-
-    /*for (int b = 0; b < B; b++) {
-        for (int i = 0; i < intervals[b].size(); i++) {
-            for (int u: intervals[b][i].users) {
-                remove_user_in_interval(u, b, i);
-            }
-        }
-    }
-
-    vector<int> p(N);
-    iota(p.begin(), p.end(), 0);
-    sort(p.begin(), p.end(), [&](int lhs, int rhs) {
-        return users_info[lhs].rbNeed > users_info[rhs].rbNeed;
-    });
-    for (int u: p) {
-        user_do_new_interval(u);
-    }*/
-
-    //SNAP_ACTION("interval_split " + to_string(b) + " " + to_string(i) + " " + to_string(best_left_len));
-
-    //if (is_good(old_metric, false)){
-        //cout << "SPLIT" << endl;
-    //}
-
     if (is_good(old_metric)) {
-        SNAP_ACTION(
-                "interval_split " + to_string(b) + " " + to_string(i) + " " + " accepted");
+        SNAP_ACTION("interval_split " + to_string(b) + " " + to_string(i) + " " + " accepted");
     } else {
         rollback(old_actions_size);
         ASSERT(old_metric == metric, "failed back score");
