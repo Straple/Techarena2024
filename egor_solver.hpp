@@ -36,16 +36,18 @@ int STEPS = 5000;
 const int METRIC_CNT = 1;
 int METRIC_TYPE = 0;
 
+int CNT_ACCEPTED_EQ = 0;
+
 static int frame_id = 0;
 
-#define SNAP_ACTION(action_foo)                                                                                            \
-    SNAP(snapshoter.write(get_total_answer(), "annealing:"                                                                 \
-                                              "\\naccepted: " +                                                            \
-                                                      to_string(metric.accepted) +                                         \
-                                                      "\\nfree_space: " + to_string(metric.free_space) +                   \
-                                                      "\\noverflow: " + to_string(metric.overflow) +                       \
-                                                      "\\nunused_space: " + to_string(metric.unused_space) +               \
-                                                      "\\nframe_id: " + to_string(frame_id++) +                            \
+#define SNAP_ACTION(action_foo)                                                                              \
+    SNAP(snapshoter.write(get_total_answer(), "annealing:"                                                   \
+                                              "\\naccepted: " +                                              \
+                                                      to_string(metric.accepted) +                           \
+                                                      "\\nfree_space: " + to_string(metric.free_space) +     \
+                                                      "\\noverflow: " + to_string(metric.overflow) +         \
+                                                      "\\nunused_space: " + to_string(metric.unused_space) + \
+                                                      "\\nframe_id: " + to_string(frame_id++) +              \
                                                       "\\n" #action_foo))
 
 struct EgorTaskSolver {
@@ -232,9 +234,9 @@ struct EgorTaskSolver {
             return m.accepted;
 
             //return METRICS_COEF[0] * m.accepted +
-            //                   METRICS_COEF[1] * m.free_space +
-            //                   METRICS_COEF[2] * m.overflow +
-            //                   METRICS_COEF[3] * m.unused_space;
+            //       METRICS_COEF[1] * m.free_space +
+            //       METRICS_COEF[2] * m.overflow +
+            //       METRICS_COEF[3] * m.unused_space;
 
             //STEPS: 1000
             //TEST CASE: K=0 | tests: 666 | score: 99.2499% | 647449/652342 | time: 2418.2ms | max_time: 15.081ms | mean_time: 3.63093ms
@@ -352,6 +354,7 @@ struct EgorTaskSolver {
             //            cout << metric.overflow << " " << metric.free_space << " " << metric.vertical_free_space << endl;
             //            return true;
         } else if (f == old_f) {
+            CNT_ACCEPTED_EQ++;
             if (metric.overflow <= old_metric.overflow) {
                 return true;
             } else {
@@ -453,7 +456,7 @@ struct EgorTaskSolver {
 
     void user_crop();
 
-    void earthquake() {
+    /*void earthquake() {
         // clear
         for (int b = 0; b < B; b++) {
             for (int i = 0; i < intervals[b].size(); i++) {
@@ -495,66 +498,6 @@ struct EgorTaskSolver {
             }
         }
 
-        // release interval
-        /*if (get_intervals_size() == J) {
-            vector<tuple<int, int, int>> ps;
-            for (int b = 0; b < B; b++) {
-                for (int i = 0; i < intervals[b].size(); i++) {
-                    int old_actions_size = actions.size();
-                    remove_interval(b, i);
-                    ps.push_back({metric.accepted // TODO: можно не просто accepted а посложнее
-                    , b, i});
-                    rollback(old_actions_size);
-                    ASSERT(old_metric == metric, "invalid back score");
-                }
-            }
-
-            ASSERT(!ps.empty(), "empty ps");
-            //sort(ps.begin(), ps.end(), greater<>());
-            auto [to_score, b, i] = ps[rnd.get(0, (int) ps.size() - 1)];
-            remove_interval(b, i);
-            //ASSERT(to_score == total_score, "invalid to score");
-        }
-
-        // insert new interval
-        {
-            vector<pair<int, int>> ps;
-            for (int b = 0; b < B; b++) {
-                for (int i = 0; i <= intervals[b].size(); i++) {
-                    if (i == 0 || i == intervals[b].size() || (intervals[b][i - 1].users & intervals[b][i].users).empty()) {
-                        ps.push_back({b, i});
-                    }
-                }
-            }
-
-            ASSERT(!ps.empty(), "empty ps");
-            auto [b, i] = ps[rnd.get(0, ps.size() - 1)];
-            insert_interval(b, i);
-            int may_add_len = free_intervals[b].len() - get_block_len(b);
-            if (may_add_len != 0) {
-                change_interval_len(b, i, may_add_len);
-            }
-        }
-
-        // clear
-        for (int b = 0; b < B; b++) {
-            for (int i = 0; i < intervals[b].size(); i++) {
-                for (int u: intervals[b][i].users) {
-                    remove_user_in_interval(u, b, i);
-                }
-            }
-        }*/
-        /*for (int b = 0; b < B; b++) {
-            for (int i = 0; i < intervals[b].size(); i++) {
-                intervals[b][i].users.clear();
-                intervals[b][i].beam_msk = 0;
-            }
-        }
-        for (int u = 0; u < N; u++) {
-            users_info[u].sum_len = 0;
-        }
-        metric = {};*/
-
         {
             vector<int> p(N);
             iota(p.begin(), p.end(), 0);
@@ -566,7 +509,9 @@ struct EgorTaskSolver {
                 user_do_new_interval(u);
             }
         }
-    }
+    }*/
+
+    void beam_rebuild();
 
     ///======================
     ///======ANNEALING=======

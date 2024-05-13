@@ -204,6 +204,8 @@ vector<Interval> EgorTaskSolver::annealing(vector<Interval> reservedRBs,
             ACTION_WRAPPER(interval_merge, s);
         } else if (s == 9) {
             ACTION_WRAPPER(interval_split, s);
+        } else if (s == 10) {
+            ACTION_WRAPPER(beam_rebuild, s);
         } else {
             ASSERT(false, "kek");
         }
@@ -212,6 +214,9 @@ vector<Interval> EgorTaskSolver::annealing(vector<Interval> reservedRBs,
             accepted_more[s]+=metric.accepted-old_metric.accepted;
         }
 
+        //if(metric.accepted == old_metric.accepted){
+        //    CNT_ACCEPTED_EQ++;
+        //}
 
 #ifdef SAVE_BEST_ANS
         if (best_score < metric.accepted) {

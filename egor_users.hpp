@@ -408,3 +408,85 @@ void EgorTaskSolver::user_crop() {
         user_do_crop(u);
     }*/
 }
+
+void EgorTaskSolver::beam_rebuild() {
+    int beam;
+    {
+        vector<int> beams;
+        for (int beam = 0; beam < 32; beam++) {
+            if (!users_beam[beam].empty()) {
+                beams.push_back(beam);
+            }
+        }
+        if (beams.empty()) {
+            return;
+        }
+        beam = beams[rnd.get(0, beams.size() - 1)];
+    }
+
+    int old_actions_size = actions.size();
+
+    auto old_metric = metric;
+
+    // (block, index)
+    set<pair<int, int>> was_map;
+
+    // удалим юзеров с этим beam
+    for (int block = 0; block < B; block++) {
+        for (int index = 0; index < intervals[block].size(); index++) {
+            if ((intervals[block][index].beam_msk >> beam) & 1) {
+                was_map.insert({block, index});
+                int find_user = -1;
+                for (int user: intervals[block][index].users) {
+                    if (users_info[user].beam == beam) {
+                        find_user = user;
+                        break;
+                    }
+                }
+                ASSERT(find_user != -1, "failed find");
+                remove_user_in_interval(find_user, block, index);
+            }
+        }
+    }
+
+    for (int user: users_beam[beam]) {
+        // поставим его жадно
+
+        int best_block = -1, best_left = -1, best_right = -1, best_f = 1e9;
+
+        for (int block = 0; block < B; block++) {
+            for (int left = 0; left < intervals[block].size(); left++) {
+                int len = 0;
+                for (int right = left; right < intervals[block].size() && was_map.count({block, right}); right++) {
+
+                    len += intervals[block][right].len;
+
+                    int cur_f = abs(len - users_info[user].rbNeed);
+
+                    if (cur_f < best_f) {
+                        best_f = cur_f;
+                        best_block = block;
+                        best_left = left;
+                        best_right = right;
+                    }
+                }
+            }
+        }
+
+        if (best_block == -1) {
+            continue;
+        }
+
+        for (int i = best_left; i <= best_right; i++) {
+            add_user_in_interval(user, best_block, i);
+            was_map.erase({best_block, i});
+        }
+    }
+
+    if (is_good(old_metric)) {
+
+    } else {
+        rollback(old_actions_size);
+        ASSERT(metric == old_metric, "failed metric");
+    }
+}

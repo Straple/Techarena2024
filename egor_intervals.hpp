@@ -582,7 +582,6 @@ void EgorTaskSolver::interval_split() {
 
     //SNAP_ACTION("interval_split " + to_string(b) + " " + to_string(i) + " " + to_string(best_left_len));
 
-
     //if (is_good(old_metric, false)){
         //cout << "SPLIT" << endl;
     //}

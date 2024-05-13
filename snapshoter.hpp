@@ -105,7 +105,7 @@ public:
 };
 Snapshoter snapshoter;
 
-#define ENABLE_SNAPSHOT
+//#define ENABLE_SNAPSHOT
 
 #ifdef ENABLE_SNAPSHOT
 #define SNAP(x) x
