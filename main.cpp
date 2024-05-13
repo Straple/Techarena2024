@@ -20,7 +20,7 @@ int main() {
     //train_egor_task_solver();
     //return 0;
 
-    for (int i = 0; i < 4; i++) {
+    for (int i = 3; i < 4; i++) {
         if (i == 0) {
             STEPS = 500;
         } else if (i == 1) {
@@ -37,17 +37,17 @@ int main() {
 
         // (diff, score, K, test, METRIC_TYPE)
         vector<tuple<int, int, int, int, int>> best_diff;
-        for (int K = 0; K <= 3; K++) {
+        for (int K = 2; K <= 2; K++) {
             //cout << "TEST CASE: K=" << K << endl;
             string dir = "tests/case_K=" + to_string(K) + "/";
             std::vector<pair<float, int>> tests_and_scores;
             infos[K].tests = test_case_K_sizes[K];
-            for (int test = 0; test < test_case_K_sizes[K]; test++) {
+            for (int test = 57; test < 58; test++) {
                 ifstream input(dir + to_string(test) + ".txt");
                 TestData data;
                 input >> data;
 
-                //cout << "test: " << test << "!" << endl;
+                cout << "test: " << test << "!" << endl;
 
                 int theor_max = get_theory_max_score(data);
                 SNAP(snapshoter = Snapshoter(K, test, theor_max, data, "METRIC_DETECTION2"));

@@ -139,6 +139,11 @@ vector<Interval> EgorTaskSolver::annealing(vector<Interval> reservedRBs,
         was_accepted = false;
         //temperature *= 0.9999;
 
+        cout << "step: " << step << endl;
+        if(step == 4999){
+            cout << "HERE" << endl;
+        }
+
         /*if (step > STEPS / 2) {
             if (best_f >= 100 * metric.accepted - 10 * metric.unused_space - metric.overflow + metric.free_space) {
                 there_has_been_no_improvement_for_x_steps++;
@@ -231,7 +236,7 @@ vector<Interval> EgorTaskSolver::annealing(vector<Interval> reservedRBs,
         //SNAP(snapshoter.write(get_total_answer(), "annealing"));
     }
 //    cout << itt << endl;
-    if (itt == 610){
+    /*if (itt == 610){
         for (int i = 0; i < 10; i++){
             cout << accepted_inc[i] << " ";
         }
@@ -240,7 +245,7 @@ vector<Interval> EgorTaskSolver::annealing(vector<Interval> reservedRBs,
             cout << accepted_more[i] << " ";
         }
         cout << endl;
-    }
+    }*/
 
 #ifdef SAVE_BEST_ANS
     users_info = best_users_info;

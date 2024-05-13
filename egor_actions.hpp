@@ -61,19 +61,11 @@ void EgorTaskSolver::change_user_len(int u, int c) {
         metric.overflow += max(0, users_info[u].sum_len - users_info[u].rbNeed);
     }
 
-    /*cout << "lol=======================================\n";
-    for (int i = 0; i < users.size(); i++) {
-        cout << users_info[users[i]].sum_len << ' ';
-    }
-    cout << endl;*/
-
     //for (int i = 0; i < users.size(); i++)
     {
         // find
         //if (users[i] == u)
         {
-            //cout << "find: " << i << endl;
-
             int i = users_info[u].pos;
             ASSERT(users[i] == u, "failed");
             ASSERT(i == users_info[u].pos, "failed");
@@ -83,12 +75,6 @@ void EgorTaskSolver::change_user_len(int u, int c) {
                 user_do_swap_eq_beam(users[i - 1], u);
                 swap(users[i - 1], users[i]);
                 i--;
-
-                /*cout << "left=======================================\n";
-                for (int i = 0; i < users.size(); i++) {
-                    cout << users_info[users[i]].sum_len << ' ';
-                }
-                cout << endl;*/
             }
 
             // move right
@@ -96,15 +82,7 @@ void EgorTaskSolver::change_user_len(int u, int c) {
                 user_do_swap_eq_beam(users[i + 1], u);
                 swap(users[i + 1], users[i]);
                 i++;
-
-                /*cout << "right=======================================\n";
-                for (int i = 0; i < users.size(); i++) {
-                    cout << users_info[users[i]].sum_len << ' ';
-                }
-                cout << endl;*/
             }
-
-            //cout << endl;
 
 #ifdef MY_DEBUG_MODE
             for (int i = 0; i + 1 < users.size(); i++) {
