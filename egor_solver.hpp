@@ -253,7 +253,7 @@ struct EgorTaskSolver {
             //1682
             //return 10'000 * m.accepted + m.vertical_free_space;
 
-            //return 100 * m.accepted - 10 * m.unused_space - m.overflow - m.free_space - m.vertical_free_space * 2;
+            //return 100 * m.accepted - 10 * m.unused_space - m.overflow - m.free_space;
 
             //add score: 0 897 417
             if (METRIC_TYPE == 0) {

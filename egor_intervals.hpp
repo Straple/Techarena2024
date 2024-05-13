@@ -543,8 +543,9 @@ bool EgorTaskSolver::interval_split_IMPL(){
 
         if (index > 0 && index + 1 < intervals[block].size()) {
 
-            int best_left_len = -1;
-            int best_f = -1e9;
+            //int best_left_len = rnd.get(0, len);
+            int best_left_len = rnd.get(0, len);
+            /*int best_f = -1e9;
 
             for(int left_len = 0; left_len <= len; left_len++){
 
@@ -552,11 +553,13 @@ bool EgorTaskSolver::interval_split_IMPL(){
                 int accepted = metric.accepted;
 
                 for(int left_user : intervals[block][index - 1].users){
-                    // TODO:
+                    accepted -= min(users_info[left_user].rbNeed, users_info[left_user].sum_len);
+                    accepted += min(users_info[left_user].rbNeed, users_info[left_user].sum_len + left_len);
                 }
 
                 for(int right_user : intervals[block][index + 1].users){
-                    // TODO:
+                    accepted -= min(users_info[right_user].rbNeed, users_info[right_user].sum_len);
+                    accepted += min(users_info[right_user].rbNeed, users_info[right_user].sum_len + right_len);
                 }
 
                 int cur_f = accepted;
@@ -565,7 +568,7 @@ bool EgorTaskSolver::interval_split_IMPL(){
                     best_f = cur_f;
                     best_left_len = left_len;
                 }
-            }
+            }*/
 
             ASSERT(best_left_len != -1, "failed");
 
