@@ -4,7 +4,7 @@
 ///===========INTERVAL=======
 ///==========================
 
-#define CHOOSE_INTERVAL(condition)                          \
+#define CHOOSE_INTERVAL(condition, return_value)                          \
     int b, i;                                               \
     {                                                       \
         vector<pair<int, int>> ips;                         \
@@ -16,7 +16,7 @@
             }                                               \
         }                                                   \
         if (ips.empty()) {                                  \
-            return;                                         \
+            return return_value;                                         \
         }                                                   \
         int k = rnd.get(0, ips.size() - 1);                 \
         b = ips[k].first;                                   \
@@ -285,7 +285,7 @@ void EgorTaskSolver::interval_flow_over() {
 void EgorTaskSolver::interval_increase_len() {
     //CNT_CALL_INTERVAL_INCREASE_LEN++;
 
-    CHOOSE_INTERVAL(get_block_len(b) < free_intervals[b].len());
+    CHOOSE_INTERVAL(get_block_len(b) < free_intervals[b].len(),);
 
     int change = rnd.get(1, min(10, (free_intervals[b].len() - get_block_len(b))));
 
@@ -313,7 +313,7 @@ void EgorTaskSolver::interval_increase_len() {
 void EgorTaskSolver::interval_decrease_len() {
     //CNT_CALL_INTERVAL_DECREASE_LEN++;
 
-    CHOOSE_INTERVAL(intervals[b][i].len > 0);
+    CHOOSE_INTERVAL(intervals[b][i].len > 0,);
 
     int change = rnd.get(-intervals[b][i].len, -1);
 
@@ -486,7 +486,7 @@ void EgorTaskSolver::interval_do_split(int b, int i) {
 }
 
 void EgorTaskSolver::interval_merge() {
-    CHOOSE_INTERVAL(i + 1 < intervals[b].size());
+    CHOOSE_INTERVAL(i + 1 < intervals[b].size(),);
 
     auto old_metric = metric;
 
@@ -504,12 +504,7 @@ void EgorTaskSolver::interval_merge() {
     }
 }
 
-void EgorTaskSolver::interval_split() {
-    ASSERT(get_intervals_size() <= J, "failed intervals size");
-
-    auto old_metric = metric;
-
-    int old_actions_size = actions.size();
+bool EgorTaskSolver::interval_split_IMPL(){
 
     if (get_intervals_size() == J) {
         // нужно добыть интервал для split
@@ -539,18 +534,74 @@ void EgorTaskSolver::interval_split() {
         }
         //sort(ips.begin(), ips.end(), greater<>());
         if (ips.empty()) {
-            return;
+            return false;
         }
         auto [_, block, index] = ips[rnd.get(0, ips.size() - 1)];
-        remove_interval(block, index);
+        //remove_interval(block, index);
+
+        int len = intervals[block][index].len;
+
+        if (index > 0 && index + 1 < intervals[block].size()) {
+
+            int best_left_len = -1;
+            int best_f = -1e9;
+
+            for(int left_len = 0; left_len <= len; left_len++){
+
+                int right_len = len - left_len;
+                int accepted = metric.accepted;
+
+                for(int left_user : intervals[block][index - 1].users){
+                    // TODO:
+                }
+
+                for(int right_user : intervals[block][index + 1].users){
+                    // TODO:
+                }
+
+                int cur_f = accepted;
+
+                if(best_f < cur_f){
+                    best_f = cur_f;
+                    best_left_len = left_len;
+                }
+            }
+
+            ASSERT(best_left_len != -1, "failed");
+
+            int right_len = len - best_left_len;
+
+            remove_interval(block, index);
+            change_interval_len(block, index - 1, best_left_len);
+            change_interval_len(block, index, right_len);
+
+        } else if (index > 0) {
+            remove_interval(block, index);
+            change_interval_len(block, index - 1, len);
+        } else if (index + 1 < intervals[block].size()) {
+            remove_interval(block, index);
+            change_interval_len(block, index, len);
+        }
+        else{
+            remove_interval(block, index);
+        }
     }
 
-    CHOOSE_INTERVAL(true);
+    CHOOSE_INTERVAL(true, false);
 
     interval_do_split(b, i);
 
-    if (is_good(old_metric)) {
-        SNAP_ACTION("interval_split " + to_string(b) + " " + to_string(i) + " " + " accepted");
+    return true;
+}
+
+void EgorTaskSolver::interval_split() {
+    ASSERT(get_intervals_size() <= J, "failed intervals size");
+
+    int old_actions_size = actions.size();
+    auto old_metric = metric;
+
+    if (interval_split_IMPL() && is_good(old_metric)) {
+        SNAP_ACTION("interval_split accepted");
     } else {
         rollback(old_actions_size);
         ASSERT(old_metric == metric, "failed back score");
@@ -565,14 +616,14 @@ void EgorTaskSolver::interval_merge_and_split() {
     int old_actions_size = actions.size();
 
     {
-        CHOOSE_INTERVAL(i + 1 < intervals[b].size());
+        CHOOSE_INTERVAL(i + 1 < intervals[b].size(),);
         interval_do_merge(b, i);
     }
 
     {
         ASSERT(get_intervals_size() < J, "failed intervals size");
 
-        CHOOSE_INTERVAL(true);
+        CHOOSE_INTERVAL(true,);
 
         interval_do_split(b, i);
     }

@@ -426,6 +426,8 @@ struct EgorTaskSolver {
 
     void interval_merge();
 
+    bool interval_split_IMPL();
+
     void interval_split();
 
     void interval_merge_and_split();
