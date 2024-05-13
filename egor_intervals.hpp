@@ -544,7 +544,8 @@ bool EgorTaskSolver::interval_split_IMPL(){
         if (index > 0 && index + 1 < intervals[block].size()) {
 
             //int best_left_len = rnd.get(0, len);
-            int best_left_len = rnd.get(0, len);
+            //int best_left_len = rnd.get(0, len);
+            int best_left_len = 0;
             /*int best_f = -1e9;
 
             for(int left_len = 0; left_len <= len; left_len++){

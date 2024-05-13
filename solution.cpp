@@ -44,9 +44,9 @@ vector<Interval> Solver_IMPL(int N, int M, int K, int J, int L,
 
     //cout << "egor_answer size: " << egor_answer.size() << endl;
 
-    /*auto get_egor_blocked = ans_to_blocked_ans(M, K, reservedRBs, egor_answer);
+    auto get_egor_blocked = ans_to_blocked_ans(M, K, reservedRBs, egor_answer);
     optimize(N, M, K, J, L, reservedRBs, userInfos, get_egor_blocked, false);
-    egor_answer = unblock_ans(get_egor_blocked);*/
+    egor_answer = unblock_ans(get_egor_blocked);
 
     //cout << "egor_answer size after optimize: " << egor_answer.size() << endl;
 
