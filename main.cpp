@@ -1,3 +1,5 @@
+//#define VERIFY_ARTEM_ANS
+
 #include "solution.cpp"
 ///
 #include "coach.hpp"

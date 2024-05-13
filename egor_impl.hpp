@@ -235,6 +235,19 @@ vector<Interval> EgorTaskSolver::annealing(vector<Interval> reservedRBs,
 
         actions.clear();
 
+#ifdef VERIFY_ARTEM_ANS
+        actions.clear();
+        auto ans = get_total_answer();
+        auto get_egor_blocked = ans_to_blocked_ans(M, K, reservedRBs, ans);
+        optimize(N, M, K, J, L, reservedRBs, userInfos, get_egor_blocked, true);
+        auto egor_answer = unblock_ans(get_egor_blocked);
+
+        if (egor_answer.size() > J){
+            ans = get_total_answer();
+            ::abort();
+        }
+#endif
+
         //SNAP(snapshoter.write(get_total_answer(), "annealing"));
     }
 //    cout << itt << endl;

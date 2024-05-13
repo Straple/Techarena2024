@@ -5,6 +5,7 @@
 #include "randomizer.hpp"
 #include "selection_randomizer.hpp"
 #include "tools.hpp"
+#include "artem_solver.hpp"
 
 //TEST CASE: K=0 | tests: 666 | score: 99.219% | 647247/652342 | time: 11025.8ms | max_time: 29.784ms | mean_time: 16.5553ms
 //TEST CASE: K=1 | tests: 215 | score: 97.7355% | 211224/216118 | time: 3998.73ms | max_time: 23.965ms | mean_time: 18.5988ms
@@ -31,7 +32,7 @@ const int SELECTION_SIZE = 10;
 const int METRIC_COEFFS_SIZE = 4;
 //SelectionRandomizer SELECTION_ACTION(SELECTION_SIZE);
 // = std::vector<int>{10, 1, 1, 1, 1, 16, 9, 6, 22, 12, 11, 30};
-int STEPS = 5000;
+int STEPS = 500;
 
 const int METRIC_CNT = 1;
 int METRIC_TYPE = 0;
