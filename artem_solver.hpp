@@ -796,7 +796,31 @@ void optimize(int N, int M, int K, int J, int L,
         }
         int iter = 0;
         std::vector<bool>ever_picked(solution.size(), false);
+
+//#ifdef MY_DEBUG_MODE
+//        auto honest_cnt = [&](){
+//            int j = 0;
+//            for (int i = 0; i < solution.size(); i++){
+//                j+=solution[i].size();
+//            }
+//            for (int i = 0; i < keep_or_not.size(); i++){
+//                for(int g = 0; g < keep_or_not[i].size(); g++){
+//                     if (!keep_or_not[i][g]){
+//                         j--;
+//                     }
+//                }
+//            }
+//            return j;
+//        };
+
+//#undef MY_DEBUG_MODE
         while (!space_left_q.empty()) {
+//            int honest = honest_cnt();
+//            if (honest > J){
+//                ::abort();
+//            }
+
+
             iter++;
             int space_left = space_left_q.begin()->first;
             int pick_i = space_left_q.begin()->second;
@@ -865,17 +889,21 @@ void optimize(int N, int M, int K, int J, int L,
                     } else {
                         if (new_version){
                             int can_place_this = false;
-                            for (auto& free_space: free_spaces){
-                                if (picked != -1 and free_space.second != picked) continue;
-                                if (userInfos[user_id].rbNeed <= free_space.first) {
-                                    if ((pre_placed_beams_bits[free_space.second]&(1u<<userInfos[user_id].beam)) == 0 && pre_placed[free_space.second].size() + candidates_placed_in_theor_interval[free_space.second] < L) {
-                                        can_place_this = true;
-                                        candidates_placed_in_theor_interval[free_space.second]++;
-                                        picked = free_space.second;
-                                        break;
+                            if (picked == -1){
+                                can_place_all = false;
+                            } else {
+                                for (auto &free_space: free_spaces) {
+                                    if (picked != -1 and free_space.second != picked) continue;
+                                    if (userInfos[user_id].rbNeed <= free_space.first) {
+                                        if ((pre_placed_beams_bits[free_space.second] & (1u << userInfos[user_id].beam)) == 0 && pre_placed[free_space.second].size() + candidates_placed_in_theor_interval[free_space.second] < L) {
+                                            can_place_this = true;
+                                            candidates_placed_in_theor_interval[free_space.second]++;
+                                            picked = free_space.second;
+                                            break;
+                                        }
+                                    } else {
+                                        break;// CORRECT?
                                     }
-                                } else {
-                                    break ; // CORRECT?
                                 }
                             }
                             if (!can_place_this){
@@ -894,9 +922,7 @@ void optimize(int N, int M, int K, int J, int L,
                     }
                 }
             }
-            //            cout << ((can_place_all && !force_hold) ? "CAN" : "CANT") << endl;
             if (can_place_all && !force_hold) {
-                //                cout << "EVICTING AND MERGING" << endl;
                 for (int user_id: need_to_find_new) {
                     bool placed = false;
                     for (auto place_to_get: possible_pre_free_spaces[userInfos[user_id].beam]) {
@@ -1035,10 +1061,10 @@ void optimize(int N, int M, int K, int J, int L,
                     activeBeams[pick_i].insert(userInfos[user_id].beam);
                 }
             }
-
             current_sub_interval[pick_i]++;
             space_left_q.insert({space_left - curr_len, pick_i});
         }
+
         std::set<pair<int, int>, greater<>> new_empty;
 
         for (auto [rbNeed, user_id]: empty) {
@@ -1110,7 +1136,6 @@ void optimize(int N, int M, int K, int J, int L,
         }
         //        new_intervals[0].back().end = M;
         solution = new_intervals;
-
     }
 
     //    std::vector<int>supplied(N,0);
@@ -1128,7 +1153,6 @@ void optimize(int N, int M, int K, int J, int L,
     //    if (f_score > s_score){
     //        cout << f_score-s_score << " "  <<  f_score << " " << s_score << " " << N << endl;
     //    }
-
 }
 vector<Interval> Solver_Artem_grad(int N, int M, int K, int J, int L,
                                    vector<Interval> reservedRBs,
