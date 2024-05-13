@@ -456,62 +456,9 @@ struct EgorTaskSolver {
 
     void user_crop();
 
-    /*void earthquake() {
-        // clear
-        for (int b = 0; b < B; b++) {
-            for (int i = 0; i < intervals[b].size(); i++) {
-                for (int u: intervals[b][i].users) {
-                    remove_user_in_interval(u, b, i);
-                }
-            }
-        }
-
-        // release interval
-        if (get_intervals_size() == J) {
-            vector<tuple<int, int>> ps;
-            for (int b = 0; b < B; b++) {
-                for (int i = 0; i < intervals[b].size(); i++) {
-                    ps.push_back({b, i});
-                }
-            }
-
-            ASSERT(!ps.empty(), "empty ps");
-            auto [b, i] = ps[rnd.get(0, (int) ps.size() - 1)];
-            remove_interval(b, i);
-        }
-
-        // insert new interval
-        {
-            vector<pair<int, int>> ps;
-            for (int b = 0; b < B; b++) {
-                for (int i = 0; i <= intervals[b].size(); i++) {
-                    ps.push_back({b, i});
-                }
-            }
-
-            ASSERT(!ps.empty(), "empty ps");
-            auto [b, i] = ps[rnd.get(0, ps.size() - 1)];
-            insert_interval(b, i);
-            int may_add_len = free_intervals[b].len() - get_block_len(b);
-            if (may_add_len != 0) {
-                change_interval_len(b, i, may_add_len);
-            }
-        }
-
-        {
-            vector<int> p(N);
-            iota(p.begin(), p.end(), 0);
-            sort(p.begin(), p.end(), [&](int lhs, int rhs) {
-                return users_info[lhs].rbNeed > users_info[rhs].rbNeed;
-            });
-
-            for (int u: p) {
-                user_do_new_interval(u);
-            }
-        }
-    }*/
-
     void beam_rebuild();
+
+    void user_Robin_Hood();
 
     ///======================
     ///======ANNEALING=======

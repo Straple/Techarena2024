@@ -211,6 +211,8 @@ vector<Interval> EgorTaskSolver::annealing(vector<Interval> reservedRBs,
             ACTION_WRAPPER(interval_split, s);
         } else if (s == 10) {
             ACTION_WRAPPER(beam_rebuild, s);
+        } else if (s == 11) {
+            ACTION_WRAPPER(user_Robin_Hood, s);
         } else {
             ASSERT(false, "kek");
         }

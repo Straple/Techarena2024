@@ -131,9 +131,10 @@ void EgorTaskSolver::user_do_new_interval(int u) {
 
 void EgorTaskSolver::user_new_interval() {
 
-    //int u = rnd.get(0, N - 1);
+    int u = rnd.get(0, N - 1);
 
-    int u;
+    // TODO: только чуток херит score
+    /*int u;
     {
         vector<pair<int, int>> ips;
         for(int user = 0; user < N; user++){
@@ -144,7 +145,7 @@ void EgorTaskSolver::user_new_interval() {
         }
         sort(ips.begin(), ips.end(), greater<>());
         u = ips[rnd.get(0, min(10, (int)ips.size() - 1))].second;
-    }
+    }*/
 
     auto old_metric = metric;
     int old_actions_size = actions.size();
@@ -450,5 +451,84 @@ void EgorTaskSolver::beam_rebuild() {
     } else {
         rollback(old_actions_size);
         ASSERT(metric == old_metric, "failed metric");
+    }
+}
+
+void EgorTaskSolver::user_Robin_Hood() {
+    // найдем двух соседних юзеров
+    // край одного дадим другому
+
+    int block, index, u_left, u_right;
+    bool type;
+    {
+        // (f, block, index, u_left, u_right)
+        vector<tuple<int, int, int, int, int, bool>> ips;
+        for (int block = 0; block < B; block++) {
+            for (int index = 0; index + 1 < intervals[block].size(); index++) {
+                auto and_users = intervals[block][index].users & intervals[block][index + 1].users;
+                auto unique_left_users = intervals[block][index].users ^ and_users;
+                auto unique_right_users = intervals[block][index + 1].users ^ and_users;
+
+                for (int u_left: unique_left_users) {
+                    // могу добавить u_left в index + 1
+                    if (((intervals[block][index + 1].beam_msk >> users_info[u_left].beam) & 1) == 0) {
+                        for (int u_right: unique_right_users) {
+                            // могу добавить u_right в index
+                            if (((intervals[block][index].beam_msk >> users_info[u_right].beam) & 1) == 0) {
+
+                                {
+                                    // удалю u_left
+                                    // добавлю на его место u_right
+                                    int accepted = min(users_info[u_left].rbNeed, users_info[u_left].sum_len - intervals[block][index].len) +
+                                            min(users_info[u_right].rbNeed, users_info[u_right].sum_len + intervals[block][index].len);
+
+                                    ips.emplace_back(accepted, block, index, u_left, u_right, true);
+                                }
+
+                                {
+                                    // удалю u_right
+                                    // добавлю на его место u_left
+                                    int accepted = min(users_info[u_left].rbNeed, users_info[u_left].sum_len + intervals[block][index + 1].len) +
+                                                   min(users_info[u_right].rbNeed, users_info[u_right].sum_len - intervals[block][index + 1].len);
+
+                                    ips.emplace_back(accepted, block, index, u_left, u_right, false);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        if (ips.empty()) {
+            return;
+        }
+
+        sort(ips.begin(), ips.end(), greater<>());
+        int p = 0;
+        //int p = rnd.get(0, ips.size() - 1);
+        block = get<1>(ips[p]);
+        index = get<2>(ips[p]);
+        u_left = get<3>(ips[p]);
+        u_right = get<4>(ips[p]);
+        type = get<5>(ips[p]);
+    }
+
+    int old_actions_size = actions.size();
+    auto old_metric = metric;
+
+    if (type) {
+        remove_user_in_interval(u_left, block, index);
+        add_user_in_interval(u_right, block, index);
+    } else {
+        remove_user_in_interval(u_right, block, index + 1);
+        add_user_in_interval(u_left, block, index + 1);
+    }
+
+    if (is_good(old_metric)) {
+
+    } else {
+        rollback(old_actions_size);
+        ASSERT(old_metric == metric, "failed back score");
     }
 }

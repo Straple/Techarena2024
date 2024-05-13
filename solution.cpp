@@ -33,7 +33,7 @@ vector<Interval> Solver_IMPL(int N, int M, int K, int J, int L,
                                    //vector<int>{0, 3, 1, 7, 0, 89, 0, 0, 90, 40, 23} // OK
                                    //          0  1  2  3  4   5  6  7   8   9  10
                                    //vector<int>{5, 0, 0, 0, 0, 5, 5, 5, 5, 5},
-                                   vector<int>{5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5},
+                                   vector<int>{5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5},
                                    vector<int>{100, 0, 0, 0});
     //vector<int>{5, 0, 0, 0, 0, 5, 5, 0, 5, 5, 5});
 
