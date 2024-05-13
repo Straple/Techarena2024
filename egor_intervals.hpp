@@ -476,6 +476,13 @@ void EgorTaskSolver::interval_do_split(int b, int i) {
             //ASSERT(false, "kek");
         }
     }
+
+    // попытаемся добавить юзеров, которых нет в освободившиеся места
+    for (int user = 0; user < N; user++) {
+        if (users_info[user].sum_len == 0) {
+            user_do_new_interval(user);
+        }
+    }
 }
 
 void EgorTaskSolver::interval_merge() {
