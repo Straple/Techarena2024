@@ -139,10 +139,10 @@ vector<Interval> EgorTaskSolver::annealing(vector<Interval> reservedRBs,
         was_accepted = false;
         //temperature *= 0.9999;
 
-        cout << "step: " << step << endl;
-        if(step == 4999){
-            cout << "HERE" << endl;
-        }
+        //cout << "step: " << step << endl;
+        //if(step == 4999){
+        //    cout << "HERE" << endl;
+        //}
 
         /*if (step > STEPS / 2) {
             if (best_f >= 100 * metric.accepted - 10 * metric.unused_space - metric.overflow + metric.free_space) {

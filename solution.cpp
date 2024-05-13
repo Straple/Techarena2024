@@ -40,7 +40,7 @@ vector<Interval> Solver_IMPL(int N, int M, int K, int J, int L,
     //auto egor_score = get_solution_score(N, M, K, J, L, reservedRBs, userInfos, egor_answer);
     //return egor_answer;
 
-    cout << "J: " << J << endl;
+    /*cout << "J: " << J << endl;
 
     cout << "egor_answer size: " << egor_answer.size() << endl;
 
@@ -48,10 +48,9 @@ vector<Interval> Solver_IMPL(int N, int M, int K, int J, int L,
     optimize(N, M, K, J, L, reservedRBs, userInfos, get_egor_blocked, true);
     egor_answer = unblock_ans(get_egor_blocked);
 
-    cout << "egor_answer size after optimize: " << egor_answer.size() << endl;
+    cout << "egor_answer size after optimize: " << egor_answer.size() << endl;*/
 
     auto egor_score = get_solution_score(N, M, K, J, L, reservedRBs, userInfos, egor_answer);
-
     if (egor_score > artem_score) {
         return egor_answer;
     } else {

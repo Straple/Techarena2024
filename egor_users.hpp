@@ -225,7 +225,6 @@ void EgorTaskSolver::user_remove_left() {
 }
 
 void EgorTaskSolver::user_remove_right() {
-    //CNT_CALL_USER_REMOVE_RIGHT++;
 
     USER_FOR_BEGIN(r != -1)
 
@@ -328,7 +327,6 @@ void EgorTaskSolver::user_remove_and_add() {
 
 void EgorTaskSolver::user_do_crop(int u) {
     ASSERT(false, "hello");
-    //CNT_CALL_USER_DO_CROP++;
 
     int best_b = -1, best_l = -1, best_r = -1, best_len = -1e9;
     for (int b = 0; b < B; b++) {
