@@ -390,7 +390,7 @@ struct EgorTaskSolver {
 
     void interval_split();
 
-    void interval_merge_and_split();
+    void interval_do_free();
 
     ///======================
     ///===========USER=======

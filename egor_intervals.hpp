@@ -27,9 +27,6 @@ void EgorTaskSolver::interval_flow_over() {
 
     // заберу у интервала i длину change, отдам ее интервалу j
 
-    // было
-    // 981863
-
     int block, i, j;
     {
         vector<tuple<int, int, int>> ips;
@@ -94,15 +91,15 @@ void EgorTaskSolver::interval_flow_over() {
         SNAP_ACTION("interval_flow_over " + to_string(block) + " " + to_string(i) + " " + to_string(j) + " " +
                     to_string(change) + " accepted");
 
-        if(i > j){
+        if (i > j) {
             swap(i, j);
         }
         // i < j
 
-        if(intervals[block][j].len == 0){
+        if (intervals[block][j].len == 0) {
             remove_interval(block, j);
         }
-        if(intervals[block][i].len == 0){
+        if (intervals[block][i].len == 0) {
             remove_interval(block, i);
         }
 
@@ -414,8 +411,6 @@ void EgorTaskSolver::interval_merge() {
 
     interval_do_merge(b, i);
 
-    //SNAP_ACTION("interval_merge " + to_string(b) + " " + to_string(i));
-
     if (is_good(old_metric)) {
         SNAP_ACTION("interval_merge " + to_string(b) + " " + to_string(i) + " accepted");
     } else {
@@ -428,85 +423,9 @@ bool EgorTaskSolver::interval_split_IMPL() {
 
     if (get_intervals_size() == J) {
         // нужно добыть интервал для split
-
-        // TODO: рандомно выбирать интервал почему-то дает больше баллов
-
-        // (metric, block, index)
-        vector<tuple<int, int, int>> ips;
-        for (int block = 0; block < B; block++) {
-            for (int index = 0; index < intervals[block].size(); index++) {
-                // если мы удалим этот интервал, то сколько accepted будет?
-
-                /*int accepted = 0;//metric.accepted;
-
-                int overflow = 0;//metric.overflow;
-
-                for (int user: intervals[block][index].users) {
-                    //accepted -= min(users_info[user].sum_len, users_info[user].rbNeed);
-                    accepted += min(users_info[user].sum_len - intervals[block][index].len, users_info[user].rbNeed);
-
-                    //overflow -= max(0, users_info[user].sum_len - users_info[user].rbNeed);
-                    overflow += max(0, users_info[user].sum_len - intervals[block][index].len - users_info[user].rbNeed);
-                }
-
-                ips.emplace_back(accepted - overflow, block, index);*/
-                ips.emplace_back(0, block, index);
-            }
-        }
-        //sort(ips.begin(), ips.end(), greater<>());
-        if (ips.empty()) {
+        interval_do_free();
+        if (get_intervals_size() == J) {
             return false;
-        }
-        auto [_, block, index] = ips[rnd.get(0, ips.size() - 1)];
-        //remove_interval(block, index);
-
-        int len = intervals[block][index].len;
-
-        if (index > 0 && index + 1 < intervals[block].size()) {
-
-            //int best_left_len = rnd.get(0, len);
-            int best_left_len = 0;
-            /*int best_f = -1e9;
-
-            for(int left_len = 0; left_len <= len; left_len++){
-
-                int right_len = len - left_len;
-                int accepted = metric.accepted;
-
-                for(int left_user : intervals[block][index - 1].users){
-                    accepted -= min(users_info[left_user].rbNeed, users_info[left_user].sum_len);
-                    accepted += min(users_info[left_user].rbNeed, users_info[left_user].sum_len + left_len);
-                }
-
-                for(int right_user : intervals[block][index + 1].users){
-                    accepted -= min(users_info[right_user].rbNeed, users_info[right_user].sum_len);
-                    accepted += min(users_info[right_user].rbNeed, users_info[right_user].sum_len + right_len);
-                }
-
-                int cur_f = accepted;
-
-                if(best_f < cur_f){
-                    best_f = cur_f;
-                    best_left_len = left_len;
-                }
-            }*/
-
-            ASSERT(best_left_len != -1, "failed");
-
-            int right_len = len - best_left_len;
-
-            remove_interval(block, index);
-            change_interval_len(block, index - 1, best_left_len);
-            change_interval_len(block, index, right_len);
-
-        } else if (index > 0) {
-            remove_interval(block, index);
-            change_interval_len(block, index - 1, len);
-        } else if (index + 1 < intervals[block].size()) {
-            remove_interval(block, index);
-            change_interval_len(block, index, len);
-        } else {
-            remove_interval(block, index);
         }
     }
 
@@ -541,30 +460,76 @@ void EgorTaskSolver::interval_split() {
     }
 }
 
-void EgorTaskSolver::interval_merge_and_split() {
-    ASSERT(false, "not used");
-
-    auto old_metric = metric;
-
-    int old_actions_size = actions.size();
-
-    {
-        CHOOSE_INTERVAL(i + 1 < intervals[b].size(), );
-        interval_do_merge(b, i);
+void EgorTaskSolver::interval_do_free() {
+    // попытаемся смержить два одинаковых интервала
+    for (int block = 0; block < B; block++) {
+        for (int index = 0; index + 1 < intervals[block].size(); index++) {
+            if (intervals[block][index].users == intervals[block][index + 1].users) {
+                change_interval_len(block, index, intervals[block][index + 1].len);
+                remove_interval(block, index + 1);
+                return;
+            }
+        }
     }
 
-    {
-        ASSERT(get_intervals_size() < J, "failed intervals size");
+    // TODO: рандомно выбирать интервал почему-то дает больше баллов
 
-        CHOOSE_INTERVAL(true, );
+    // (metric, block, index)
+    vector<tuple<int, int, int>> ips;
+    for (int block = 0; block < B; block++) {
+        for (int index = 0; index < intervals[block].size(); index++) {
+            // если мы удалим этот интервал, то сколько accepted будет?
 
-        interval_do_split(b, i);
+            int accepted = 0;//metric.accepted;
+
+            int overflow = 0;//metric.overflow;
+
+            for (int user: intervals[block][index].users) {
+                //accepted -= min(users_info[user].sum_len, users_info[user].rbNeed);
+                accepted += min(users_info[user].sum_len - intervals[block][index].len, users_info[user].rbNeed);
+
+                //overflow -= max(0, users_info[user].sum_len - users_info[user].rbNeed);
+                overflow += max(0, users_info[user].sum_len - intervals[block][index].len - users_info[user].rbNeed);
+            }
+
+            ips.emplace_back(accepted, block, index);
+        }
+    }
+    //sort(ips.begin(), ips.end(), greater<>());
+    if (ips.empty()) {
+        return;
     }
 
-    if (is_good(old_metric)) {
-        SNAP_ACTION("interval_merge_and_split accepted");
+    auto [_, block, index] = ips[rnd.get(0, ips.size() - 1)];
+
+    int len = intervals[block][index].len;
+
+    if (intervals[block].size() == 1) {
+        remove_interval(block, 0);
     } else {
-        rollback(old_actions_size);
-        ASSERT(old_metric == metric, "failed back score");
+        remove_interval(block, index);
+        change_interval_len(block, rnd.get(0, intervals[block].size() - 1), len);
     }
+
+    /*if (index > 0 && index + 1 < intervals[block].size()) {
+
+        int best_left_len = 0;
+
+        ASSERT(best_left_len != -1, "failed");
+
+        int right_len = len - best_left_len;
+
+        remove_interval(block, index);
+        change_interval_len(block, index - 1, best_left_len);
+        change_interval_len(block, index, right_len);
+
+    } else if (index > 0) {
+        remove_interval(block, index);
+        change_interval_len(block, index - 1, len);
+    } else if (index + 1 < intervals[block].size()) {
+        remove_interval(block, index);
+        change_interval_len(block, index, len);
+    } else {
+        remove_interval(block, index);
+    }*/
 }

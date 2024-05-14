@@ -142,87 +142,13 @@ int main() {
     }
     cout << "}" << endl;*/
 
-        /*{
-        cout << "EGOR TASK SOLVER STATISTIC:\n";
-
-#define CAT_IMPL(string1, string2) string1##string2
-
-#define CAT(string1, string2) CAT_IMPL(string1, string2)
-
-#define f(x) cout << #x ": " << x / 1000.0 << '\n';
-#define g(x) cout << #x ": " << CAT(CNT_ACCEPTED_, x) * 100.0 / CAT(CNT_CALL_, x) << "% " << CAT(CNT_ACCEPTED_, x) / 1000 << "/" << CAT(CNT_CALL_, x) / 1000 << '\n';
-
-        f(CNT_CALL_GET_LEFT_USER);
-        f(CNT_CALL_GET_RIGHT_USER);
-        cout << "=================\n";
-        f(CNT_CALL_CHANGE_INTERVAL_LEN);
-        cout << "=================\n";
-        f(CNT_CALL_ADD_USER_IN_INTERVAL);
-        f(CNT_CALL_REMOVE_USER_IN_INTERVAL);
-        cout << "=================\n";
-        g(INTERVAL_FLOW_OVER);
-        g(INTERVAL_INCREASE_LEN);
-        g(INTERVAL_DECREASE_LEN);
-        g(INTERVAL_GET_FULL_FREE_SPACE);
-
-        f(CNT_CALL_INTERVAL_DO_MERGE_EQUAL);
-        f(CNT_CALL_INTERVAL_DO_SPLIT);
-
-        g(INTERVAL_MERGE_EQUAL);
-        g(INTERVAL_SPLIT);
-
-        cout << "=================\n";
-        g(USER_NEW_INTERVAL);
-        g(USER_ADD_LEFT);
-        g(USER_REMOVE_LEFT);
-        g(USER_ADD_RIGHT);
-        g(USER_REMOVE_RIGHT);
-
-        f(CNT_CALL_USER_DO_CROP);
-
-        g(USER_CROP);
-        g(USER_SWAP);
-        cout << "=================\n";
-        cout.flush();
-
-#undef CAT_IMPL
-#undef CAT
-#undef f
-#undef g
-    }*/
-
-        /*cout << "============================================================\n";
-    cout << "{\n";
-    for (int i = 0; i < 12; i++) {
-        cout << "{";
-        for (int j = 0; j < 12; j++) {
-            long long sum = 0;
-            for (int k = 0; k < 12; k++) {
-                sum += cnt_edges[i][k];
-            }
-            int val = (int) (cnt_good_edges[i][j] * 10000.0 / sum);
-            cout << val;
-            if (j != 11) {
-                cout << ", ";
-            }
-            //cout << cnt_good_edges[i][j] << '/' << cnt_edges[i][j] << ' ';
-            //cout << (int) (cnt_good_edges[i][j] * 100.0 / cnt_edges[i][j]) << ' ';
-        }
-        cout << "},\n";
-    }
-    cout << "}\n";
-    cout << "============================================================\n";
-    cout << endl;*/
-
         cout << "====================================\n";
         cout << "STEPS: " << STEPS << '\n';
         for (int K = 0; K <= 4; K++) {
             cout << "TEST CASE: K=" << K << " | " << infos[K] << endl;
         }
         cout << "TOTAL: " << total_info << endl;
-        //cout << "FLOW_OVER: " << (CNT_ACCEPTED_FLOW_OVER * 100.0 / CNT_CALL_FLOW_OVER) << "% " << CNT_ACCEPTED_FLOW_OVER
-        //     << "/" << CNT_CALL_FLOW_OVER << endl;
     }
 
-    //cout << "CNT_ACCEPTED_EQ: " << CNT_ACCEPTED_EQ << "\n";
+    cout << ABSYBDAYSBD << endl;
 }

@@ -124,6 +124,8 @@ EgorTaskSolver::EgorTaskSolver(int NN, int MM, int KK, int JJ, int LL,
 int accepted_inc[10];
 int accepted_more[10];
 
+int ABSYBDAYSBD = 0;
+
 int itt = 0;
 vector<Interval> EgorTaskSolver::annealing(vector<Interval> reservedRBs,
                                            vector<UserInfo> userInfos) {
@@ -159,6 +161,16 @@ vector<Interval> EgorTaskSolver::annealing(vector<Interval> reservedRBs,
             for (int index = 0; index < intervals[block].size(); index++) {
                 if (intervals[block][index].len == 0) {
                     ASSERT(false, "zero interval");
+                }
+
+                if(index + 1 < intervals[block].size()){
+                    if(intervals[block][index].users == intervals[block][index + 1].users &&
+                        intervals[block][index].users.size() == L){
+                        ABSYBDAYSBD++;
+
+                        //change_interval_len(block, index, intervals[block][index + 1].len);
+                        //remove_interval(block, index + 1);
+                    }
                 }
             }
         }
