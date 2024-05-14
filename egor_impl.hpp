@@ -92,21 +92,25 @@ EgorTaskSolver::EgorTaskSolver(int NN, int MM, int KK, int JJ, int LL,
             }
             ASSERT(already_push, "no push");
         }
-        //for (int i = start_intervals.size(); i < J; i++) {
-        //    intervals[rnd.get(0, B - 1)].push_back(SetInterval());
-        //}
-        for(int block = 0; block < B; block++){
-            int len = get_block_len(block);
-            if(len < free_intervals[block].len()){
-                if(get_intervals_size() < J){
+
+        {
+            vector<pair<int, int>> ips;
+            for (int block = 0; block < B; block++) {
+                int len = get_block_len(block);
+                if (len < free_intervals[block].len()) {
+                    if (!intervals[block].empty()) {
+                        change_interval_len(block, intervals[block].size() - 1, free_intervals[block].len() - len);
+                    } else {
+                        ips.emplace_back(free_intervals[block].len(), block);
+                    }
+                }
+            }
+
+            sort(ips.begin(), ips.end(), greater<>());
+            for (auto [len, block]: ips) {
+                if (get_intervals_size() < J) {
                     intervals[block].push_back(SetInterval());
-                    change_interval_len(block, intervals[block].size() - 1, free_intervals[block].len() - len);
-                }
-                else if(!intervals[block].empty()){
-                    change_interval_len(block, intervals[block].size() - 1, free_intervals[block].len() - len);
-                }
-                else{
-                    //cout << "kek" << endl;
+                    change_interval_len(block, 0, free_intervals[block].len());
                 }
             }
         }
