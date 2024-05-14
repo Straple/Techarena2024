@@ -93,6 +93,28 @@ void EgorTaskSolver::interval_flow_over() {
     if (is_good(old_metric)) {
         SNAP_ACTION("interval_flow_over " + to_string(block) + " " + to_string(i) + " " + to_string(j) + " " +
                     to_string(change) + " accepted");
+
+        if(i > j){
+            swap(i, j);
+        }
+        // i < j
+
+        if(intervals[block][j].len == 0){
+            remove_interval(block, j);
+        }
+        if(intervals[block][i].len == 0){
+            remove_interval(block, i);
+        }
+
+#ifdef MY_DEBUG_MODE
+        for (int block = 0; block < B; block++) {
+            for (int index = 0; index < intervals[block].size(); index++) {
+                if (intervals[block][index].len == 0) {
+                    ASSERT(false, "zero interval");
+                }
+            }
+        }
+#endif
     } else {
         rollback(old_actions_size);
         ASSERT(old_metric == metric, "failed back score");
@@ -301,7 +323,7 @@ void EgorTaskSolver::interval_do_split(int b, int i) {
     int best_left_len = -1;
     int best_right_len = -1;
     int best_f = -1;
-    for (int left_len = 0; left_len <= intervals[b][i].len; left_len++) {
+    for (int left_len = 1; left_len < intervals[b][i].len; left_len++) {
         int right_len = intervals[b][i].len - left_len;
 
         int free_space = 0;
@@ -443,7 +465,6 @@ bool EgorTaskSolver::interval_split_IMPL() {
         if (index > 0 && index + 1 < intervals[block].size()) {
 
             //int best_left_len = rnd.get(0, len);
-            //int best_left_len = rnd.get(0, len);
             int best_left_len = 0;
             /*int best_f = -1e9;
 
@@ -489,7 +510,7 @@ bool EgorTaskSolver::interval_split_IMPL() {
         }
     }
 
-    CHOOSE_INTERVAL(true, false);
+    CHOOSE_INTERVAL(intervals[b][i].len > 1, false);
 
     interval_do_split(b, i);
 
@@ -504,6 +525,16 @@ void EgorTaskSolver::interval_split() {
 
     if (interval_split_IMPL() && is_good(old_metric)) {
         SNAP_ACTION("interval_split accepted");
+
+#ifdef MY_DEBUG_MODE
+        for (int block = 0; block < B; block++) {
+            for (int index = 0; index < intervals[block].size(); index++) {
+                if (intervals[block][index].len == 0) {
+                    ASSERT(false, "zero interval");
+                }
+            }
+        }
+#endif
     } else {
         rollback(old_actions_size);
         ASSERT(old_metric == metric, "failed back score");

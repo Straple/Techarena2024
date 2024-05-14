@@ -76,6 +76,7 @@ EgorTaskSolver::EgorTaskSolver(int NN, int MM, int KK, int JJ, int LL,
         intervals.resize(B);
 
         for (auto [start, end, users]: start_intervals) {
+            ASSERT(start < end, "invalid interval");
             bool already_push = false;
             for (int block = 0; block < B; block++) {
                 if (free_intervals[block].start <= start && end <= free_intervals[block].end) {
@@ -120,8 +121,6 @@ EgorTaskSolver::EgorTaskSolver(int NN, int MM, int KK, int JJ, int LL,
 #define ACTION_WRAPPER(action_foo, action_id) \
     action_foo();
 
-//#define ACTION_WRAPPER(action_foo, action_id) \
-    action_foo();
 int accepted_inc[10];
 int accepted_more[10];
 
@@ -156,6 +155,16 @@ vector<Interval> EgorTaskSolver::annealing(vector<Interval> reservedRBs,
 
         //TRAIN_SCORE += best_score;
 
+#ifdef MY_DEBUG_MODE
+        for (int block = 0; block < B; block++) {
+            for (int index = 0; index < intervals[block].size(); index++) {
+                if (intervals[block][index].len == 0) {
+                    ASSERT(false, "zero interval");
+                }
+            }
+        }
+#endif
+
         ASSERT(get_solution_score(N, M, K, J, L, reservedRBs, userInfos, get_total_answer()) == metric.accepted,
                "invalid total_score");
         if (THEORY_MAX_SCORE <= metric.accepted) {
@@ -178,10 +187,6 @@ vector<Interval> EgorTaskSolver::annealing(vector<Interval> reservedRBs,
             accepted_inc[s]++;
             accepted_more[s] += metric.accepted - old_metric.accepted;
         }
-
-        //if(metric.accepted == old_metric.accepted){
-        //    CNT_ACCEPTED_EQ++;
-        //}
 
 #ifdef SAVE_BEST_ANS
         if (best_score < metric.accepted) {
