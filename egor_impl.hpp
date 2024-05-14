@@ -129,7 +129,6 @@ vector<Interval> EgorTaskSolver::annealing(vector<Interval> reservedRBs,
                                            vector<UserInfo> userInfos) {
     itt++;
     temperature = 1;
-    prev_action = 0;
 
     //#define SAVE_BEST_ANS
 

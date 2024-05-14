@@ -72,9 +72,6 @@ struct EgorTaskSolver {
 
     int B;// колво блоков
 
-    int prev_action = 0;
-    int score_prev_action = 0;
-
     vector<MyInterval> free_intervals;
 
     ///============================
