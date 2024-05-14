@@ -82,9 +82,8 @@ EgorTaskSolver::EgorTaskSolver(int NN, int MM, int KK, int JJ, int LL,
                     ASSERT(!already_push, "double push");
                     already_push = true;
 
-                    //intervals[block].push_back({end - start, {}, 0});
-                    intervals[block].push_back({0, {}, 0});                              /// !
-                    change_interval_len(block, intervals[block].size() - 1, end - start);/// !
+                    intervals[block].push_back({0, {}, 0});
+                    change_interval_len(block, intervals[block].size() - 1, end - start);
 
                     for (int u: users) {
                         add_user_in_interval(u, block, intervals[block].size() - 1);
@@ -93,8 +92,23 @@ EgorTaskSolver::EgorTaskSolver(int NN, int MM, int KK, int JJ, int LL,
             }
             ASSERT(already_push, "no push");
         }
-        for (int i = start_intervals.size(); i < J; i++) {
-            intervals[rnd.get(0, B - 1)].push_back(SetInterval());
+        //for (int i = start_intervals.size(); i < J; i++) {
+        //    intervals[rnd.get(0, B - 1)].push_back(SetInterval());
+        //}
+        for(int block = 0; block < B; block++){
+            int len = get_block_len(block);
+            if(len < free_intervals[block].len()){
+                if(get_intervals_size() < J){
+                    intervals[block].push_back(SetInterval());
+                    change_interval_len(block, intervals[block].size() - 1, free_intervals[block].len() - len);
+                }
+                else if(!intervals[block].empty()){
+                    change_interval_len(block, intervals[block].size() - 1, free_intervals[block].len() - len);
+                }
+                else{
+                    //cout << "kek" << endl;
+                }
+            }
         }
     }
 }
@@ -122,8 +136,8 @@ vector<Interval> EgorTaskSolver::annealing(vector<Interval> reservedRBs,
     auto best_intervals = intervals;
 #endif
 
-    int best_f = 100 * metric.accepted - 10 * metric.unused_space - metric.overflow + metric.free_space;
-    int there_has_been_no_improvement_for_x_steps = 0;
+    //int best_f = 100 * metric.accepted - 10 * metric.unused_space - metric.overflow + metric.free_space;
+    //int there_has_been_no_improvement_for_x_steps = 0;
 
     for (int step = 0; step < STEPS; step++) {
         temperature = ((STEPS - step) * 0.01 / STEPS);
@@ -135,41 +149,6 @@ vector<Interval> EgorTaskSolver::annealing(vector<Interval> reservedRBs,
         //if(step == 4999){
         //    cout << "HERE" << endl;
         //}
-
-        /*if (step > STEPS / 2) {
-            if (best_f >= 100 * metric.accepted - 10 * metric.unused_space - metric.overflow + metric.free_space) {
-                there_has_been_no_improvement_for_x_steps++;
-                if (there_has_been_no_improvement_for_x_steps > 200) {
-                    break;
-                }
-            } else {
-                there_has_been_no_improvement_for_x_steps = 0;
-                best_f = 100 * metric.accepted - 10 * metric.unused_space - metric.overflow + metric.free_space;
-            }
-        }*/
-
-        //if(step > STEPS / 2)
-        /*{
-            if (best_f >= 100 * metric.accepted - 10 * metric.unused_space - metric.overflow + metric.free_space) {
-                there_has_been_no_improvement_for_x_steps++;
-                if (there_has_been_no_improvement_for_x_steps > 300) {
-                    there_has_been_no_improvement_for_x_steps = 0;
-                    earthquake();
-                    best_f = 100 * metric.accepted - 10 * metric.unused_space - metric.overflow + metric.free_space;
-                }
-            } else {
-                there_has_been_no_improvement_for_x_steps = 0;
-                best_f = 100 * metric.accepted - 10 * metric.unused_space - metric.overflow + metric.free_space;
-            }
-        }*/
-
-        //977151
-
-        /*if (step < STEPS / 2) {
-            METRIC_TYPE = 1;
-        } else {
-            METRIC_TYPE = 0;
-        }*/
 
         //TRAIN_SCORE += best_score;
 
@@ -184,10 +163,8 @@ vector<Interval> EgorTaskSolver::annealing(vector<Interval> reservedRBs,
         if (s == 0) {
             ACTION_WRAPPER(user_remove_and_add, s);
         } else if (s == 1) {
-            ACTION_WRAPPER(interval_increase_len, s);
-        } else if (s == 2) {
             ACTION_WRAPPER(interval_flow_over, s);
-        } else if (s == 3) {
+        } else if (s == 2) {
             ACTION_WRAPPER(interval_split, s);
         } else {
             ASSERT(false, "kek");

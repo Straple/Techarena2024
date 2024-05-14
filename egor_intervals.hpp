@@ -237,68 +237,6 @@ void EgorTaskSolver::interval_flow_over() {
     }*/
 }
 
-void EgorTaskSolver::interval_increase_len() {
-    //CNT_CALL_INTERVAL_INCREASE_LEN++;
-
-    //ASSERT(false, "not used");
-
-    CHOOSE_INTERVAL(get_block_len(b) < free_intervals[b].len(), );
-
-    int change = rnd.get(1, min(10, (free_intervals[b].len() - get_block_len(b))));
-
-    auto old_metric = metric;
-
-    change_interval_len(b, i, change);
-
-    //SNAP_ACTION("interval_increase_len " + to_string(b) + " " + to_string(i) + " " + to_string(change));
-    //if (is_good(old_metric, false)){
-    //
-    //}
-    //    if (is_good(old_metric, false)){
-    //        cout << "INCREASE" << endl;
-    //    };
-
-    if (is_good(old_metric)) {
-        SNAP_ACTION(
-                "interval_increase_len " + to_string(b) + " " + to_string(i) + " " + to_string(change) + " accepted");
-    } else {
-        rollback();
-        ASSERT(old_metric == metric, "failed back score");
-    }
-}
-
-void EgorTaskSolver::interval_decrease_len() {
-    //CNT_CALL_INTERVAL_DECREASE_LEN++;
-    ASSERT(false, "not used");
-
-    CHOOSE_INTERVAL(intervals[b][i].len > 0, );
-
-    int change = rnd.get(-intervals[b][i].len, -1);
-
-    auto old_metric = metric;
-
-    change_interval_len(b, i, change);
-
-    //SNAP_ACTION("interval_decrease_len " + to_string(b) + " " + to_string(i) + " " + to_string(change));
-
-
-    //if (is_good(old_metric, false)){
-    //    cout << "DECREASE" << endl;
-    //}
-
-    if (is_good(old_metric)) {
-        SNAP_ACTION(
-                "interval_decrease_len " + to_string(b) + " " + to_string(i) + " " + to_string(change) + " accepted");
-    } else {
-        rollback();
-        ASSERT(old_metric == metric, "failed back score");
-    }
-}
-
-/*bool EgorTaskSolver::merge_verify(int b, int i) {
-    return i + 1 < intervals[b].size();
-}*/
-
 void EgorTaskSolver::interval_do_merge(int b, int i) {
     ASSERT(false, "not used");
     //CNT_CALL_INTERVAL_DO_MERGE_EQUAL++;

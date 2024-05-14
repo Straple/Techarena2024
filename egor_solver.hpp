@@ -381,10 +381,6 @@ struct EgorTaskSolver {
 
     void interval_flow_over();
 
-    void interval_increase_len();
-
-    void interval_decrease_len();
-
     bool merge_verify(int b, int i);
 
     void interval_do_merge(int b, int i);
