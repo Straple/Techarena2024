@@ -531,8 +531,10 @@ void EgorTaskSolver::interval_do_free() {
 
     // распределить наиболее оптимально len
 
+    change_interval_len(block, min(index, (int)intervals[block].size() - 1), len);
+
     // TODO: медленно, но хорошо дает скор
-    for (; len > 0; len--) {
+    /*for (; len > 0; len--) {
 
         int best_index = -1, best_f = -1e9;
         for (int index = 0; index < intervals[block].size(); index++) {
@@ -555,7 +557,8 @@ void EgorTaskSolver::interval_do_free() {
         ASSERT(best_index != -1, "invalid best_index");
 
         change_interval_len(block, best_index, +1);
-    }
+    }*/
+
     /*while(len > 0){
 
         // (accepted, min_add_len, index)

@@ -124,7 +124,6 @@ void EgorTaskSolver::user_new_interval() {
     }
 }
 
-
 void EgorTaskSolver::user_remove_and_add() {
     for (int step = 0; step < 3; step++) {
         int u = rnd.get(0, N - 1);
