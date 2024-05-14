@@ -116,8 +116,6 @@ struct EgorTaskSolver {
 
     vector<int> user_id_to_u;
 
-    vector<int> users_order;
-
     struct Action {
         enum Type {
             ADD_USER_IN_INTERVAL,

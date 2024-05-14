@@ -67,14 +67,6 @@ EgorTaskSolver::EgorTaskSolver(int NN, int MM, int KK, int JJ, int LL,
         B = free_intervals.size();
     }
 
-    {
-        users_order.resize(N);
-        iota(users_order.begin(), users_order.end(), 0);
-        sort(users_order.begin(), users_order.end(), [&](int lhs, int rhs) {
-            return users_info[lhs].rbNeed > users_info[rhs].rbNeed;
-        });
-    }
-
     // build from start_intervals
     {
         sort(start_intervals.begin(), start_intervals.end(), [&](const auto &lhs, const auto &rhs) {
