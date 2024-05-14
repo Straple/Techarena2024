@@ -229,11 +229,13 @@ struct EgorTaskSolver {
     //TEST CASE: K=3 | tests: 39 | score: 96.4336% | 43615/45228 | time: 1849.04ms | max_time: 35.504ms | mean_time: 47.4114ms
     //TEST CASE: K=4 | tests: 0 | score: -nan% | 0/0 | time: 0ms | max_time: 0ms | mean_time: 0ms
     //TOTAL: tests: 1000 | score: 98.7319% | 980385/992977 | time: 42951.8ms | max_time: 77.561ms | mean_time: 42.9518ms
-    bool is_good(Metric old_metric, bool temp = true) {
+    bool is_good(Metric old_metric) {
         ASSERT(get_metric() == metric, "invalid metric");
 
+        return metric.accepted >= old_metric.accepted;
+
         // 979437 -> 980155 -> 980332 -> 980459
-        auto calc_f = [&](Metric m) {
+        /*auto calc_f = [&](Metric m) {
             return m.accepted;
 
             //return METRICS_COEF[0] * m.accepted +
@@ -279,15 +281,15 @@ struct EgorTaskSolver {
             } else if (METRIC_TYPE == 2) {
                 return m.accepted * 5 - m.unused_space;
             }
-            /*else if(METRIC_TYPE == 3){
+            else if(METRIC_TYPE == 3){
                 //980520
                 //return m.accepted * 100 + m.free_space;
                 //980526
                 //return m.accepted * 10 + m.free_space;
 
                 return m.accepted * 10 - m.overflow;
-            }*/
-            /*else if(METRIC_TYPE == 1){
+            }
+            else if(METRIC_TYPE == 1){
                 // add score: 0 834 199 51
                 // 980488
                 return m.accepted * 5 - m.unused_space;
@@ -297,13 +299,13 @@ struct EgorTaskSolver {
             }
             else if(METRIC_TYPE == 3){
                 return 100 * m.accepted - m.unused_space - m.overflow;
-            }*/
-            /*else if(METRIC_TYPE == 3){
+            }
+            else if(METRIC_TYPE == 3){
                 return m.accepted * 10000 + m.overflow;
             }
             else if(METRIC_TYPE == 4){
                 return m.accepted * 10 + m.free_space;
-            }*/
+            }
 
             ASSERT(false, "invalid METRIC_TYPE");
             /// !!!
@@ -343,10 +345,10 @@ struct EgorTaskSolver {
             //return m.accepted * 100 + m.unused_space;// 978419
         };
 
-        double f = calc_f(metric);
-        double old_f = calc_f(old_metric);
+        //double f = calc_f(metric);
+        //double old_f = calc_f(old_metric);
 
-        return f > old_f || rnd.get_d() < exp((f - old_f)  / temperature);
+        //return f >= old_f;// || rnd.get_d() < exp((f - old_f)  / temperature);
 
         //ASSERT(f > 0, "invalid f");
         //ASSERT(old_f > 0, "invalid old_f");
@@ -372,46 +374,7 @@ struct EgorTaskSolver {
         } else {
             return false;
         }
-        return f > old_f || (temp && (rnd.get_d() < exp((5 * (f - old_f) / (double) THEORY_MAX_SCORE) / temperature)));
-
-        /*if (metric.accepted > old_metric.accepted) {
-            return true;
-        } else if (metric.accepted == old_metric.accepted) {
-            //return true; // 979363
-            //return false;// 966147
-
-            auto calc_f = [](Metric m) {
-                //return m.overflow + m.free_space; // 967490
-                //return -m.overflow + m.free_space; // 970315
-                //return -m.overflow + m.free_space * 10; // 970425
-                //return -m.overflow + m.free_space * 100; // 970374
-                //return -m.overflow + m.free_space * 15; // 970438
-                //return -m.overflow + m.free_space * 12; // 970469
-                //return m.free_space;
-                return m.overflow;
-            };
-
-            //double f = calc_f(metric);
-            //double old_f = calc_f(old_metric);
-            //ASSERT(f > 0, "invalid f");
-            //ASSERT(old_f > 0, "invalid old_f");
-
-            //969488
-            //978105
-
-            //979529
-            //return f < old_f || rnd.get_d() < exp((f - old_f) / temperature);
-
-            //977855
-            return rnd.get_d() < exp((old_metric.overflow - metric.overflow) / temperature);
-
-            //962261
-            return rnd.get_d() < exp((metric.overflow - old_metric.overflow) / temperature);
-        }
-        return rnd.get_d() < exp((metric.accepted - old_metric.accepted) / temperature);*/
-
-        // 979437
-        //return metric.accepted > old_metric.accepted || rnd.get_d() < exp((metric.accepted - old_metric.accepted) / temperature);
+        return f > old_f || (temp && (rnd.get_d() < exp((5 * (f - old_f) / (double) THEORY_MAX_SCORE) / temperature)));*/
     }
 
     ///==========================
