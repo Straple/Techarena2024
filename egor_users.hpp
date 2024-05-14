@@ -51,12 +51,8 @@ void EgorTaskSolver::user_do_new_interval(int u) {
     }*/
 
     auto f = [&](int len) {
-        return len;//abs(len - users_info[u].rbNeed);
-        /*if (len > users_info[u].rbNeed) {
-            return (len - users_info[u].rbNeed);
-        } else {
-            return users_info[u].rbNeed - len;
-        }*/
+        return len;
+        //abs(len - users_info[u].rbNeed);
     };
 
     int best_b = -1, best_l = -1, best_r = -1, best_f = -1e9;
@@ -127,7 +123,6 @@ void EgorTaskSolver::user_new_interval() {
         ASSERT(old_metric == metric, "failed back score");
     }
 }
-
 
 
 void EgorTaskSolver::user_remove_and_add() {
