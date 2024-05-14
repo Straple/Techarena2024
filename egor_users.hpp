@@ -269,6 +269,13 @@ void EgorTaskSolver::user_remove_and_add() {
         int u = rnd.get(0, N - 1);
         int u2 = rnd.get(0, N - 1);
 
+        /*auto a = get_user_position(u);
+        auto b = get_user_position(u2);
+
+        if(get<0>(a) != get<0>(b)){
+            continue;
+        }*/
+
         int old_actions_size = actions.size();
         auto old_metric = metric;
 
@@ -373,6 +380,8 @@ void EgorTaskSolver::user_crop() {
 }
 
 void EgorTaskSolver::beam_rebuild() {
+    ASSERT(false, "not supported");
+
     int beam;
     {
         vector<int> beams;
@@ -455,6 +464,7 @@ void EgorTaskSolver::beam_rebuild() {
 }
 
 void EgorTaskSolver::user_Robin_Hood() {
+    ASSERT(false, "not supported");
     // найдем двух соседних юзеров
     // край одного дадим другому
 

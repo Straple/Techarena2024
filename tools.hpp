@@ -226,7 +226,7 @@ std::vector<vector<Interval>> ans_to_blocked_ans(int M, int K, const vector<Inte
     return ans;
 }
 
-std::map<int, int> reduce_users(int &N, int J, vector<UserInfo> &userInfos) {
+std::map<int, int> reduce_users22312414123(int &N, int J, vector<UserInfo> &userInfos) {
     std::map<int, int> back_mapping;
     std::vector<pair<int, UserInfo>> newUserInfos;
     int last_id = 0;
@@ -246,7 +246,12 @@ std::map<int, int> reduce_users(int &N, int J, vector<UserInfo> &userInfos) {
         }
     }
     N = last_id;
-    sort(newUserInfos.begin(), newUserInfos.end(), [&](const auto &lhs, const auto &rhs) {
+    userInfos.resize(N);
+    for(int i = 0; i < N; i++){
+        userInfos[i] = newUserInfos[i].second;
+    }
+    return back_mapping;
+    /*sort(newUserInfos.begin(), newUserInfos.end(), [&](const auto &lhs, const auto &rhs) {
         return lhs.first < rhs.first;
     });
 
@@ -258,7 +263,7 @@ std::map<int, int> reduce_users(int &N, int J, vector<UserInfo> &userInfos) {
         userInfos[i] = newUserInfos[i].second;
         userInfos[i].id = i;
     }
-    return back_mapping222;
+    return back_mapping222;*/
 
     /*std::map<int, int> back_mapping222;
     mt19937 rnd(42);
@@ -270,7 +275,37 @@ std::map<int, int> reduce_users(int &N, int J, vector<UserInfo> &userInfos) {
     return back_mapping222;*/
 }
 
-void normalize_id(std::vector<Interval> &normalize_it, std::map<int, int> &back_mapping) {
+void normalize_id12412321124123(std::vector<Interval> &normalize_it, std::map<int, int> &back_mapping) {
+    for (int i = 0; i < normalize_it.size(); i++) {
+        for (int g = 0; g < normalize_it[i].users.size(); g++) {
+            normalize_it[i].users[g] = back_mapping[normalize_it[i].users[g]];
+        }
+    }
+}
+
+std::map<int,int> reduce_users(int& N, int J,  vector<UserInfo>& userInfos){
+    std::map<int,int>back_mapping;
+    std::vector<UserInfo>newUserInfos;
+    int last_id = 0;
+    std::vector<pair<int,pair<int,int>>>users_arr;
+    std::vector<int>beamGot(32);
+    for (int i = 0; i < N; i++) {
+        users_arr.push_back({userInfos[i].rbNeed, {userInfos[i].beam, i}});
+    }
+    sort(users_arr.begin(), users_arr.end(), greater<>());
+    for (int i = 0; i < N; i++) {
+        beamGot[users_arr[i].second.first]++;
+        if ( beamGot[users_arr[i].second.first] <= J) {
+            newUserInfos.push_back({users_arr[i].first, users_arr[i].second.first, last_id});
+            back_mapping[last_id] = users_arr[i].second.second;
+            last_id++;
+        }
+    }
+    N = last_id;
+    userInfos = newUserInfos;
+    return back_mapping;
+}
+void normalize_id(std::vector<Interval>&normalize_it, std::map<int,int>&back_mapping) {
     for (int i = 0; i < normalize_it.size(); i++) {
         for (int g = 0; g < normalize_it[i].users.size(); g++) {
             normalize_it[i].users[g] = back_mapping[normalize_it[i].users[g]];
