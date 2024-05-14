@@ -517,7 +517,7 @@ bool EgorTaskSolver::interval_split_IMPL(){
             for (int index = 0; index < intervals[block].size(); index++) {
                 // если мы удалим этот интервал, то сколько accepted будет?
 
-                int accepted = 0;//metric.accepted;
+                /*int accepted = 0;//metric.accepted;
 
                 int overflow = 0;//metric.overflow;
 
@@ -529,7 +529,8 @@ bool EgorTaskSolver::interval_split_IMPL(){
                     overflow += max(0, users_info[user].sum_len - intervals[block][index].len - users_info[user].rbNeed);
                 }
 
-                ips.emplace_back(accepted - overflow, block, index);
+                ips.emplace_back(accepted - overflow, block, index);*/
+                ips.emplace_back(0, block, index);
             }
         }
         //sort(ips.begin(), ips.end(), greater<>());

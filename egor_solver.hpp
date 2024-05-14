@@ -178,6 +178,8 @@ struct EgorTaskSolver {
     ///===========ACTIONS=========
     ///===========================
 
+    void user_do_swap_eq_beam(int u, int u2);
+
     void change_user_len(int u, int c);
 
     void IMPL_change_interval_len(int b, int i, int c);
@@ -343,6 +345,9 @@ struct EgorTaskSolver {
 
         double f = calc_f(metric);
         double old_f = calc_f(old_metric);
+
+        return f > old_f || rnd.get_d() < exp((f - old_f)  / temperature);
+
         //ASSERT(f > 0, "invalid f");
         //ASSERT(old_f > 0, "invalid old_f");
         double rnd_ddd = rnd.get_d();
@@ -439,29 +444,9 @@ struct EgorTaskSolver {
 
     void user_do_new_interval(int u);
 
-    void user_add_left();
-
-    void user_add_right();
-
-    void user_remove_left();
-
-    void user_remove_right();
-
     void user_new_interval();
 
-    void user_do_swap_eq_beam(int u, int u2);
-
-    //void user_do_remove_and_add(int u, int u2);
-
     void user_remove_and_add();
-
-    void user_do_crop(int u);
-
-    void user_crop();
-
-    void beam_rebuild();
-
-    void user_Robin_Hood();
 
     ///======================
     ///======ANNEALING=======

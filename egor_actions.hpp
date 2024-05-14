@@ -34,20 +34,33 @@ void EgorTaskSolver::rollback(int size) {
 ///===========ACTIONS=========
 ///===========================
 
+void EgorTaskSolver::user_do_swap_eq_beam(int u, int u2) {
+    ASSERT(users_info[u].beam == users_info[u].beam, "no equals beams");
+
+    int urbNeed = users_info[u].rbNeed;
+    int u2rbNeed = users_info[u2].rbNeed;
+
+    int usum_len = users_info[u].sum_len;
+    int u2sum_len = users_info[u2].sum_len;
+
+    metric.accepted += min(urbNeed, u2sum_len) - min(urbNeed, usum_len) +
+                       min(u2rbNeed, usum_len) - min(u2rbNeed, u2sum_len);
+
+    metric.overflow += max(0, usum_len - u2rbNeed) - max(0, usum_len - urbNeed) +
+                       max(0, u2sum_len - urbNeed) - max(0, u2sum_len - u2rbNeed);
+
+    swap(user_id_to_u[users_info[u].id], user_id_to_u[users_info[u2].id]);
+    swap(users_info[u].rbNeed, users_info[u2].rbNeed);
+    swap(users_info[u].id, users_info[u2].id);
+    swap(users_info[u].pos, users_info[u2].pos);
+}
+
 void EgorTaskSolver::change_user_len(int u, int c) {
     auto &users = users_beam[users_info[u].beam];
 
-    /*cout << "kek=======================================\n";
-    for (int i = 0; i + 1 < users.size(); i++) {
-        cout << users_info[users[i]].sum_len << ' ';
-    }
-    cout << endl;*/
-
 #ifdef MY_DEBUG_MODE
     for (int i = 0; i + 1 < users.size(); i++) {
-        if (users_info[users[i]].sum_len < users_info[users[i + 1]].sum_len) {
-            ASSERT(false, "WTF");
-        }
+        ASSERT(users_info[users[i]].sum_len >= users_info[users[i + 1]].sum_len, "WTF");
     }
 #endif
 
@@ -86,9 +99,7 @@ void EgorTaskSolver::change_user_len(int u, int c) {
 
 #ifdef MY_DEBUG_MODE
             for (int i = 0; i + 1 < users.size(); i++) {
-                if (users_info[users[i]].sum_len < users_info[users[i + 1]].sum_len) {
-                    ASSERT(false, "WTF");
-                }
+                ASSERT(users_info[users[i]].sum_len >= users_info[users[i + 1]].sum_len, "WTF");
             }
 #endif
             return;

@@ -1,32 +1,32 @@
 ====================================
 STEPS: 500
-TEST CASE: K=0 | tests: 666 | score: 99.3131% | 647861/652342 | time: 420.422ms | max_time: 3.553ms | mean_time: 0.631264ms
-TEST CASE: K=1 | tests: 215 | score: 98.3139% | 212474/216118 | time: 217.372ms | max_time: 1.446ms | mean_time: 1.01103ms
-TEST CASE: K=2 | tests: 80 | score: 98.2116% | 77871/79289 | time: 99.09ms | max_time: 1.51ms | mean_time: 1.23862ms
-TEST CASE: K=3 | tests: 39 | score: 97.0151% | 43878/45228 | time: 50.362ms | max_time: 1.535ms | mean_time: 1.29133ms
+TEST CASE: K=0 | tests: 666 | score: 99.3097% | 647839/652342 | time: 441.544ms | max_time: 2.522ms | mean_time: 0.662979ms
+TEST CASE: K=1 | tests: 215 | score: 98.3264% | 212501/216118 | time: 267.894ms | max_time: 2.137ms | mean_time: 1.24602ms
+TEST CASE: K=2 | tests: 80 | score: 98.1902% | 77854/79289 | time: 114.926ms | max_time: 1.676ms | mean_time: 1.43657ms
+TEST CASE: K=3 | tests: 39 | score: 97.2274% | 43974/45228 | time: 61.404ms | max_time: 1.906ms | mean_time: 1.57446ms
 TEST CASE: K=4 | tests: 0 | score: -nan% | 0/0 | time: 0ms | max_time: 0ms | mean_time: 0ms
-TOTAL: tests: 1000 | score: 98.903% | 982084/992977 | time: 787.246ms | max_time: 3.553ms | mean_time: 0.787246ms
+TOTAL: tests: 1000 | score: 98.9115% | 982168/992977 | time: 885.768ms | max_time: 2.522ms | mean_time: 0.885768ms
 ====================================
 STEPS: 1000
-TEST CASE: K=0 | tests: 666 | score: 99.3281% | 647959/652342 | time: 630.68ms | max_time: 3.092ms | mean_time: 0.946967ms
-TEST CASE: K=1 | tests: 215 | score: 98.3722% | 212600/216118 | time: 383.794ms | max_time: 2.796ms | mean_time: 1.78509ms
-TEST CASE: K=2 | tests: 80 | score: 98.3163% | 77954/79289 | time: 176.51ms | max_time: 2.795ms | mean_time: 2.20637ms
-TEST CASE: K=3 | tests: 39 | score: 97.108% | 43920/45228 | time: 93.896ms | max_time: 2.972ms | mean_time: 2.40759ms
+TEST CASE: K=0 | tests: 666 | score: 99.3293% | 647967/652342 | time: 897.588ms | max_time: 5.312ms | mean_time: 1.34773ms
+TEST CASE: K=1 | tests: 215 | score: 98.4111% | 212684/216118 | time: 593.61ms | max_time: 4.655ms | mean_time: 2.76098ms
+TEST CASE: K=2 | tests: 80 | score: 98.3251% | 77961/79289 | time: 257.608ms | max_time: 3.986ms | mean_time: 3.2201ms
+TEST CASE: K=3 | tests: 39 | score: 97.119% | 43925/45228 | time: 124.658ms | max_time: 3.449ms | mean_time: 3.19636ms
 TEST CASE: K=4 | tests: 0 | score: -nan% | 0/0 | time: 0ms | max_time: 0ms | mean_time: 0ms
-TOTAL: tests: 1000 | score: 98.9381% | 982433/992977 | time: 1284.88ms | max_time: 3.092ms | mean_time: 1.28488ms
+TOTAL: tests: 1000 | score: 98.9486% | 982537/992977 | time: 1873.46ms | max_time: 5.312ms | mean_time: 1.87346ms
 ====================================
 STEPS: 2000
-TEST CASE: K=0 | tests: 666 | score: 99.3434% | 648059/652342 | time: 1041.17ms | max_time: 4.951ms | mean_time: 1.56331ms
-TEST CASE: K=1 | tests: 215 | score: 98.4615% | 212793/216118 | time: 687.032ms | max_time: 5.085ms | mean_time: 3.1955ms
-TEST CASE: K=2 | tests: 80 | score: 98.4222% | 78038/79289 | time: 325.104ms | max_time: 5.113ms | mean_time: 4.0638ms
-TEST CASE: K=3 | tests: 39 | score: 97.1588% | 43943/45228 | time: 162.33ms | max_time: 4.828ms | mean_time: 4.16231ms
+TEST CASE: K=0 | tests: 666 | score: 99.3433% | 648058/652342 | time: 1708.81ms | max_time: 17.46ms | mean_time: 2.56578ms
+TEST CASE: K=1 | tests: 215 | score: 98.5156% | 212910/216118 | time: 974.608ms | max_time: 8.661ms | mean_time: 4.53306ms
+TEST CASE: K=2 | tests: 80 | score: 98.3945% | 78016/79289 | time: 518.236ms | max_time: 8.861ms | mean_time: 6.47795ms
+TEST CASE: K=3 | tests: 39 | score: 97.2031% | 43963/45228 | time: 305.604ms | max_time: 10.907ms | mean_time: 7.836ms
 TEST CASE: K=4 | tests: 0 | score: -nan% | 0/0 | time: 0ms | max_time: 0ms | mean_time: 0ms
-TOTAL: tests: 1000 | score: 98.9784% | 982833/992977 | time: 2215.63ms | max_time: 5.113ms | mean_time: 2.21563ms
+TOTAL: tests: 1000 | score: 98.9899% | 982947/992977 | time: 3507.26ms | max_time: 17.46ms | mean_time: 3.50726ms
 ====================================
 STEPS: 5000
-TEST CASE: K=0 | tests: 666 | score: 99.3557% | 648139/652342 | time: 2185.58ms | max_time: 12.248ms | mean_time: 3.28165ms
-TEST CASE: K=1 | tests: 215 | score: 98.5027% | 212882/216118 | time: 1635.03ms | max_time: 17.718ms | mean_time: 7.60481ms
-TEST CASE: K=2 | tests: 80 | score: 98.5193% | 78115/79289 | time: 818.504ms | max_time: 12.595ms | mean_time: 10.2313ms
-TEST CASE: K=3 | tests: 39 | score: 97.2384% | 43979/45228 | time: 454.432ms | max_time: 35.37ms | mean_time: 11.6521ms
+TEST CASE: K=0 | tests: 666 | score: 99.3542% | 648129/652342 | time: 2500.77ms | max_time: 13.972ms | mean_time: 3.75491ms
+TEST CASE: K=1 | tests: 215 | score: 98.542% | 212967/216118 | time: 1577.27ms | max_time: 11.771ms | mean_time: 7.33612ms
+TEST CASE: K=2 | tests: 80 | score: 98.5181% | 78114/79289 | time: 892.334ms | max_time: 13.225ms | mean_time: 11.1542ms
+TEST CASE: K=3 | tests: 39 | score: 97.2672% | 43992/45228 | time: 421.76ms | max_time: 12.669ms | mean_time: 10.8144ms
 TEST CASE: K=4 | tests: 0 | score: -nan% | 0/0 | time: 0ms | max_time: 0ms | mean_time: 0ms
-TOTAL: tests: 1000 | score: 99.0068% | 983115/992977 | time: 5093.55ms | max_time: 35.37ms | mean_time: 5.09355ms
+TOTAL: tests: 1000 | score: 99.0156% | 983202/992977 | time: 5392.13ms | max_time: 13.972ms | mean_time: 5.39213ms

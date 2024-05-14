@@ -122,7 +122,7 @@ vector<Interval> EgorTaskSolver::annealing(vector<Interval> reservedRBs,
     temperature = 1;
     prev_action = 0;
 
-//#define SAVE_BEST_ANS
+    //#define SAVE_BEST_ANS
 
 #ifdef SAVE_BEST_ANS
     int best_score = metric.accepted;
@@ -190,35 +190,20 @@ vector<Interval> EgorTaskSolver::annealing(vector<Interval> reservedRBs,
 
         int s = SELECTION_ACTION.select();
         if (s == 0) {
-            ACTION_WRAPPER(user_new_interval, s);
-        } else if (s == 1) {
-            ACTION_WRAPPER(user_add_left, s);
-        } else if (s == 2) {
-            ACTION_WRAPPER(user_remove_left, s);
-        } else if (s == 3) {
-            ACTION_WRAPPER(user_add_right, s);
-        } else if (s == 4) {
-            ACTION_WRAPPER(user_remove_right, s);
-        } else if (s == 5) {
             ACTION_WRAPPER(user_remove_and_add, s);
-        } else if (s == 6) {
+        } else if (s == 1) {
             ACTION_WRAPPER(interval_increase_len, s);
-        } else if (s == 7) {
+        } else if (s == 2) {
             ACTION_WRAPPER(interval_flow_over, s);
-        } else if (s == 8) {
-            ACTION_WRAPPER(interval_merge, s);
-        } else if (s == 9) {
+        } else if (s == 3) {
             ACTION_WRAPPER(interval_split, s);
-        } else if (s == 10) {
-            ACTION_WRAPPER(beam_rebuild, s);
-        } else if (s == 11) {
-            ACTION_WRAPPER(user_Robin_Hood, s);
         } else {
             ASSERT(false, "kek");
         }
-        if (metric.accepted > old_metric.accepted){
+
+        if (metric.accepted > old_metric.accepted) {
             accepted_inc[s]++;
-            accepted_more[s]+=metric.accepted-old_metric.accepted;
+            accepted_more[s] += metric.accepted - old_metric.accepted;
         }
 
         //if(metric.accepted == old_metric.accepted){
@@ -242,7 +227,7 @@ vector<Interval> EgorTaskSolver::annealing(vector<Interval> reservedRBs,
         optimize(N, M, K, J, L, reservedRBs, userInfos, get_egor_blocked, true);
         auto egor_answer = unblock_ans(get_egor_blocked);
 
-        if (egor_answer.size() > J){
+        if (egor_answer.size() > J) {
             ans = get_total_answer();
             ::abort();
         }
@@ -250,7 +235,7 @@ vector<Interval> EgorTaskSolver::annealing(vector<Interval> reservedRBs,
 
         //SNAP(snapshoter.write(get_total_answer(), "annealing"));
     }
-//    cout << itt << endl;
+    //    cout << itt << endl;
     /*if (itt == 610){
         for (int i = 0; i < 10; i++){
             cout << accepted_inc[i] << " ";
