@@ -27,6 +27,7 @@ EgorTaskSolver::EgorTaskSolver(int NN, int MM, int KK, int JJ, int LL,
             users_info[u].id = userInfos[u].id;
             users_info[u].rbNeed = userInfos[u].rbNeed;
             users_info[u].beam = userInfos[u].beam;
+            unused_users.insert(u);
         }
         for (int u = 0; u < N; u++) {
             user_id_to_u[users_info[u].id] = u;

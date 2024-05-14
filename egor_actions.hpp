@@ -134,18 +134,15 @@ void EgorTaskSolver::IMPL_add_user_in_interval(int u, int b, int i) {
     ASSERT(!interval.users.contains(u), "user already contains");
     ASSERT(((interval.beam_msk >> user.beam) & 1) == 0, "equal beams");
 
-    change_user_len(u, interval.len);
-    /*metric.accepted -= min(user.rbNeed, user.sum_len);
-    metric.overflow -= max(0, user.sum_len - user.rbNeed);
-
-    user.sum_len += interval.len;
-    metric.accepted += min(user.rbNeed, user.sum_len);
-    metric.overflow += max(0, user.sum_len - user.rbNeed);*/
+    if(unused_users.contains(u)){
+        unused_users.erase(u);
+    }
 
     interval.users.insert(u);
     interval.beam_msk ^= (uint32_t(1) << user.beam);
-
     metric.free_space -= interval.len;
+
+    change_user_len(u, interval.len);
 }
 
 void EgorTaskSolver::add_user_in_interval(int u, int b, int i) {
@@ -161,19 +158,14 @@ void EgorTaskSolver::IMPL_remove_user_in_interval(int u, int b, int i) {
     ASSERT(interval.users.contains(u), "user no contains");
     ASSERT(((interval.beam_msk >> users_info[u].beam) & 1) == 1, "user no contains");
 
-    change_user_len(u, -interval.len);
-    /*metric.accepted -= min(user.rbNeed, user.sum_len);
-    metric.overflow -= max(0, user.sum_len - user.rbNeed);
-
-    user.sum_len -= interval.len;
-
-    metric.accepted += min(user.rbNeed, user.sum_len);
-    metric.overflow += max(0, user.sum_len - user.rbNeed);*/
+    if((i == 0 || !intervals[b][i-1].users.contains(u)) && (i + 1 == intervals[b].size() || !intervals[b][i+1].users.contains(u))){
+        unused_users.insert(u);
+    }
 
     interval.users.erase(u);
     interval.beam_msk ^= (uint32_t(1) << user.beam);
-
     metric.free_space += interval.len;
+    change_user_len(u, -interval.len);
 }
 
 void EgorTaskSolver::remove_user_in_interval(int u, int b, int i) {

@@ -107,6 +107,8 @@ struct EgorTaskSolver {
         int sum_len = 0;
     };
 
+    MyBitSet<128> unused_users;
+
     vector<MyUserInfo> users_info;
 
     vector<int> users_beam[32];

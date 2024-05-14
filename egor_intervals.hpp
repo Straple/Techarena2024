@@ -394,10 +394,28 @@ void EgorTaskSolver::interval_do_split(int b, int i) {
     }
 
     // попытаемся добавить юзеров, которых нет в освободившиеся места
+
+#ifdef MY_DEBUG_MODE
+    MyBitSet<128> set;
     for (int user = 0; user < N; user++) {
         if (users_info[user].sum_len == 0) {
-            user_do_new_interval(user);
+            set.insert(user);
         }
+    }
+    ASSERT(unused_users == set, "invalid unused users");
+#endif
+
+    for (int u: unused_users) {
+        bool may_left = intervals[b][i].users.size() < L && ((intervals[b][i].beam_msk >> users_info[u].beam) & 1) == 0;
+        bool may_right = intervals[b][i + 1].users.size() < L && ((intervals[b][i + 1].beam_msk >> users_info[u].beam) & 1) == 0;
+
+        if(may_left){
+            add_user_in_interval(u, b, i);
+        }
+        if(may_right){
+            add_user_in_interval(u, b, i+1);
+        }
+        //user_do_new_interval(u);
     }
 }
 
