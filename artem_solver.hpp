@@ -832,7 +832,7 @@ void optimize(int N, int M, int K, int J, int L,
             }
             int curr_len = solution[pick_i][curr].end - solution[pick_i][curr].start;
             std::vector<int> need_to_find_new;
-            MyBitSet<128> need_to_find_new_set_bits;
+            MyBitSet need_to_find_new_set_bits;
             bool force_hold = false;
             int already = 0;
             if (curr != 0) {

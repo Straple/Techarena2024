@@ -24,8 +24,53 @@
     }
 
 void EgorTaskSolver::interval_flow_over() {
-
     // заберу у интервала i длину change, отдам ее интервалу j
+
+    /*int block, i, j, change;
+    {
+    // (f, block, i, j, change)
+    vector<tuple<int, int, int, int,int>> ips;
+    for (int block = 0; block < B; block++) {
+        for (int i = 0; i < intervals[block].size(); i++) {
+            for (int j = 0; j < intervals[block].size(); j++) {
+                if (i != j) {
+
+                    auto and_users = intervals[block][i].users & intervals[block][j].users;
+                    auto unique_i = intervals[block][i].users ^ and_users;
+                    auto unique_j = intervals[block][j].users ^ and_users;
+
+                    for (int change = 1; change <= intervals[block][i].len; change++) {
+                        int accepted = metric.accepted;
+                        int overflow = metric.overflow;
+
+                        for (int u: unique_i) {
+                            accepted -= min(users_info[u].rbNeed, users_info[u].sum_len);
+                            accepted += min(users_info[u].rbNeed, users_info[u].sum_len - change);
+                        }
+
+                        for (int u: unique_j) {
+                            accepted -= min(users_info[u].rbNeed, users_info[u].sum_len);
+                            accepted += min(users_info[u].rbNeed, users_info[u].sum_len + change);
+                        }
+
+                        int cur_f = accepted;
+
+                        ips.emplace_back(cur_f, block, i, j, change);
+                    }
+                }
+            }
+        }
+    }
+    if (ips.empty()) {
+        return;
+    }
+    sort(ips.begin(), ips.end(), greater<>());
+    int p = rnd.get(0, min((int)ips.size() - 1, 3));
+    block = get<1>(ips[p]);
+    i = get<2>(ips[p]);
+    j = get<3>(ips[p]);
+    change = get<4>(ips[p]);
+}*/
 
     int block, i, j;
     {
@@ -49,37 +94,6 @@ void EgorTaskSolver::interval_flow_over() {
     }
 
     int best_change = rnd.get(-intervals[block][i].len, intervals[block][j].len);
-
-    /*auto and_users = intervals[block][i].users & intervals[block][j].users;
-    auto unique_i = intervals[block][i].users ^ and_users;
-    auto unique_j = intervals[block][j].users ^ and_users;
-
-    int best_f = -1e9;
-    int best_change = 0;
-    for (int change = 0; change <= intervals[block][j].len; change++) {
-        int accepted = 0;
-        int overflow = 0;
-
-        for (int u: unique_i) {
-            accepted += min(users_info[u].rbNeed, users_info[u].sum_len - change);
-            overflow += max(0, users_info[u].sum_len - change - users_info[u].rbNeed);
-        }
-        for (int u: unique_j) {
-            accepted += min(users_info[u].rbNeed, users_info[u].sum_len + change);
-            overflow += max(0, users_info[u].sum_len + change - users_info[u].rbNeed);
-        }
-        for (int u: and_users) {
-            accepted += min(users_info[u].rbNeed, users_info[u].sum_len);
-            overflow += max(0, users_info[u].sum_len - users_info[u].rbNeed);
-        }
-
-        int cur_f = accepted * 100 - overflow;
-
-        if (best_f < cur_f) {
-            best_f = cur_f;
-            best_change = change;
-        }
-    }*/
 
     auto old_metric = metric;
     int old_actions_size = actions.size();
@@ -167,80 +181,6 @@ void EgorTaskSolver::interval_flow_over() {
 
     change_interval_len(block, i, change);
     change_interval_len(block, j, -change);
-
-    SNAP_ACTION(
-            "interval_flow_over " + to_string(b) + " " + to_string(i) + " " + to_string(j) + " " +
-            to_string(change));
-
-    if (is_good(old_metric)) {
-        SNAP_ACTION("interval_flow_over " + to_string(b) + " " + to_string(i) + " " + to_string(j) + " " +
-                    to_string(change) + " accepted");
-        CNT_ACCEPTED_FLOW_OVER++;
-    } else {
-        rollback(old_actions_size);
-        ASSERT(old_metric == metric, "failed back score");
-    }*/
-
-    //STEPS=5000
-    //981497
-    /*int block, i, j;
-    {
-        vector<tuple<int, int, int>> ips;
-        for (int block = 0; block < B; block++) {
-            for (int i = 0; i < intervals[block].size(); i++) {
-                for (int j = 0; j < intervals[block].size(); j++) {
-                    if (i != j) {
-                        ips.emplace_back(block, i, j);
-                    }
-                }
-            }
-        }
-        if (ips.empty()) {
-            return;
-        }
-        int p = rnd.get(0, ips.size() - 1);
-        block = get<0>(ips[p]);
-        i = get<1>(ips[p]);
-        j = get<2>(ips[p]);
-    }
-
-    auto and_users = intervals[block][i].users & intervals[block][j].users;
-    auto unique_i = intervals[block][i].users ^ and_users;
-    auto unique_j = intervals[block][j].users ^ and_users;
-
-    int best_f = -1e9;
-    int best_change = 0;
-    for (int change = 1; change <= intervals[block][i].len; change++) {
-        int accepted = 0;
-        int overflow = 0;
-
-        for (int u: unique_i) {
-            accepted += min(users_info[u].rbNeed, users_info[u].sum_len - change);
-            overflow += max(0, users_info[u].sum_len - change - users_info[u].rbNeed);
-        }
-        for (int u: unique_j) {
-            accepted += min(users_info[u].rbNeed, users_info[u].sum_len + change);
-            overflow += max(0, users_info[u].sum_len + change - users_info[u].rbNeed);
-        }
-        for (int u: and_users) {
-            accepted += min(users_info[u].rbNeed, users_info[u].sum_len);
-            overflow += max(0, users_info[u].sum_len - users_info[u].rbNeed);
-        }
-
-        int cur_f = accepted * 100 - overflow;
-
-        if (best_f < cur_f) {
-            best_f = cur_f;
-            best_change = change;
-        }
-    }
-
-    auto old_metric = metric;
-    int old_actions_size = actions.size();
-    CNT_CALL_FLOW_OVER++;
-
-    change_interval_len(block, i, -best_change);
-    change_interval_len(block, j, best_change);
 
     SNAP_ACTION(
             "interval_flow_over " + to_string(b) + " " + to_string(i) + " " + to_string(j) + " " +
@@ -396,7 +336,7 @@ void EgorTaskSolver::interval_do_split(int b, int i) {
     // попытаемся добавить юзеров, которых нет в освободившиеся места
 
 #ifdef MY_DEBUG_MODE
-    MyBitSet<128> set;
+    MyBitSet set;
     for (int user = 0; user < N; user++) {
         if (users_info[user].sum_len == 0) {
             set.insert(user);
@@ -409,11 +349,11 @@ void EgorTaskSolver::interval_do_split(int b, int i) {
         bool may_left = intervals[b][i].users.size() < L && ((intervals[b][i].beam_msk >> users_info[u].beam) & 1) == 0;
         bool may_right = intervals[b][i + 1].users.size() < L && ((intervals[b][i + 1].beam_msk >> users_info[u].beam) & 1) == 0;
 
-        if(may_left){
+        if (may_left) {
             add_user_in_interval(u, b, i);
         }
-        if(may_right){
-            add_user_in_interval(u, b, i+1);
+        if (may_right) {
+            add_user_in_interval(u, b, i + 1);
         }
         //user_do_new_interval(u);
     }
@@ -522,6 +462,9 @@ void EgorTaskSolver::interval_do_free() {
 
     int len = intervals[block][index].len;
 
+    ASSERT(len <= free_intervals[block].len(), "kek");
+    ASSERT(get_block_len(block) == free_intervals[block].len(), "kek");
+
     if (intervals[block].size() == 1) {
         //ASSERT(false, "don't touch him");
         return;
@@ -529,9 +472,31 @@ void EgorTaskSolver::interval_do_free() {
 
     remove_interval(block, index);
 
+    ASSERT(!intervals[block].empty(), "kek");
+
     // распределить наиболее оптимально len
 
-    change_interval_len(block, min(index, (int)intervals[block].size() - 1), len);
+    change_interval_len(block, rnd.get(0, (int) intervals[block].size() - 1), len);
+
+    /*int best_index = -1, best_f = -1e9;
+    for (int index = 0; index < intervals[block].size(); index++) {
+        int accepted = 0;
+
+        for (int u: intervals[block][index].users) {
+            accepted += min(len, users_info[u].rbNeed - users_info[u].sum_len);
+        }
+
+        int cur_f = accepted;
+
+        if (best_f < cur_f) {
+            best_f = cur_f;
+            best_index = index;
+        }
+    }
+
+    ASSERT(best_index != -1, "invalid best_index");
+
+    change_interval_len(block, best_index, len);*/
 
     // TODO: медленно, но хорошо дает скор
     /*for (; len > 0; len--) {

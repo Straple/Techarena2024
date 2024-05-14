@@ -30,43 +30,46 @@
     }                \
     }
 
-void EgorTaskSolver::user_do_new_interval(int u) {
-
-    //auto [old_b, old_l, old_r] = get_user_position(u);
-
-    // remove user
+void EgorTaskSolver::user_do_new_interval(int user) {
     {
-        for (int b = 0; b < B; b++) {
-            for (int i = 0; i < intervals[b].size(); i++) {
-                if (intervals[b][i].users.contains(u)) {
-                    remove_user_in_interval(u, b, i);
-                }
-            }
-        }
+        auto [old_b, old_l, old_r] = get_user_position(user);
+        ASSERT(old_b == -1, "failed");
     }
-    /*if (old_b != -1) {
-        for (int i = old_l; i <= old_r; i++) {
-            remove_user_in_interval(u, old_b, i);
-        }
-    }*/
 
     auto f = [&](int len) {
         return len;
         //abs(len - users_info[u].rbNeed);
     };
 
+    int beam = users_info[user].beam;
+    auto &users = users_beam[beam];
+
     int best_b = -1, best_l = -1, best_r = -1, best_f = -1e9;
     for (int b = 0; b < B; b++) {
         for (int l = 0; l < intervals[b].size(); l++) {
             int sum_len = 0;
-            for (int r = l; r < intervals[b].size(); r++) {
-                sum_len += intervals[b][r].len;
+            int pos = users.size() - 1;
+            ASSERT(pos >= 0, "invalid pos");
+            for (int r = l; r < intervals[b].size() &&
+                            intervals[b][r].users.size() < L &&
+                            ((intervals[b][r].beam_msk >> beam) & 1) == 0;
+                 r++) {
 
-                if (intervals[b][r].users.size() == L || ((intervals[b][r].beam_msk >> users_info[u].beam) & 1) == 1) {
-                    break;
+                sum_len += intervals[b][r].len;
+                while (pos > 0 && users_info[users[pos]].rbNeed < sum_len) {
+
+                    int cur_f = min(users_info[users[pos]].rbNeed, sum_len);// - min(users_info[users[pos]].rbNeed, users_info[users[pos]].sum_len);// * 5 - max(0, sum_len - users_info[users[pos]].rbNeed);
+
+                    if (best_f < cur_f) {
+                        best_f = cur_f;
+                        best_b = b;
+                        best_l = l;
+                        best_r = r;
+                    }
+                    pos--;
                 }
 
-                int cur_f = f(sum_len);
+                int cur_f = min(users_info[users[pos]].rbNeed, sum_len);// - min(users_info[users[pos]].rbNeed, users_info[users[pos]].sum_len);// * 5 - max(0, sum_len - users_info[users[pos]].rbNeed);
 
                 if (best_f < cur_f) {
                     best_f = cur_f;
@@ -74,12 +77,6 @@ void EgorTaskSolver::user_do_new_interval(int u) {
                     best_l = l;
                     best_r = r;
                 }
-
-                /*auto &users = users_beam[users_info[u].beam];
-
-                if (sum_len > users_info[users[0]].sum_len) {
-                    break;
-                }*/
             }
         }
     }
@@ -89,27 +86,27 @@ void EgorTaskSolver::user_do_new_interval(int u) {
     }
 
     for (int i = best_l; i <= best_r; i++) {
-        add_user_in_interval(u, best_b, i);
+        add_user_in_interval(user, best_b, i);
     }
 }
 
-void EgorTaskSolver::user_new_interval() {
+/*void EgorTaskSolver::user_new_interval() {
 
     int u = rnd.get(0, N - 1);
 
     // TODO: только чуток херит score
-    /*int u;
-    {
-        vector<pair<int, int>> ips;
-        for(int user = 0; user < N; user++){
-            ips.emplace_back(abs(users_info[user].sum_len - users_info[user].rbNeed),user);
-        }
-        if(ips.empty()){
-            return;
-        }
-        sort(ips.begin(), ips.end(), greater<>());
-        u = ips[rnd.get(0, min(10, (int)ips.size() - 1))].second;
-    }*/
+    //int u;
+    //{
+    //    vector<pair<int, int>> ips;
+    //    for(int user = 0; user < N; user++){
+    //        ips.emplace_back(abs(users_info[user].sum_len - users_info[user].rbNeed),user);
+    //    }
+    //    if(ips.empty()){
+    //        return;
+    //    }
+    //    sort(ips.begin(), ips.end(), greater<>());
+    //    u = ips[rnd.get(0, min(10, (int)ips.size() - 1))].second;
+    //}
 
     auto old_metric = metric;
     int old_actions_size = actions.size();
@@ -122,12 +119,16 @@ void EgorTaskSolver::user_new_interval() {
         rollback(old_actions_size);
         ASSERT(old_metric == metric, "failed back score");
     }
-}
+}*/
 
 void EgorTaskSolver::user_remove_and_add() {
     for (int step = 0; step < 3; step++) {
         int u = rnd.get(0, N - 1);
         int u2 = rnd.get(0, N - 1);
+
+        if(u == u2){
+            continue;
+        }
 
         /*auto a = get_user_position(u);
         auto b = get_user_position(u2);

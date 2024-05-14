@@ -6,7 +6,97 @@
 
 extern Snapshoter snapshoter;
 
+void testMyBitSet() {
+    int N = 10;
+    int K = 100000;
+    Timer t;
+
+    uint64_t hash = 0;
+    for (int i = 0; i < 10; i++) {
+
+        MyBitSet S;
+        for (int j = 0; j < K; j++) {
+
+            {
+                int x = rnd.get(0, 127);
+                if (S.contains(x)) {
+                    S.erase(x);
+                } else {
+                    S.insert(x);
+                }
+            }
+            for (int x: S) {
+                hash += x;
+            }
+        }
+    }
+
+
+    /*for (int i = 0; i < 10; i++) {
+
+        MyBitSet S;
+        set<int> set;
+        for (int j = 0; j < K; j++) {
+            ASSERT(S.size() == set.size(), "invalid size");
+
+            hash += S.size();
+            hash *= 25;
+
+            {
+                int x = rnd.get(0, 127);
+
+                ASSERT(S.contains(x) == set.count(x), "invalid contains");
+
+                if (S.contains(x)) {
+                    S.erase(x);
+                    set.erase(x);
+                    hash += 10;
+                } else {
+                    S.insert(x);
+                    set.insert(x);
+                    hash += 15124;
+                }
+                hash *= 31;
+            }
+
+            hash += S.size();
+
+            vector<int> xS, xset;
+            for (int x: S) {
+                xS.push_back(x);
+                hash += x;
+                hash *= 124;
+            }
+            for (int x: set) {
+                xset.push_back(x);
+            }
+            if (xS != xset) {
+                for (int x: xS) {
+                    cout << x << ' ';
+                }
+                cout << '\n';
+                for (int x: xset) {
+                    cout << x << ' ';
+                }
+                cout << '\n';
+                cout << endl;
+            }
+            ASSERT(xS == xset, "failed range-based-for");
+        }
+    }*/
+
+    cout << "TIME: " << t << endl;
+    cout << "HASH: " << hash << endl;//4058641092
+
+    //TIME: 0.4607s
+    //HASH: 6520965741607998596
+    //      6520965741607998596
+}
+
 int main() {
+
+    //testMyBitSet();
+    //return 0;
     /*SelectionRandomizer ss(10);
     map<int, int> S;
     for (int i = 0; i < 100000; i++) {

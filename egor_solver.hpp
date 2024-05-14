@@ -82,7 +82,7 @@ struct EgorTaskSolver {
 
     struct SetInterval {
         int len = 0;
-        MyBitSet<128> users;
+        MyBitSet users;
         uint32_t beam_msk = 0;
 
         friend bool operator==(const SetInterval &lhs, const SetInterval &rhs) {
@@ -107,7 +107,7 @@ struct EgorTaskSolver {
         int sum_len = 0;
     };
 
-    MyBitSet<128> unused_users;
+    MyBitSet unused_users;
 
     vector<MyUserInfo> users_info;
 
@@ -219,13 +219,6 @@ struct EgorTaskSolver {
 
     double temperature = 1;
 
-    //add score: 0 693 288
-    //TEST CASE: K=0 | tests: 666 | score: 99.2982% | 647764/652342 | time: 28137.4ms | max_time: 77.561ms | mean_time: 42.2483ms
-    //TEST CASE: K=1 | tests: 215 | score: 97.8553% | 211483/216118 | time: 9188.19ms | max_time: 39.351ms | mean_time: 42.7358ms
-    //TEST CASE: K=2 | tests: 80 | score: 97.7727% | 77523/79289 | time: 3777.18ms | max_time: 38.059ms | mean_time: 47.2147ms
-    //TEST CASE: K=3 | tests: 39 | score: 96.4336% | 43615/45228 | time: 1849.04ms | max_time: 35.504ms | mean_time: 47.4114ms
-    //TEST CASE: K=4 | tests: 0 | score: -nan% | 0/0 | time: 0ms | max_time: 0ms | mean_time: 0ms
-    //TOTAL: tests: 1000 | score: 98.7319% | 980385/992977 | time: 42951.8ms | max_time: 77.561ms | mean_time: 42.9518ms
     bool is_good(Metric old_metric) {
         ASSERT(get_metric() == metric, "invalid metric");
 
@@ -400,7 +393,7 @@ struct EgorTaskSolver {
 
     void user_do_new_interval(int u);
 
-    void user_new_interval();
+    //void user_new_interval();
 
     void user_remove_and_add();
 
