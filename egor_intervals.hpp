@@ -505,11 +505,79 @@ void EgorTaskSolver::interval_do_free() {
     int len = intervals[block][index].len;
 
     if (intervals[block].size() == 1) {
+        //ASSERT(false, "don't touch him");
+        return;
+    }
+
+    remove_interval(block, index);
+
+    // распределить наиболее оптимально len
+
+    // TODO: медленно, но хорошо дает скор
+    for (; len > 0; len--) {
+
+        int best_index = -1, best_f = -1e9;
+        for (int index = 0; index < intervals[block].size(); index++) {
+            int accepted = 0;
+
+            for (int u: intervals[block][index].users) {
+                if (users_info[u].sum_len < users_info[u].rbNeed) {
+                    accepted++;
+                }
+            }
+
+            int cur_f = accepted;
+
+            if (best_f < cur_f) {
+                best_f = cur_f;
+                best_index = index;
+            }
+        }
+
+        ASSERT(best_index != -1, "invalid best_index");
+
+        change_interval_len(block, best_index, +1);
+    }
+    /*while(len > 0){
+
+        // (accepted, min_add_len, index)
+        vector<tuple<int, int, int>> ips;
+        for (int index = 0; index < intervals[block].size(); index++) {
+            int cnt = 0;
+            int min_add_len = 10000;
+
+            for (int u: intervals[block][index].users) {
+                if (users_info[u].sum_len < users_info[u].rbNeed) {
+                    min_add_len = min(min_add_len, users_info[u].rbNeed - users_info[u].sum_len);
+                    cnt++;
+                }
+            }
+
+            ips.emplace_back(cnt * min_add_len, min_add_len, index);
+        }
+        sort(ips.begin(), ips.end(), greater<>());
+
+        ASSERT(!ips.empty(), "ips empty");
+
+        auto [accepted, min_add_len, index] = ips[0];
+
+        int x = min(min_add_len, len);
+        ASSERT(x != 0, "invalid x");
+        len -= x;
+        change_interval_len(block, index, x);
+
+        //ASSERT(best_index != -1, "invalid best_index");
+        //change_interval_len(block, best_index, +1);
+    }*/
+
+    /*if (intervals[block].size() == 1) {
+        //ASSERT(false, "don't touch him");
+        return;
         remove_interval(block, 0);
     } else {
         remove_interval(block, index);
         change_interval_len(block, rnd.get(0, intervals[block].size() - 1), len);
-    }
+    }*/
 
     /*if (index > 0 && index + 1 < intervals[block].size()) {
 
