@@ -12,7 +12,7 @@ void testMyBitSet() {
     Timer t;
 
     uint64_t hash = 0;
-    for (int i = 0; i < 10; i++) {
+    /*for (int i = 0; i < 10; i++) {
 
         MyBitSet S;
         for (int j = 0; j < K; j++) {
@@ -29,10 +29,10 @@ void testMyBitSet() {
                 hash += x;
             }
         }
-    }
+    }*/
 
 
-    /*for (int i = 0; i < 10; i++) {
+    for (int i = 0; i < 10; i++) {
 
         MyBitSet S;
         set<int> set;
@@ -83,7 +83,7 @@ void testMyBitSet() {
             }
             ASSERT(xS == xset, "failed range-based-for");
         }
-    }*/
+    }
 
     cout << "TIME: " << t << endl;
     cout << "HASH: " << hash << endl;//4058641092

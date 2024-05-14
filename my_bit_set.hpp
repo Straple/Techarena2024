@@ -34,7 +34,7 @@ public:
     }
 
     [[nodiscard]] bool empty() const {
-        return word[0] != 0 || word[1] != 0;
+        return word[0] == 0 && word[1] == 0;
     }
 
     [[nodiscard]] int size() const {
@@ -42,8 +42,8 @@ public:
     }
 
     class Iterator {
-        uint8_t bit;
         const MyBitSet &object;
+        uint8_t bit;
 
     public:
         using difference_type = std::ptrdiff_t;
@@ -61,6 +61,15 @@ public:
                 return *this;
             }
 
+            /*while (bit < 128) {
+                uint64_t val = object.word[bit / 64] >> (bit % 64);
+                if (val == 0) {
+                    bit += 64 - bit % 64;
+                } else {
+                    bit += __builtin_ctzll(val);
+                    break;
+                }
+            }*/
             uint64_t val = object.word[bit / 64] >> (bit % 64);
             if (val == 0) {
                 if (bit < 64) {
