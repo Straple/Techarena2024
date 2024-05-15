@@ -32,7 +32,7 @@ const int SELECTION_SIZE = 10;
 const int METRIC_COEFFS_SIZE = 4;
 //SelectionRandomizer SELECTION_ACTION(SELECTION_SIZE);
 // = std::vector<int>{10, 1, 1, 1, 1, 16, 9, 6, 22, 12, 11, 30};
-int STEPS = 390;
+int STEPS = 400;
 
 const int METRIC_CNT = 1;
 int METRIC_TYPE = 0;

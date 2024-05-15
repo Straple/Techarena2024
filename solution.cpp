@@ -25,7 +25,7 @@ vector<Interval> Solver_IMPL(int N, int M, int K, int J, int L,
     auto artem_answer = Solver_Artem_grad(N, M, K, J, L, reservedRBs, userInfos);
     auto artem_score = get_solution_score(N, M, K, J, L, reservedRBs, userInfos, artem_answer);
     ASSERT(THEORY_MAX_SCORE >= artem_score, "WA THEORMAX");
-    if (THEORY_MAX_SCORE <= artem_score || get_time_ms() > 950) {
+    if (THEORY_MAX_SCORE <= artem_score || get_time_ms() >   950) {
         return artem_answer;
     }
 
@@ -35,7 +35,7 @@ vector<Interval> Solver_IMPL(int N, int M, int K, int J, int L,
                                    //vector<int>{5, 0, 0, 0, 0, 5, 5, 5, 5, 5},
                                    vector<int>{5, 5, 5},
                                    vector<int>{100, 0, 0, 0});
-    //vector<int>{5, 0, 0, 0, 0, 5, 5, 0, 5, 5, 5});
+    //vector<int>{5, 0, 0, 0, 0, 5, 5, 0,  5,  5,  5});
 
     //auto egor_score = get_solution_score(N, M, K, J, L, reservedRBs, userInfos, egor_answer);
     //return egor_answer;

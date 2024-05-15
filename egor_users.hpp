@@ -123,142 +123,9 @@ void EgorTaskSolver::user_do_new_interval(int user) {
 }*/
 
 void EgorTaskSolver::user_remove_and_add() {
-    /*for (int step = 0; step < 100; step++) {
-
-        int u = rnd.get(0, N - 1);
-        int u2 = rnd.get(0, N - 1);
-        if (u == u2 || users_info[u].beam == users_info[u2].beam) {
-            continue;
-        }
-
-        // swap u and u2
-
-        int old_accepted = min(users_info[u].rbNeed, users_info[u].sum_len) +
-                           min(users_info[u2].rbNeed, users_info[u2].sum_len);
-
-        int new_accepted = min(users_info[u].rbNeed, users_info[u2].sum_len) +
-                           min(users_info[u2].rbNeed, users_info[u].sum_len);
-
-        if(new_accepted < old_accepted){
-            continue;
-        }
-
-        int old_actions_size = actions.size();
-        auto old_metric = metric;
-
-        auto [old_b, old_l, old_r] = get_user_position(u);
-        auto [old_b2, old_l2, old_r2] = get_user_position(u2);
-
-        if (old_b != -1) {
-            for (int i = old_l; i <= old_r; i++) {
-                remove_user_in_interval(u, old_b, i);
-            }
-        }
-        if (old_b2 != -1) {
-            for (int i = old_l2; i <= old_r2; i++) {
-                remove_user_in_interval(u2, old_b2, i);
-            }
-        }
-
-        user_do_new_interval(u2);
-        user_do_new_interval(u);
-
-        if (is_good(old_metric)) {
-            SNAP_ACTION("user_remove_and_add " + to_string(u) + " " + to_string(u2) + " accepted");
-        } else {
-            rollback(old_actions_size);
-            ASSERT(metric == old_metric, "failed back metric");
-        }
-    }*/
-    // 981412
-    // return;
-
-    /*for (int step = 0; step < 10; step++) {
-        int u = rnd.get(0, N - 1);
-
-        auto [old_b, old_l, old_r] = get_user_position(u);
-
-        if (rnd.get_d() < temperature * 0.01) {
-            if (old_b != -1) {
-                for (int i = old_l; i <= old_r; i++) {
-                    remove_user_in_interval(u, old_b, i);
-                }
-            }
-        } else if (rnd.get_d() < 0.5) {
-            // add left
-            if (old_b != -1 && old_l > 0 &&
-                intervals[old_b][old_l - 1].users.size() < L &&
-                ((intervals[old_b][old_l - 1].beam_msk >> users_info[u].beam) & 1) == 0 &&
-                users_info[u].sum_len < users_info[u].rbNeed) {
-
-                add_user_in_interval(u, old_b, old_l - 1);
-            }
-
-            // add right
-            else if (old_b != -1 && old_r + 1 < intervals[old_b].size() &&
-                intervals[old_b][old_r + 1].users.size() < L &&
-                ((intervals[old_b][old_r + 1].beam_msk >> users_info[u].beam) & 1) == 0 &&
-                users_info[u].sum_len < users_info[u].rbNeed) {
-
-                add_user_in_interval(u, old_b, old_r + 1);
-            }
-
-            // remove left
-            else if (old_b != -1 &&
-                users_info[u].sum_len - intervals[old_b][old_l].len >= users_info[u].rbNeed) {
-
-                remove_user_in_interval(u, old_b, old_l);
-            }
-
-            // remove right
-            else if (old_b != -1 &&
-                users_info[u].sum_len - intervals[old_b][old_r].len >= users_info[u].rbNeed) {
-
-                remove_user_in_interval(u, old_b, old_r);
-            }
-        }
-        else{
-            if (old_b != -1) {
-                for (int i = old_l; i <= old_r; i++) {
-                    remove_user_in_interval(u, old_b, i);
-                }
-            }
-
-            user_do_new_interval(u);
-        }
-    }*/
-
-    /*for (int u: unused_users) {
-        user_do_new_interval(u);
-    }*/
-
-    // 981417
-    /*for (int b = 0; b < B; b++) {
-        for (int i = 0; i < intervals[b].size(); i++) {
-            if (intervals[b][i].users.size() < L) {
-                for (int u: unused_users) {
-                    if (((intervals[b][i].beam_msk >> users_info[u].beam) & 1) == 0) {
-                        add_user_in_interval(u, b, i);
-                        break;
-                    }
-                }
-            }
-        }
-    }*/
-
-    /*for (int b = 0; b < B; b++) {
-        for (int i = 0; i < intervals[b].size(); i++) {
-            if (intervals[b][i].users.size() < L) {
-
-            }
-        }
-    }*/
-
-    //return;
-
     //user_RobinHood();
 
-    //982788
+    //982593
     for (int step = 0; step < 3; step++) {
         int u = rnd.get(0, N - 1);
         int u2 = rnd.get(0, N - 1);
@@ -267,9 +134,67 @@ void EgorTaskSolver::user_remove_and_add() {
             continue;
         }
 
-        int old_actions_size = actions.size();
         auto old_metric = metric;
 
+        auto [old_b, old_l, old_r] = get_user_position(u);
+        auto [old_b2, old_l2, old_r2] = get_user_position(u2);
+
+        int best_b2 = -1, best_l2 = -1, best_r2 = -1;
+        int best_f2 = -1e9;
+        for (int b2 = 0; b2 < B; b2++) {
+            for (int l2 = 0; l2 < intervals[b2].size(); l2++) {
+                int len = 0;
+                for (int r2 = l2; r2 < intervals[b2].size() &&
+                                  (
+                                          // наш юзер u2 там уже лежит
+                                          (intervals[b2][r2].users.contains(u2)) ||
+                                          (
+                                                  // размера хватает
+                                                  intervals[b2][r2].users.size() - int(intervals[b2][r2].users.contains(u)) < L &&
+                                                  // beam подходит
+                                                  ((intervals[b2][r2].beam_msk >> users_info[u2].beam) & 1) == 0));
+                     r2++) {
+
+                    len += intervals[b2][r2].len;
+
+                    if (best_f2 < len) {
+                        best_f2 = len;
+                        best_b2 = b2;
+                        best_l2 = l2;
+                        best_r2 = r2;
+                    }
+                }
+            }
+        }
+
+        int best_b = -1, best_l = -1, best_r = -1;
+        int best_f = -1e9;
+        for (int b = 0; b < B; b++) {
+            for (int l = 0; l < intervals[b].size(); l++) {
+                int len = 0;
+                for (int r = l; r < intervals[b].size() &&
+                                (intervals[b][r].users.contains(u) || ((intervals[b][r].beam_msk >> users_info[u].beam) & 1) == 0) &&
+                                intervals[b][r].users.size() - int(intervals[b][r].users.contains(u)) - int(intervals[b][r].users.contains(u2)) + int(best_b2 == b && best_l2 <= r && r <= best_r2) < L;
+                     r++) {
+
+                    len += intervals[b][r].len;
+
+                    if (best_f < len) {
+                        best_f = len;
+                        best_b = b;
+                        best_l = l;
+                        best_r = r;
+                    }
+                }
+            }
+        }
+
+        int accepted = max(0, min(best_f, users_info[u].rbNeed))
+                       + max(0, min(best_f2, users_info[u2].rbNeed))
+                       - min(users_info[u].rbNeed, users_info[u].sum_len)
+                       - min(users_info[u2].rbNeed, users_info[u2].sum_len);
+
+        /*int old_actions_size = actions.size();
         auto [old_b, old_l, old_r] = get_user_position(u);
         if (old_b != -1) {
             for (int i = old_l; i <= old_r; i++) {
@@ -286,15 +211,35 @@ void EgorTaskSolver::user_remove_and_add() {
 
         // add
         user_do_new_interval(u2);
-        user_do_new_interval(u);
+        user_do_new_interval(u);*/
 
-        //SNAP_ACTION("user_remove_and_add " + to_string(u) + " " + to_string(u2));
-
-        if (is_good(old_metric)) {
+        if (accepted >= 0) {
             SNAP_ACTION("user_remove_and_add " + to_string(u) + " " + to_string(u2) + " accepted");
+            if (old_b != -1) {
+                for (int i = old_l; i <= old_r; i++) {
+                    remove_user_in_interval(u, old_b, i);
+                }
+            }
+            if (old_b2 != -1) {
+                for (int i = old_l2; i <= old_r2; i++) {
+                    remove_user_in_interval(u2, old_b2, i);
+                }
+            }
+
+            if (best_b2 != -1) {
+                for (int i = best_l2; i <= best_r2; i++) {
+                    add_user_in_interval(u2, best_b2, i);
+                }
+            }
+
+            if (best_b != -1) {
+                for (int i = best_l; i <= best_r; i++) {
+                    add_user_in_interval(u, best_b, i);
+                }
+            }
         } else {
 
-            rollback(old_actions_size);
+            //rollback(old_actions_size);
 
             ASSERT(old_metric == metric, "failed back score");
         }
@@ -333,7 +278,7 @@ void EgorTaskSolver::user_RobinHood() {
         int u = rnd.get(0, N - 1);
 
         auto [b, l, r] = get_user_position(u);
-        if(b != -1) {
+        if (b != -1) {
             for (int i = l; i <= r; i++) {
                 remove_user_in_interval(u, b, i);
             }

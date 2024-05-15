@@ -7,8 +7,7 @@ EgorTaskSolver::EgorTaskSolver(int NN, int MM, int KK, int JJ, int LL,
                                vector<int> metric_coefs) : N(NN), M(MM),
                                                            K(KK), J(JJ),
                                                            L(LL),
-                                                           SELECTION_ACTION(
-                                                                   powers),
+                                                           SELECTION_ACTION(powers),
                                                            METRICS_COEF(metric_coefs) {
 
     rnd.generator = mt19937_64(random_seed);
@@ -168,6 +167,8 @@ vector<Interval> EgorTaskSolver::annealing(vector<Interval> reservedRBs,
         } else {
             there_has_been_no_improvement_for_x_steps = 0;
         }*/
+
+
 
 #ifdef MY_DEBUG_MODE
         /*for(int u = 0; u + 1 < N; u++){
