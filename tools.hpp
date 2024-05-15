@@ -71,9 +71,30 @@ int get_theory_max_score(int N, int M, int K, int J, int L, const vector<Interva
     int taken = 0;
     map<int, int> beams_taken;
     map<int, int> len_per_beam;
+    std::vector<vector<int>>rbNeedPerBeam(32, vector<int>());
     for (int i = 0; i < N; i++) {
-        len_per_beam[userInfos[i].beam] += userInfos[i].rbNeed;
+        rbNeedPerBeam[userInfos[i].beam].push_back(userInfos[i].rbNeed);
     }
+
+    for (int i = 0; i < 32; i++) {
+        sort(rbNeedPerBeam[i].begin(), rbNeedPerBeam[i].end(), greater<>());
+        for (int g = 0; g < rbNeedPerBeam[i].size(); g++){
+            if (g == J){
+                break;
+            }
+            len_per_beam[i]+=rbNeedPerBeam[i][g];
+        }
+    }
+    //    for (int i = 0; i < N; i++) {
+    //        len_per_beam[userInfos[i].beam] += userInfos[i].rbNeed;
+    //    }
+    int realL = 0;
+    std::vector<bool>was(32, false);
+    for (auto& u: userInfos){
+        was[u.beam] = true;
+    }
+    for (int i = 0; i < 32; i++) realL+=was[i];
+    L = min(L, realL);
     int ma_len_uniq_beam = 0;
     int sum_res_len = 0;
     for (const auto &reserved: reservedRBs) {
@@ -102,7 +123,7 @@ int get_theory_max_score(int N, int M, int K, int J, int L, const vector<Interva
     for (const auto &reserved: reservedRBs) {
         max_possible -= (reserved.end - reserved.start) * L;
     }
-
+    //    cout << max_score << " " << max_possible << " " << ma_len_uniq_beam << endl;
     return min(min(max_score, max_possible), ma_len_uniq_beam);
 }
 
