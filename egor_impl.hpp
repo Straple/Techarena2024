@@ -84,7 +84,8 @@ EgorTaskSolver::EgorTaskSolver(int NN, int MM, int KK, int JJ, int LL,
                     ASSERT(!already_push, "double push");
                     already_push = true;
 
-                    intervals[block].push_back({0, {}, 0});
+                    intervals[block].push_back({0, 0, {}});
+                    //intervals[block].push_back({0, {}, 0});
                     change_interval_len(block, intervals[block].size() - 1, end - start);
 
                     for (int u: users) {
@@ -145,10 +146,6 @@ vector<Interval> EgorTaskSolver::annealing(vector<Interval> reservedRBs,
 
     int best_f = metric.accepted;
     int there_has_been_no_improvement_for_x_steps = 0;
-
-    if (get_time_ms() > 900) {
-        STEPS = 50;
-    }
 
     for (int step = 0; step < STEPS; step++) {
         temperature = ((STEPS - step) * 0.01 / STEPS);

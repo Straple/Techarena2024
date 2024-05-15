@@ -32,7 +32,7 @@ const int SELECTION_SIZE = 10;
 const int METRIC_COEFFS_SIZE = 4;
 //SelectionRandomizer SELECTION_ACTION(SELECTION_SIZE);
 // = std::vector<int>{10, 1, 1, 1, 1, 16, 9, 6, 22, 12, 11, 30};
-int STEPS = 440;
+int STEPS = 420;
 
 const int METRIC_CNT = 1;
 int METRIC_TYPE = 0;
@@ -82,8 +82,8 @@ struct EgorTaskSolver {
 
     struct SetInterval {
         int len = 0;
-        MyBitSet users;
         uint32_t beam_msk = 0;
+        MyBitSet users;
 
         friend bool operator==(const SetInterval &lhs, const SetInterval &rhs) {
             return lhs.len == rhs.len &&

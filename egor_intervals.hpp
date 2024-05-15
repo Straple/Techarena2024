@@ -27,23 +27,175 @@
 
 void EgorTaskSolver::interval_flow_over() {
 
-    int block, i;
-    {
-        vector<tuple<int, int>> ips;
-        for (int block = 0; block < B; block++) {
-            if (intervals[block].size() > 1) {
-                for (int i = 0; i < intervals[block].size(); i++) {
-                    ips.emplace_back(block, i);
+    //981995
+    /*int b = rnd.get(0, B - 1);
+
+    for (int step = 0; step < 100; step++) {
+
+        int best_from = -1, best_to = -1, best_f = -1e9;
+        for (int from = 0; from < intervals[b].size(); from++) {
+            if (intervals[b][from].len == 0) {
+                continue;
+            }
+            for (int to = 0; to < intervals[b].size(); to++) {
+                if (from != to) {
+
+                    auto and_users = intervals[b][from].users & intervals[b][to].users;
+                    auto unique_i_users = intervals[b][from].users ^ and_users;
+                    auto unique_j_users = intervals[b][to].users ^ and_users;
+
+                    int accepted = 0;
+                    int overflow = 0;
+
+                    for (int u: unique_i_users) {
+                        if (users_info[u].sum_len <= users_info[u].rbNeed) {
+                            accepted--;
+                        }
+                        else{
+                            overflow--;
+                        }
+                    }
+                    for (int u: unique_j_users) {
+                        if (users_info[u].sum_len < users_info[u].rbNeed) {
+                            accepted++;
+                        }
+                        else{
+                            overflow++;
+                        }
+                    }
+
+                    int cur_f = accepted * 100 + overflow;
+
+                    if (best_f <= cur_f) {
+                        best_f = cur_f;
+                        best_from = from;
+                        best_to = to;
+                    }
                 }
             }
         }
 
+        if (best_from == -1) {
+            break;
+        }
+
+        change_interval_len(b, best_from, -1);
+        change_interval_len(b, best_to, +1);
+    }
+
+    for (int i = (int) intervals[b].size() - 1; i >= 0; i--) {
+        if (intervals[b][i].len == 0) {
+            remove_interval(b, i);
+        }
+    }*/
+
+    /*int b = rnd.get(0, B - 1);
+
+    for (int step = 0; step < 100; step++) {
+        // найти интервал, у которого можно хорошо спиздить длину 1
+        // отдать ее другому интервалу
+
+        int from = -1;
+        {
+            int best_f = -1e9;
+            for (int i = 0; i < intervals[b].size(); i++) {
+                if(intervals[b][i].len == 0){
+                    continue;
+                }
+                int accepted = 0;
+                for (int u: intervals[b][i].users) {
+                    accepted -= users_info[u].sum_len <= users_info[u].rbNeed;
+                }
+
+                int cur_f = accepted;
+
+                if (best_f <= cur_f) {
+                    best_f = cur_f;
+                    from = i;
+                }
+            }
+            if(from == -1){
+                break;
+            }
+        }
+
+        int to = -1;
+        {
+            int best_f = -1e9;
+            for (int i = 0; i < intervals[b].size(); i++) {
+                int accepted = 0;
+                for (int u: intervals[b][i].users) {
+                    accepted += users_info[u].sum_len < users_info[u].rbNeed;
+                }
+
+                int cur_f = accepted;
+
+                if (best_f < cur_f) {
+                    best_f = cur_f;
+                    to = i;
+                }
+            }
+            if(to == -1){
+                break;
+            }
+        }
+
+        if (from == to) {
+            break;
+        }
+
+        change_interval_len(b, from, -1);
+        change_interval_len(b, to, +1);
+    }
+
+    for (int i = (int) intervals[b].size() - 1; i >= 0; i--) {
+        if (intervals[b][i].len == 0) {
+            remove_interval(b, i);
+        }
+    }*/
+
+    /*sort(ips.begin(), ips.end());
+        int sum = 0;
+        for(auto [metric, block, i] : ips){
+            sum += metric;
+        }
+        int x = rnd.get(0, sum);
+        bool choose = false;
+        for(auto [metric, bbbblock, iiii] : ips){
+            x -= metric;
+            if(x <= 0){
+                choose = true;
+                block = bbbblock;
+                i = iiii;
+            }
+        }
+        ASSERT(choose, "failed choose");*/
+
+    // 982347
+    int block, i;
+    {
+        // (metric, block, i)
+        vector<tuple<int, int, int>> ips;
+        for (int block = 0; block < B; block++) {
+            if (intervals[block].size() > 1) {
+                for (int i = 0; i < intervals[block].size(); i++) {
+                    int overflow = 0;
+                    for(int u : intervals[block][i].users){
+                        overflow += max(0, users_info[u].sum_len - users_info[u].rbNeed);
+                    }
+                    ips.emplace_back(overflow, block, i);
+                }
+            }
+        }
         if (ips.empty()) {
             return;
         }
+
         int p = rnd.get(0, ips.size() - 1);
-        block = get<0>(ips[p]);
-        i = get<1>(ips[p]);
+        block = get<1>(ips[p]);
+        i = get<2>(ips[p]);
+
+        //int p = rnd.get(0, ips.size() - 1);
     }
 
     while (intervals[block][i].len > 0) {
@@ -338,7 +490,6 @@ void EgorTaskSolver::interval_do_split(int b, int i) {
             }
         }
     }
-std:
     sort(need_to_check.begin(), need_to_check.end());
 
     if (false) {
@@ -445,7 +596,7 @@ std:
     // попытаемся добавить юзеров, которых нет в освободившиеся места
 
 #ifdef MY_DEBUG_MODE
-    MyBitSet<128> set;
+    MyBitSet set;
     for (int user = 0; user < N; user++) {
         if (users_info[user].sum_len == 0) {
             set.insert(user);

@@ -8,7 +8,7 @@ vector<Interval> EgorTaskSolver::get_total_answer() const {
     vector<Interval> answer;
     for (int block = 0; block < B; block++) {
         int start = free_intervals[block].start;
-        for (auto [len, users, beam_msk]: intervals[block]) {
+        for (auto [len, beam_msk, users]: intervals[block]) {
             if (len != 0 && !users.empty()) {
                 answer.push_back(Interval{start, start + len, {}});
                 start += len;

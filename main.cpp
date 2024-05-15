@@ -112,8 +112,7 @@ int main() {
     //train_egor_task_solver();
     //return 0;
 
-    {STEPS=280;
-    /*for (int i = 0; i < 4; i++) {
+    for (int i = 0; i < 4; i++) {
         if (i == 0) {
             STEPS = 500;
         } else if (i == 1) {
@@ -122,7 +121,7 @@ int main() {
             STEPS = 2'000;
         } else if (i == 3) {
             STEPS = 5'000;
-        }*/
+        }
 
         test_case_info infos[5];
         map<int, map<int, int>> score_per_test;

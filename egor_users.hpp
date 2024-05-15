@@ -256,7 +256,7 @@ void EgorTaskSolver::user_remove_and_add() {
 
     //return;
 
-    for (int step = 0; step < 1; step++) {
+    for (int step = 0; step < 2; step++) {
         int u = rnd.get(0, N - 1);
         int u2 = rnd.get(0, N - 1);
 
