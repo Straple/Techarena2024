@@ -118,14 +118,16 @@ EgorTaskSolver::EgorTaskSolver(int NN, int MM, int KK, int JJ, int LL,
         }
     }
 }
+int accepted_inc[10]{};
+int accepted_more[10]{};
 
-#define ACTION_WRAPPER(action_foo, action_id) \
-    action_foo();
-
-int accepted_inc[10];
-int accepted_more[10];
-
-int ABSYBDAYSBD = 0;
+#define ACTION_WRAPPER(action_foo, action_id)                       \
+    int old_accepted = metric.accepted;                             \
+    action_foo();                                                   \
+    if (old_accepted < metric.accepted) {                           \
+        accepted_inc[action_id]++;                                  \
+        accepted_more[action_id] += metric.accepted - old_accepted; \
+    }
 
 int itt = 0;
 vector<Interval> EgorTaskSolver::annealing(vector<Interval> reservedRBs,
@@ -141,8 +143,12 @@ vector<Interval> EgorTaskSolver::annealing(vector<Interval> reservedRBs,
     auto best_intervals = intervals;
 #endif
 
-    //int best_f = 100 * metric.accepted - 10 * metric.unused_space - metric.overflow + metric.free_space;
-    //int there_has_been_no_improvement_for_x_steps = 0;
+    int best_f = metric.accepted;
+    int there_has_been_no_improvement_for_x_steps = 0;
+
+    if (get_time_ms() > 900) {
+        STEPS = 50;
+    }
 
     for (int step = 0; step < STEPS; step++) {
         temperature = ((STEPS - step) * 0.01 / STEPS);
@@ -157,17 +163,29 @@ vector<Interval> EgorTaskSolver::annealing(vector<Interval> reservedRBs,
 
         //TRAIN_SCORE += best_score;
 
+        /*if (best_f == metric.accepted) {
+            there_has_been_no_improvement_for_x_steps++;
+            if (there_has_been_no_improvement_for_x_steps > 20) {
+                break;
+            }
+        } else {
+            there_has_been_no_improvement_for_x_steps = 0;
+        }*/
+
 #ifdef MY_DEBUG_MODE
+        /*for(int u = 0; u + 1 < N; u++){
+            ASSERT(users_info[u].rbNeed >= users_info[u+1].rbNeed, "failed");
+        }*/
+
         for (int block = 0; block < B; block++) {
             for (int index = 0; index < intervals[block].size(); index++) {
                 if (intervals[block][index].len == 0) {
                     ASSERT(false, "zero interval");
                 }
 
-                if(index + 1 < intervals[block].size()){
-                    if(intervals[block][index].users == intervals[block][index + 1].users &&
-                        intervals[block][index].users.size() == L){
-                        ABSYBDAYSBD++;
+                if (index + 1 < intervals[block].size()) {
+                    if (intervals[block][index].users == intervals[block][index + 1].users &&
+                        intervals[block][index].users.size() == L) {
 
                         //change_interval_len(block, index, intervals[block][index + 1].len);
                         //remove_interval(block, index + 1);

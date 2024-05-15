@@ -4,6 +4,8 @@
 ///===========INTERVAL=======
 ///==========================
 
+#include <bitset>
+
 #define CHOOSE_INTERVAL(condition, return_value)            \
     int b, i;                                               \
     {                                                       \
@@ -24,7 +26,68 @@
     }
 
 void EgorTaskSolver::interval_flow_over() {
-    // заберу у интервала i длину change, отдам ее интервалу j
+
+    int block, i;
+    {
+        vector<tuple<int, int>> ips;
+        for (int block = 0; block < B; block++) {
+            if (intervals[block].size() > 1) {
+                for (int i = 0; i < intervals[block].size(); i++) {
+                    ips.emplace_back(block, i);
+                }
+            }
+        }
+
+        if (ips.empty()) {
+            return;
+        }
+        int p = rnd.get(0, ips.size() - 1);
+        block = get<0>(ips[p]);
+        i = get<1>(ips[p]);
+    }
+
+    while (intervals[block][i].len > 0) {
+        // выбрать кому лучше всего отдать длину +1
+        int best_j = -1, best_f = 0;
+        for (int j = 0; j < intervals[block].size(); j++) {
+            if (j != i) {
+                int accepted = 0;
+
+                auto and_users = intervals[block][i].users & intervals[block][j].users;
+                auto unique_i_users = intervals[block][i].users ^ and_users;
+                auto unique_j_users = intervals[block][j].users ^ and_users;
+
+                for (int u: unique_i_users) {
+                    if (users_info[u].sum_len <= users_info[u].rbNeed) {
+                        accepted--;
+                    }
+                }
+                for (int u: unique_j_users) {
+                    if (users_info[u].sum_len < users_info[u].rbNeed) {
+                        accepted++;
+                    }
+                }
+
+                int cur_f = accepted;
+
+                if (best_f <= cur_f) {
+                    best_f = cur_f;
+                    best_j = j;
+                }
+            }
+        }
+
+        if (best_j == -1) {
+            break;
+        }
+
+        change_interval_len(block, i, -1);
+        change_interval_len(block, best_j, +1);
+    }
+
+    if (intervals[block][i].len == 0) {
+        remove_interval(block, i);
+    }
 
     /*int block, i, j, change;
     {
@@ -72,7 +135,8 @@ void EgorTaskSolver::interval_flow_over() {
     change = get<4>(ips[p]);
 }*/
 
-    int block, i, j;
+    // заберу у интервала i длину change, отдам ее интервалу j
+    /*int block, i, j;
     {
         vector<tuple<int, int, int>> ips;
         for (int block = 0; block < B; block++) {
@@ -100,6 +164,53 @@ void EgorTaskSolver::interval_flow_over() {
 
     change_interval_len(block, i, best_change);
     change_interval_len(block, j, -best_change);
+
+    for(int unused_u : unused_users){
+        for(int u : intervals[block][i].users){
+
+            if(users_info[u].beam != users_info[unused_u].beam && ((intervals[block][i].beam_msk >> users_info[unused_u].beam) & 1) == 1){
+                continue;
+            }
+
+            bool have_left = i > 0 && intervals[block][i-1].users.contains(u);
+            bool have_right = i + 1 < intervals[block].size() && intervals[block][i+1].users.contains(u);
+
+            if(have_left && have_right){
+                continue;
+            }
+
+            if(min(users_info[u].rbNeed, users_info[u].sum_len) < min(users_info[unused_u].rbNeed, intervals[block][i].len)){
+                remove_user_in_interval(u, block, i);
+                add_user_in_interval(unused_u, block, i);
+                break;
+            }
+        }
+
+
+        if(!unused_users.contains(unused_u)){
+            break;
+        }
+
+        for(int u : intervals[block][j].users){
+
+            if(users_info[u].beam != users_info[unused_u].beam && ((intervals[block][j].beam_msk >> users_info[unused_u].beam) & 1) == 1){
+                continue;
+            }
+
+            bool have_left = j > 0 && intervals[block][j-1].users.contains(u);
+            bool have_right = j + 1 < intervals[block].size() && intervals[block][j+1].users.contains(u);
+
+            if(have_left && have_right){
+                continue;
+            }
+
+            if(min(users_info[u].rbNeed, users_info[u].sum_len) < min(users_info[unused_u].rbNeed, intervals[block][j].len)){
+                remove_user_in_interval(u, block, j);
+                add_user_in_interval(unused_u, block, j);
+                break;
+            }
+        }
+    }
 
     if (is_good(old_metric)) {
         SNAP_ACTION("interval_flow_over " + to_string(block) + " " + to_string(i) + " " + to_string(j) + " " +
@@ -129,108 +240,13 @@ void EgorTaskSolver::interval_flow_over() {
     } else {
         rollback(old_actions_size);
         ASSERT(old_metric == metric, "failed back score");
-    }
-
-    /*int block, i, j;
-    {
-        vector<tuple<int, int, int, int>> ips;
-        for (int block = 0; block < B; block++) {
-            for (int i = 0; i < intervals[block].size(); i++) {
-                for (int j = 0; j < intervals[block].size(); j++) {
-                    if (i != j) {
-                        //ips.emplace_back(block, i, j);
-
-                        auto and_users = intervals[block][i].users & intervals[block][j].users;
-                        auto unique_i = intervals[block][i].users ^ and_users;
-                        auto unique_j = intervals[block][j].users ^ and_users;
-
-                        int accepted = 0;
-                        int overflow = 0;
-
-                        for (int u: unique_i) {
-                            accepted += min(users_info[u].rbNeed, users_info[u].sum_len);
-                            overflow += max(0, users_info[u].sum_len - users_info[u].rbNeed);
-                        }
-                        for (int u: unique_j) {
-                            accepted += min(users_info[u].rbNeed, users_info[u].sum_len);
-                            overflow += max(0, users_info[u].sum_len - users_info[u].rbNeed);
-                        }
-
-                        int cur_f = overflow;
-
-                        ips.emplace_back(cur_f, block, i, j);
-                    }
-                }
-            }
-        }
-        if (ips.empty()) {
-            return;
-        }
-        sort(ips.begin(), ips.end(), greater<>());
-        int p = 0;//rnd.get(0, ips.size() - 1);
-        block = get<1>(ips[p]);
-        i = get<2>(ips[p]);
-        j = get<3>(ips[p]);
-    }
-
-    int change = rnd.get(-intervals[block][i].len, intervals[block][j].len);
-
-    auto old_metric = metric;
-    int old_actions_size = actions.size();
-    CNT_CALL_FLOW_OVER++;
-
-    change_interval_len(block, i, change);
-    change_interval_len(block, j, -change);
-
-    SNAP_ACTION(
-            "interval_flow_over " + to_string(b) + " " + to_string(i) + " " + to_string(j) + " " +
-            to_string(change));
-
-    if (is_good(old_metric)) {
-        SNAP_ACTION("interval_flow_over " + to_string(b) + " " + to_string(i) + " " + to_string(j) + " " +
-                    to_string(change) + " accepted");
-        CNT_ACCEPTED_FLOW_OVER++;
-    } else {
-        rollback(old_actions_size);
-        ASSERT(old_metric == metric, "failed back score");
     }*/
 }
 
 void EgorTaskSolver::interval_do_merge(int b, int i) {
     ASSERT(false, "not used");
-    //CNT_CALL_INTERVAL_DO_MERGE_EQUAL++;
 
     ASSERT(i + 1 < intervals[b].size(), "invalid merge");
-
-    // TODO: ничего не дало
-    /*auto and_msk = intervals[b][i].users & intervals[b][i + 1].users;
-    auto xor_msk = intervals[b][i].users ^ intervals[b][i + 1].users;
-
-    int right_len = intervals[b][i + 1].len;
-    remove_interval(b, i + 1);
-    change_interval_len(b, i, right_len);
-    for (int u: intervals[b][i].users) {
-        if(!and_msk.contains(u)){
-            remove_user_in_interval(u, b, i);
-        }
-    }
-
-    vector<int> ps;
-    for (int u: xor_msk) {
-        ps.push_back(u);
-    }
-    sort(ps.begin(), ps.end(), [&](int lhs, int rhs) {
-        return users_info[lhs].rbNeed -  users_info[lhs].sum_len  < users_info[rhs].rbNeed - users_info[rhs].sum_len;
-    });
-
-    for (int u: ps) {
-        if (intervals[b][i].users.size() + 1 <= L &&
-            ((intervals[b][i].beam_msk >> users_info[u].beam) & 1) == 0
-            && users_info[u].sum_len < users_info[u].rbNeed
-        ) {
-            add_user_in_interval(u, b, i);
-        }
-    }*/
 
     for (int u: intervals[b][i + 1].users) {
         if (intervals[b][i].users.size() + 1 <= L &&
@@ -245,6 +261,214 @@ void EgorTaskSolver::interval_do_merge(int b, int i) {
 }
 
 void EgorTaskSolver::interval_do_split(int b, int i) {
+    auto right_end_users = intervals[b][i].users;
+    auto left_end_users = intervals[b][i].users;
+    if (i + 1 < intervals[b].size()) {
+        right_end_users = (right_end_users & intervals[b][i + 1].users) ^ right_end_users;
+    }
+    if (i > 0) {
+        left_end_users = (left_end_users & intervals[b][i - 1].users) ^ left_end_users;
+    }
+    auto end_users = left_end_users & right_end_users;
+    left_end_users = left_end_users ^ end_users;
+    right_end_users = right_end_users ^ end_users;
+
+    int best_left_len = -1;
+    int best_right_len = -1;
+    int best_f = -1;
+    std::vector<int> need_to_check;
+    std::vector<int> plus_this(intervals[b][i].len, 0);
+    std::vector<int> minus_this_after(intervals[b][i].len, 0);
+
+    //    std::vector<int>need_to_check;
+    bitset<512> have;
+    int accumulated_lefts = 0;
+    int accumulated_rights = 0;
+    for (int u: right_end_users) {
+
+        int right = users_info[u].sum_len - users_info[u].rbNeed;
+        int left = intervals[b][i].len - right;
+        if (left <= 0) {
+            accumulated_rights++;
+        }
+        if (left >= 1 and left < intervals[b][i].len) {
+            plus_this[left]++;
+            if (!have[left]) {
+                need_to_check.push_back(left);
+                have[left] = true;
+            }
+        }
+    }
+
+    for (int u: left_end_users) {
+        int left = users_info[u].sum_len - users_info[u].rbNeed;
+        if (users_info[u].sum_len > users_info[u].rbNeed) {
+            accumulated_lefts++;
+        }
+        if (left >= 1 and left < intervals[b][i].len) {
+            minus_this_after[left]++;
+            if (!have[left]) {
+                need_to_check.push_back(left);
+                have[left] = true;
+            }
+        }
+    }
+    if (!have[1]) {
+        need_to_check.push_back(1);
+        have[1] = true;
+    }
+    if (!have[intervals[b][i].len - 1]) {
+        need_to_check.push_back(intervals[b][i].len - 1);
+        have[intervals[b][i].len - 1] = true;
+    }
+    for (int u: end_users) {
+        {
+            int right = users_info[u].sum_len - users_info[u].rbNeed;
+            int left = intervals[b][i].len - right;
+            if (left >= 1 and left < intervals[b][i].len && !have[left]) {
+                need_to_check.push_back(left);
+                have[left] = true;
+            }
+        }
+        {
+            int left = users_info[u].sum_len - users_info[u].rbNeed;
+            if (left >= 1 and left < intervals[b][i].len && !have[left]) {
+                need_to_check.push_back(left);
+                have[left] = true;
+            }
+        }
+    }
+std:
+    sort(need_to_check.begin(), need_to_check.end());
+
+    if (false) {
+        for (int left_len = 1; left_len < intervals[b][i].len; left_len++) {
+            int right_len = intervals[b][i].len - left_len;
+
+            int free_space = 0;
+
+            for (int u: end_users) {
+                int x = 0;
+                if (users_info[u].sum_len - right_len >= users_info[u].rbNeed) {
+                    x = max(x, right_len);
+                }
+                if (users_info[u].sum_len - left_len >= users_info[u].rbNeed) {
+                    x = max(x, left_len);
+                }
+                free_space += x;
+            }
+
+            for (int u: right_end_users) {
+                if (users_info[u].sum_len - right_len >= users_info[u].rbNeed) {
+                    free_space += right_len;
+                }
+            }
+            for (int u: left_end_users) {
+                if (users_info[u].sum_len - left_len >= users_info[u].rbNeed) {
+                    free_space += left_len;
+                }
+            }
+
+            int cur_f = free_space;
+
+            if (cur_f > best_f) {
+                best_f = cur_f;
+                best_right_len = right_len;
+                best_left_len = left_len;
+            }
+        }
+    } else {
+        for (int left_len: need_to_check) {
+            int right_len = intervals[b][i].len - left_len;
+            int free_space = 0;
+
+
+            accumulated_rights += plus_this[left_len];
+            for (int u: end_users) {
+                int x = 0;
+                if (users_info[u].sum_len - right_len >= users_info[u].rbNeed) {
+                    x = max(x, right_len);
+                }
+                if (users_info[u].sum_len - left_len >= users_info[u].rbNeed) {
+                    x = max(x, left_len);
+                }
+                free_space += x;
+            }
+            int cur_f = free_space + accumulated_lefts * left_len + accumulated_rights * right_len;
+
+            if (cur_f > best_f) {
+                best_f = cur_f;
+                best_right_len = right_len;
+                best_left_len = left_len;
+            }
+            accumulated_lefts -= minus_this_after[left_len];
+        }
+    }
+    ASSERT(best_right_len != -1, "failed");
+
+    insert_interval(b, i + 1);
+    change_interval_len(b, i, -best_right_len);
+    change_interval_len(b, i + 1, best_right_len);
+    for (int u: intervals[b][i].users) {
+        add_user_in_interval(u, b, i + 1);
+    }
+
+    for (int u: right_end_users) {
+        if (users_info[u].sum_len - best_right_len >= users_info[u].rbNeed) {
+            remove_user_in_interval(u, b, i + 1);
+        }
+    }
+
+    for (int u: left_end_users) {
+        if (users_info[u].sum_len - best_left_len >= users_info[u].rbNeed) {
+            remove_user_in_interval(u, b, i);
+        }
+    }
+    for (int u: end_users) {
+        int x = 0;
+        if (users_info[u].sum_len - best_left_len >= users_info[u].rbNeed) {
+            x = max(x, best_left_len);
+        }
+        if (users_info[u].sum_len - best_right_len >= users_info[u].rbNeed) {
+            x = max(x, best_right_len);
+        }
+
+        if (x == best_left_len) {
+            remove_user_in_interval(u, b, i);
+        } else if (x == best_right_len) {
+            remove_user_in_interval(u, b, i + 1);
+        } else {
+            //ASSERT(false, "kek");
+        }
+    }
+
+    // попытаемся добавить юзеров, которых нет в освободившиеся места
+
+#ifdef MY_DEBUG_MODE
+    MyBitSet<128> set;
+    for (int user = 0; user < N; user++) {
+        if (users_info[user].sum_len == 0) {
+            set.insert(user);
+        }
+    }
+    ASSERT(unused_users == set, "invalid unused users");
+#endif
+
+    for (int u: unused_users) {
+        bool may_left = intervals[b][i].users.size() < L && ((intervals[b][i].beam_msk >> users_info[u].beam) & 1) == 0;
+        bool may_right = intervals[b][i + 1].users.size() < L && ((intervals[b][i + 1].beam_msk >> users_info[u].beam) & 1) == 0;
+
+        if (may_left) {
+            add_user_in_interval(u, b, i);
+        }
+        if (may_right) {
+            add_user_in_interval(u, b, i + 1);
+        }
+        //user_do_new_interval(u);
+    }
+}
+
+/*void EgorTaskSolver::interval_do_split(int b, int i) {
     auto right_end_users = intervals[b][i].users;
     auto left_end_users = intervals[b][i].users;
     if (i + 1 < intervals[b].size()) {
@@ -345,6 +569,8 @@ void EgorTaskSolver::interval_do_split(int b, int i) {
     ASSERT(unused_users == set, "invalid unused users");
 #endif
 
+
+    // add unused users
     for (int u: unused_users) {
         bool may_left = intervals[b][i].users.size() < L && ((intervals[b][i].beam_msk >> users_info[u].beam) & 1) == 0;
         bool may_right = intervals[b][i + 1].users.size() < L && ((intervals[b][i + 1].beam_msk >> users_info[u].beam) & 1) == 0;
@@ -355,9 +581,104 @@ void EgorTaskSolver::interval_do_split(int b, int i) {
         if (may_right) {
             add_user_in_interval(u, b, i + 1);
         }
-        //user_do_new_interval(u);
+    }
+}*/
+// replace
+/*for (int unused_u: unused_users) {
+        for (int u: intervals[b][i].users) {
+            bool have_left = (i == 0 || intervals[b][i - 1].users.contains(u));
+            bool have_right = (i + 1 == intervals[b].size() || intervals[b][i + 1].users.contains(u));
+
+if (have_left && have_right) {
+    continue;
+}
+
+int old_accepted = min(users_info[u].sum_len, users_info[u].rbNeed);
+int new_accepted = min(users_info[u].sum_len - intervals[b][i].len, users_info[u].rbNeed) +
+                   min(users_info[unused_u].rbNeed, intervals[b][i].len);
+
+if (old_accepted < new_accepted && ((intervals[b][i].beam_msk >> users_info[unused_u].beam) & 1) == 0) {
+    remove_user_in_interval(u, b, i);
+    add_user_in_interval(unused_u, b, i);
+    break;
+}
+}
+
+if (!unused_users.contains(unused_u)) {
+    continue;
+}
+
+for (int u: intervals[b][i + 1].users) {
+    bool have_left = intervals[b][i].users.contains(u);
+    bool have_right = (i + 2 == intervals[b].size() || intervals[b][i + 2].users.contains(u));
+
+    if (have_left && have_right) {
+        continue;
+    }
+
+    int old_accepted = min(users_info[u].sum_len, users_info[u].rbNeed);
+    int new_accepted = min(users_info[u].sum_len - intervals[b][i + 1].len, users_info[u].rbNeed) +
+                       min(users_info[unused_u].rbNeed, intervals[b][i + 1].len);
+
+    if (old_accepted < new_accepted && ((intervals[b][i + 1].beam_msk >> users_info[unused_u].beam) & 1) == 0) {
+        remove_user_in_interval(u, b, i + 1);
+        add_user_in_interval(unused_u, b, i + 1);
+        break;
     }
 }
+}*/
+
+/*right_end_users = intervals[b][i].users;
+left_end_users = intervals[b][i].users;
+if (i + 1 < intervals[b].size()) {
+right_end_users = (right_end_users & intervals[b][i + 1].users) ^ right_end_users;
+}
+if (i > 0) {
+left_end_users = (left_end_users & intervals[b][i - 1].users) ^ left_end_users;
+}
+end_users = left_end_users & right_end_users;
+left_end_users = left_end_users ^ end_users;
+right_end_users = right_end_users ^ end_users;
+
+for (int u: right_end_users) {
+for (int unused_u: unused_users) {
+    int old_accepted = min(users_info[u].sum_len, users_info[u].rbNeed);
+    int new_accepted = min(users_info[u].sum_len - intervals[b][i + 1].len, users_info[u].rbNeed) +
+                       min(users_info[unused_u].rbNeed, intervals[b][i + 1].len);
+    if (old_accepted < new_accepted) {
+        remove_user_in_interval(u, b, i + 1);
+        add_user_in_interval(unused_u, b, i + 1);
+        break;
+    }
+}
+}*/
+
+/*for (int u = 0; u < N; u++) {
+bool may_left = intervals[b][i].users.size() < L && ((intervals[b][i].beam_msk >> users_info[u].beam) & 1) == 0;
+bool may_right = intervals[b][i + 1].users.size() < L && ((intervals[b][i + 1].beam_msk >> users_info[u].beam) & 1) == 0;
+
+int len = (may_left ? intervals[b][i].len : 0) +
+          (may_right ? intervals[b][i + 1].len : 0);
+
+if(min(users_info[u].rbNeed, users_info[u].sum_len) <
+min(users_info[u].rbNeed, len)){
+
+for(int b = 0; b < B; b++){
+for(int i = 0; i < intervals[b].size(); i++){
+    if(intervals[b][i].users.contains(u)){
+        remove_user_in_interval(u, b, i);
+    }
+}
+}
+
+if(may_left){
+add_user_in_interval(u, b, i);
+}
+if(may_right){
+add_user_in_interval(u, b, i + 1);
+}
+}
+}*/
 
 void EgorTaskSolver::interval_merge() {
     ASSERT(false, "not used");
@@ -463,7 +784,7 @@ void EgorTaskSolver::interval_do_free() {
     int len = intervals[block][index].len;
 
     ASSERT(len <= free_intervals[block].len(), "kek");
-    ASSERT(get_block_len(block) == free_intervals[block].len(), "kek");
+    //ASSERT(get_block_len(block) == free_intervals[block].len(), "kek");
 
     if (intervals[block].size() == 1) {
         //ASSERT(false, "don't touch him");

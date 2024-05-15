@@ -112,7 +112,8 @@ int main() {
     //train_egor_task_solver();
     //return 0;
 
-    for (int i = 0; i < 4; i++) {
+    {STEPS=280;
+    /*for (int i = 0; i < 4; i++) {
         if (i == 0) {
             STEPS = 500;
         } else if (i == 1) {
@@ -121,7 +122,7 @@ int main() {
             STEPS = 2'000;
         } else if (i == 3) {
             STEPS = 5'000;
-        }
+        }*/
 
         test_case_info infos[5];
         map<int, map<int, int>> score_per_test;
@@ -238,7 +239,18 @@ int main() {
             cout << "TEST CASE: K=" << K << " | " << infos[K] << endl;
         }
         cout << "TOTAL: " << total_info << endl;
-    }
 
-    cout << ABSYBDAYSBD << endl;
+        for (int i = 0; i < 3; i++) {
+            cout << accepted_more[i] << ' ';
+        }
+        cout << endl;
+        for (int i = 0; i < 3; i++) {
+            cout << accepted_inc[i] << ' ';
+        }
+        cout << endl;
+
+        for (int i = 0; i < 3; i++) {
+            accepted_more[i] = accepted_inc[i] = 0;
+        }
+    }
 }

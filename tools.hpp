@@ -226,19 +226,19 @@ std::vector<vector<Interval>> ans_to_blocked_ans(int M, int K, const vector<Inte
     return ans;
 }
 
-std::map<int,int> reduce_users(int& N, int J,  vector<UserInfo>& userInfos){
-    std::map<int,int>back_mapping;
-    std::vector<UserInfo>newUserInfos;
+std::map<int, int> reduce_users(int &N, int J, vector<UserInfo> &userInfos) {
+    std::map<int, int> back_mapping;
+    std::vector<UserInfo> newUserInfos;
     int last_id = 0;
-    std::vector<pair<int,pair<int,int>>>users_arr;
-    std::vector<int>beamGot(32);
+    std::vector<pair<int, pair<int, int>>> users_arr;
+    std::vector<int> beamGot(32);
     for (int i = 0; i < N; i++) {
         users_arr.push_back({userInfos[i].rbNeed, {userInfos[i].beam, i}});
     }
     sort(users_arr.begin(), users_arr.end(), greater<>());
     for (int i = 0; i < N; i++) {
         beamGot[users_arr[i].second.first]++;
-        if ( beamGot[users_arr[i].second.first] <= J) {
+        if (beamGot[users_arr[i].second.first] <= J) {
             newUserInfos.push_back({users_arr[i].first, users_arr[i].second.first, last_id});
             back_mapping[last_id] = users_arr[i].second.second;
             last_id++;
@@ -248,10 +248,14 @@ std::map<int,int> reduce_users(int& N, int J,  vector<UserInfo>& userInfos){
     userInfos = newUserInfos;
     return back_mapping;
 }
-void normalize_id(std::vector<Interval>&normalize_it, std::map<int,int>&back_mapping) {
+void normalize_id(std::vector<Interval> &normalize_it, std::map<int, int> &back_mapping) {
     for (int i = 0; i < normalize_it.size(); i++) {
         for (int g = 0; g < normalize_it[i].users.size(); g++) {
             normalize_it[i].users[g] = back_mapping[normalize_it[i].users[g]];
         }
     }
+}
+
+int get_time_ms() {
+    return (clock() * 1000) / CLOCKS_PER_SEC;
 }

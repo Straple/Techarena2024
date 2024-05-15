@@ -4,7 +4,7 @@
 ///===========USER=======
 ///======================
 
-#define CHOOSE_USER(condition)                     \
+/*#define CHOOSE_USER(condition)                     \
     int u;                                         \
     {                                              \
         vector<int> ips;                           \
@@ -28,7 +28,7 @@
 
 #define USER_FOR_END \
     }                \
-    }
+    }*/
 
 void EgorTaskSolver::user_do_new_interval(int user) {
     {
@@ -56,16 +56,17 @@ void EgorTaskSolver::user_do_new_interval(int user) {
                  r++) {
 
                 sum_len += intervals[b][r].len;
+
+                /*int cur_f = min(users_info[0].rbNeed, sum_len);
+
+                if (best_f < cur_f) {
+                    best_f = cur_f;
+                    best_b = b;
+                    best_l = l;
+                    best_r = r;
+                }*/
+
                 while (pos > 0 && users_info[users[pos]].rbNeed < sum_len) {
-
-                    int cur_f = min(users_info[users[pos]].rbNeed, sum_len);// - min(users_info[users[pos]].rbNeed, users_info[users[pos]].sum_len);// * 5 - max(0, sum_len - users_info[users[pos]].rbNeed);
-
-                    if (best_f < cur_f) {
-                        best_f = cur_f;
-                        best_b = b;
-                        best_l = l;
-                        best_r = r;
-                    }
                     pos--;
                 }
 
@@ -122,20 +123,146 @@ void EgorTaskSolver::user_do_new_interval(int user) {
 }*/
 
 void EgorTaskSolver::user_remove_and_add() {
-    for (int step = 0; step < 3; step++) {
+    /*for (int step = 0; step < 100; step++) {
+
         int u = rnd.get(0, N - 1);
         int u2 = rnd.get(0, N - 1);
-
-        if(u == u2){
+        if (u == u2 || users_info[u].beam == users_info[u2].beam) {
             continue;
         }
 
-        /*auto a = get_user_position(u);
-        auto b = get_user_position(u2);
+        // swap u and u2
 
-        if(get<0>(a) != get<0>(b)){
+        int old_accepted = min(users_info[u].rbNeed, users_info[u].sum_len) +
+                           min(users_info[u2].rbNeed, users_info[u2].sum_len);
+
+        int new_accepted = min(users_info[u].rbNeed, users_info[u2].sum_len) +
+                           min(users_info[u2].rbNeed, users_info[u].sum_len);
+
+        if(new_accepted < old_accepted){
             continue;
-        }*/
+        }
+
+        int old_actions_size = actions.size();
+        auto old_metric = metric;
+
+        auto [old_b, old_l, old_r] = get_user_position(u);
+        auto [old_b2, old_l2, old_r2] = get_user_position(u2);
+
+        if (old_b != -1) {
+            for (int i = old_l; i <= old_r; i++) {
+                remove_user_in_interval(u, old_b, i);
+            }
+        }
+        if (old_b2 != -1) {
+            for (int i = old_l2; i <= old_r2; i++) {
+                remove_user_in_interval(u2, old_b2, i);
+            }
+        }
+
+        user_do_new_interval(u2);
+        user_do_new_interval(u);
+
+        if (is_good(old_metric)) {
+            SNAP_ACTION("user_remove_and_add " + to_string(u) + " " + to_string(u2) + " accepted");
+        } else {
+            rollback(old_actions_size);
+            ASSERT(metric == old_metric, "failed back metric");
+        }
+    }*/
+    // 981412
+    // return;
+
+    /*for (int step = 0; step < 10; step++) {
+        int u = rnd.get(0, N - 1);
+
+        auto [old_b, old_l, old_r] = get_user_position(u);
+
+        if (rnd.get_d() < temperature * 0.01) {
+            if (old_b != -1) {
+                for (int i = old_l; i <= old_r; i++) {
+                    remove_user_in_interval(u, old_b, i);
+                }
+            }
+        } else if (rnd.get_d() < 0.5) {
+            // add left
+            if (old_b != -1 && old_l > 0 &&
+                intervals[old_b][old_l - 1].users.size() < L &&
+                ((intervals[old_b][old_l - 1].beam_msk >> users_info[u].beam) & 1) == 0 &&
+                users_info[u].sum_len < users_info[u].rbNeed) {
+
+                add_user_in_interval(u, old_b, old_l - 1);
+            }
+
+            // add right
+            else if (old_b != -1 && old_r + 1 < intervals[old_b].size() &&
+                intervals[old_b][old_r + 1].users.size() < L &&
+                ((intervals[old_b][old_r + 1].beam_msk >> users_info[u].beam) & 1) == 0 &&
+                users_info[u].sum_len < users_info[u].rbNeed) {
+
+                add_user_in_interval(u, old_b, old_r + 1);
+            }
+
+            // remove left
+            else if (old_b != -1 &&
+                users_info[u].sum_len - intervals[old_b][old_l].len >= users_info[u].rbNeed) {
+
+                remove_user_in_interval(u, old_b, old_l);
+            }
+
+            // remove right
+            else if (old_b != -1 &&
+                users_info[u].sum_len - intervals[old_b][old_r].len >= users_info[u].rbNeed) {
+
+                remove_user_in_interval(u, old_b, old_r);
+            }
+        }
+        else{
+            if (old_b != -1) {
+                for (int i = old_l; i <= old_r; i++) {
+                    remove_user_in_interval(u, old_b, i);
+                }
+            }
+
+            user_do_new_interval(u);
+        }
+    }*/
+
+    /*for (int u: unused_users) {
+        user_do_new_interval(u);
+    }*/
+
+    // 981417
+    /*for (int b = 0; b < B; b++) {
+        for (int i = 0; i < intervals[b].size(); i++) {
+            if (intervals[b][i].users.size() < L) {
+                for (int u: unused_users) {
+                    if (((intervals[b][i].beam_msk >> users_info[u].beam) & 1) == 0) {
+                        add_user_in_interval(u, b, i);
+                        break;
+                    }
+                }
+            }
+        }
+    }*/
+
+    /*for (int b = 0; b < B; b++) {
+        for (int i = 0; i < intervals[b].size(); i++) {
+            if (intervals[b][i].users.size() < L) {
+
+            }
+        }
+    }*/
+
+    //return;
+
+    for (int step = 0; step < 1; step++) {
+        int u = rnd.get(0, N - 1);
+        int u2 = rnd.get(0, N - 1);
+
+        if (u == u2 || users_info[u].beam == users_info[u2].beam) {
+            continue;
+        }
 
         int old_actions_size = actions.size();
         auto old_metric = metric;
@@ -162,32 +289,20 @@ void EgorTaskSolver::user_remove_and_add() {
 
         if (is_good(old_metric)) {
             SNAP_ACTION("user_remove_and_add " + to_string(u) + " " + to_string(u2) + " accepted");
+
+            /*if(metric.accepted > old_metric.accepted) {
+                auto [new_b, new_l, new_r] = get_user_position(u);
+                auto [new_b2, new_l2, new_r2] = get_user_position(u2);
+
+                cout << users_info[u].beam << ' ' << old_b << ' ' << old_l << ' ' << old_r << '\n';
+                cout << users_info[u2].beam << ' ' << old_b2 << ' ' << old_l2 << ' ' << old_r2 << '\n';
+                cout << users_info[u].beam << ' ' << new_b << ' ' << new_l << ' ' << new_r << '\n';
+                cout << users_info[u2].beam << ' ' << new_b2 << ' ' << new_l2 << ' ' << new_r2 << '\n';
+                cout << "============\n";
+            }*/
         } else {
 
-            auto [new_b, new_l, new_r] = get_user_position(u);
-            if (new_b != -1) {
-                for (int i = new_l; i <= new_r; i++) {
-                    remove_user_in_interval(u, new_b, i);
-                }
-            }
-
-            auto [new_b2, new_l2, new_r2] = get_user_position(u2);
-            if (new_b2 != -1) {
-                for (int i = new_l2; i <= new_r2; i++) {
-                    remove_user_in_interval(u2, new_b2, i);
-                }
-            }
-
-            if (old_b != -1) {
-                for (int i = old_l; i <= old_r; i++) {
-                    add_user_in_interval(u, old_b, i);
-                }
-            }
-            if (old_b2 != -1) {
-                for (int i = old_l2; i <= old_r2; i++) {
-                    add_user_in_interval(u2, old_b2, i);
-                }
-            }
+            rollback(old_actions_size);
 
             ASSERT(old_metric == metric, "failed back score");
         }
