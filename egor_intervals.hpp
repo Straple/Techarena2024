@@ -180,7 +180,7 @@ void EgorTaskSolver::interval_flow_over() {
             if (intervals[block].size() > 1) {
                 for (int i = 0; i < intervals[block].size(); i++) {
                     int overflow = 0;
-                    for(int u : intervals[block][i].users){
+                    for (int u: intervals[block][i].users) {
                         overflow += max(0, users_info[u].sum_len - users_info[u].rbNeed);
                     }
                     ips.emplace_back(overflow, block, i);
@@ -198,6 +198,15 @@ void EgorTaskSolver::interval_flow_over() {
         //int p = rnd.get(0, ips.size() - 1);
     }
 
+    /*MyBitSet dp;
+    for (int i = 0; i < intervals[block].size(); i++) {
+        for (int u: intervals[block][i].users) {
+            if (users_info[u].sum_len < users_info[u].rbNeed && !dp.contains(u)) {
+                dp.insert(u);
+            }
+        }
+    }*/
+
     while (intervals[block][i].len > 0) {
         // выбрать кому лучше всего отдать длину +1
         int best_j = -1, best_f = 0;
@@ -214,6 +223,7 @@ void EgorTaskSolver::interval_flow_over() {
                         accepted--;
                     }
                 }
+
                 for (int u: unique_j_users) {
                     if (users_info[u].sum_len < users_info[u].rbNeed) {
                         accepted++;

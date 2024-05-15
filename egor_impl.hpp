@@ -144,8 +144,8 @@ vector<Interval> EgorTaskSolver::annealing(vector<Interval> reservedRBs,
     auto best_intervals = intervals;
 #endif
 
-    int best_f = metric.accepted;
-    int there_has_been_no_improvement_for_x_steps = 0;
+    //int best_f = metric.accepted;
+    //int there_has_been_no_improvement_for_x_steps = 0;
 
     for (int step = 0; step < STEPS; step++) {
         temperature = ((STEPS - step) * 0.01 / STEPS);

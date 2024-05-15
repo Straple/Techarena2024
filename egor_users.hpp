@@ -256,7 +256,10 @@ void EgorTaskSolver::user_remove_and_add() {
 
     //return;
 
-    for (int step = 0; step < 2; step++) {
+    //user_RobinHood();
+
+    //982788
+    for (int step = 0; step < 3; step++) {
         int u = rnd.get(0, N - 1);
         int u2 = rnd.get(0, N - 1);
 
@@ -289,22 +292,186 @@ void EgorTaskSolver::user_remove_and_add() {
 
         if (is_good(old_metric)) {
             SNAP_ACTION("user_remove_and_add " + to_string(u) + " " + to_string(u2) + " accepted");
-
-            /*if(metric.accepted > old_metric.accepted) {
-                auto [new_b, new_l, new_r] = get_user_position(u);
-                auto [new_b2, new_l2, new_r2] = get_user_position(u2);
-
-                cout << users_info[u].beam << ' ' << old_b << ' ' << old_l << ' ' << old_r << '\n';
-                cout << users_info[u2].beam << ' ' << old_b2 << ' ' << old_l2 << ' ' << old_r2 << '\n';
-                cout << users_info[u].beam << ' ' << new_b << ' ' << new_l << ' ' << new_r << '\n';
-                cout << users_info[u2].beam << ' ' << new_b2 << ' ' << new_l2 << ' ' << new_r2 << '\n';
-                cout << "============\n";
-            }*/
         } else {
 
             rollback(old_actions_size);
 
             ASSERT(old_metric == metric, "failed back score");
         }
+    }
+
+    /*if(metric.accepted > old_metric.accepted) {
+                auto [new_b, new_l, new_r] = get_user_position(u);
+                auto [new_b2, new_l2, new_r2] = get_user_position(u2);
+
+    cout << users_info[u].beam << ' ' << old_b << ' ' << old_l << ' ' << old_r << '\n';
+    cout << users_info[u2].beam << ' ' << old_b2 << ' ' << old_l2 << ' ' << old_r2 << '\n';
+    cout << users_info[u].beam << ' ' << new_b << ' ' << new_l << ' ' << new_r << '\n';
+    cout << users_info[u2].beam << ' ' << new_b2 << ' ' << new_l2 << ' ' << new_r2 << '\n';
+    cout << "============\n";
+}*/
+}
+
+void EgorTaskSolver::user_RobinHood() {
+
+    if (rnd.get_d() < 0.2) {
+        vector<int> ips;
+        for (int u: unused_users) {
+            ips.push_back(u);
+        }
+
+        if (!ips.empty()) {
+            int u = ips[rnd.get(0, ips.size() - 1)];
+            user_do_new_interval(u);
+        }
+    }
+
+    if (rnd.get_d() < 0.1) {
+        int old_actions_size = actions.size();
+        auto old_metric = metric;
+
+        int u = rnd.get(0, N - 1);
+
+        auto [b, l, r] = get_user_position(u);
+        if(b != -1) {
+            for (int i = l; i <= r; i++) {
+                remove_user_in_interval(u, b, i);
+            }
+        }
+        user_do_new_interval(u);
+
+        if (is_good(old_metric)) {
+        } else {
+            rollback(old_actions_size);
+            ASSERT(old_metric == metric, "failed back score");
+        }
+    }
+
+    if (rnd.get_d() < 0.1) {
+        // (block, index, user)
+        vector<tuple<int, int, int>> ips;
+        for (int block = 0; block < B; block++) {
+            for (int index = 0; index + 1 < intervals[block].size(); index++) {
+
+                auto unique_users = intervals[block][index + 1].users;
+                unique_users = unique_users ^ (unique_users & intervals[block][index].users);
+
+                for (int u: unique_users) {
+                    if (users_info[u].sum_len < users_info[u].rbNeed &&
+                        intervals[block][index].users.size() < L &&
+                        ((intervals[block][index].beam_msk >> users_info[u].beam) & 1) == 0) {
+
+                        ips.emplace_back(block, index, u);
+                    }
+                }
+            }
+
+            for (int index = 1; index < intervals[block].size(); index++) {
+                auto unique_users = intervals[block][index - 1].users;
+                unique_users = unique_users ^ (unique_users & intervals[block][index].users);
+                for (int u: unique_users) {
+                    if (users_info[u].sum_len < users_info[u].rbNeed &&
+                        intervals[block][index].users.size() < L &&
+                        ((intervals[block][index].beam_msk >> users_info[u].beam) & 1) == 0) {
+
+                        ips.emplace_back(block, index, u);
+                    }
+                }
+            }
+        }
+
+        if (!ips.empty()) {
+            auto [b, i, u] = ips[rnd.get(0, ips.size() - 1)];
+
+            add_user_in_interval(u, b, i);
+        }
+    }
+
+    int block, index, u_left, u_right;
+    block = -1;
+    bool type;
+    bool mode;
+    {
+        // (f, block, index, u_left, u_right)
+        vector<tuple<int, int, int, int, int, bool>> ips;
+
+        for (int block = 0; block < B; block++) {
+            for (int index = 0; index < intervals[block].size(); index++) {
+                auto unique_right_users = intervals[block][index].users;// Отдаём правый край.
+                if (index + 1 < intervals[block].size()) {
+                    auto and_users = intervals[block][index].users & intervals[block][index + 1].users;
+                    unique_right_users = unique_right_users ^ and_users;
+                }
+
+                for (int u_right: unique_right_users) {
+                    for (auto empty: unused_users) {
+                        if (users_info[empty].beam == users_info[u_right].beam ||
+                            ((intervals[block][index].beam_msk >> users_info[empty].beam) & 1) == 0) {
+                            int accepted = min(users_info[u_right].rbNeed, users_info[u_right].sum_len - intervals[block][index].len) +
+                                           min(users_info[empty].rbNeed, /*users_info[empty].sum_len*/ +intervals[block][index].len);
+                            ips.emplace_back(accepted, block, index, u_right, empty, true);
+                        }
+                    }
+                }
+            }
+        }
+
+        for (int block = 0; block < B; block++) {
+            for (int index = 0; index < intervals[block].size(); index++) {
+                auto unique_left_users = intervals[block][index].users;
+                if (index != 0) {
+                    auto and_users = intervals[block][index].users & intervals[block][index + 1].users;
+                    unique_left_users = unique_left_users ^ and_users;
+                }
+
+                for (int u_left: unique_left_users) {
+                    for (auto empty: unused_users) {
+                        if (users_info[empty].beam == users_info[u_left].beam ||
+                            ((intervals[block][index].beam_msk >> users_info[empty].beam) & 1) == 0) {
+                            int accepted = min(users_info[u_left].rbNeed, users_info[u_left].sum_len - intervals[block][index].len) +
+                                           min(users_info[empty].rbNeed, /*users_info[empty].sum_len*/ +intervals[block][index].len);
+                            ips.emplace_back(accepted, block, index, u_left, empty, true);
+                        }
+                    }
+                }
+            }
+        }
+
+        if (ips.empty()) {
+            return;
+        }
+
+        //sort(ips.begin(), ips.end(), greater<>());
+        //int p = 0;
+        int p = rnd.get(0, ips.size() - 1);
+        block = get<1>(ips[p]);
+        index = get<2>(ips[p]);
+        u_left = get<3>(ips[p]);
+        u_right = get<4>(ips[p]);
+        type = get<5>(ips[p]);
+    }
+
+    ASSERT(block != -1, "kek");
+
+    int old_actions_size = actions.size();
+    auto old_metric = metric;
+
+    if (type) {
+        remove_user_in_interval(u_left, block, index);
+        add_user_in_interval(u_right, block, index);
+    } else {
+        ASSERT(false, "kek");
+        remove_user_in_interval(u_left, block, index);
+        add_user_in_interval(u_right, block, index);
+    }
+
+    if (is_good(old_metric)) {
+        if (metric.accepted > old_metric.accepted) {
+            //cout << "GOOOOOOD" << endl;
+        }
+
+    } else {
+        rollback(old_actions_size);
+        ASSERT(old_metric == metric, "failed back score");
     }
 }

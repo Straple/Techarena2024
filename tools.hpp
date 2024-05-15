@@ -51,8 +51,7 @@ int get_theory_max_score(int N, int M, int K, int J, int L, const vector<Interva
                          const vector<UserInfo> &userInfos) {
     int max_score = 0;
     std::vector<pair<int, int>> rbNeeded;
-    std::vector<pair<int, int>>
-            reserved;
+    std::vector<pair<int, int>> reserved;
     for (int i = 0; i < K; i++) {
         reserved.push_back({reservedRBs[i].start, reservedRBs[i].end});
     }
