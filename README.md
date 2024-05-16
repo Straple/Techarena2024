@@ -3,6 +3,13 @@
 Условие задачи:
 [statements-240400.pdf](https://github.com/Straple/Techarena2024/files/15334768/statements-240400.pdf)
 
+Команда: Kak Pogodka Snizu?
+
+TODO: добавить финальное место
+
+Сейчас таблица после окончания такая (всего 50 команд с ненулевым баллом):
+![image](https://github.com/Straple/Techarena2024/assets/54230867/7b4541fa-8328-4145-b16d-b66ee9ccf8c3)
+
 # Собирать
 Собирать main.cpp, который читает тесты из файлов и запускает их на нашем решении с помощью CMakeLists.txt
 
