@@ -4,6 +4,8 @@
 [statements-240400.pdf](https://github.com/Straple/Techarena2024/files/15334768/statements-240400.pdf)
 
 Команда: Kak Pogodka Snizu?
+Straple - Егор Юхневич
+brezhart - Артем Брежнев
 
 TODO: добавить финальное место
 
