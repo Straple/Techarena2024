@@ -18,7 +18,14 @@
 
 Артем сделал супер визуализацию всего решения. Не только скрины, но еще и видео того, что происходит. И мы легко в коде можем добавить строчку кода, чтобы сделать снапшот текущего сосстояния с какой-то дополнительной информацией: метрики, что за действие было выполнено и т.д.
 
-https://github.com/Straple/Techarena2024/assets/54230867/b2578823-5399-4a33-92e4-284580f36adf
+![00827](https://github.com/Straple/Techarena2024/assets/54230867/768bbae7-6b17-469d-b93a-a61b2ed8c203)
+![00001 (6)](https://github.com/Straple/Techarena2024/assets/54230867/8e6acb6d-b5ec-4bdb-ae89-a3eb37e93681)
+![00001 (4)](https://github.com/Straple/Techarena2024/assets/54230867/68fe9684-eca0-432c-8587-f1164291b9a6)
+![image_2024-05-14_00-12-39](https://github.com/Straple/Techarena2024/assets/54230867/d3c8f968-2bf4-4293-9eec-f378dc436108)
+
+Visualization 1: https://youtu.be/-xqAZdD8EXI
+
+Visualization 2: https://youtu.be/B7OFaIDbArg
 
 # Решение
 
